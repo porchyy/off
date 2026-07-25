@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Component Library · PostureAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../specs/tokens.css" />
+  <link rel="stylesheet" href="../prototype/base.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { padding: 0; }
+    .cl-wrap { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    .cl-side { background: var(--bg-secondary); border-right: 1px solid var(--border-subtle); padding: var(--sp-6) var(--sp-4); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .cl-side h2 { font-size: var(--fs-md); margin-bottom: var(--sp-4); }
+    .cl-side a { display: block; padding: var(--sp-2) var(--sp-3); color: var(--text-secondary); font-size: var(--fs-sm); border-radius: var(--r-md); margin-bottom: 2px; }
+    .cl-side a:hover, .cl-side a.active { background: var(--bg-tertiary); color: var(--text-primary); }
+    .cl-main { padding: var(--sp-10); max-width: 1100px; }
+    .cl-section { margin-bottom: var(--sp-12); scroll-margin-top: var(--sp-6); }
+    .cl-section h1 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-tight); margin-bottom: var(--sp-2); }
+    .cl-section .desc { color: var(--text-secondary); margin-bottom: var(--sp-6); }
+    .cl-section h2 { font-size: var(--fs-md); font-weight: var(--fw-semibold); margin-top: var(--sp-8); margin-bottom: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-subtle); }
+    .preview { padding: var(--sp-6); background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: var(--r-md); margin-bottom: var(--sp-3); min-height: 100px; display: flex; align-items: center; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; }
+    .code { background: #06080F; border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: var(--sp-3); font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--brand-accent); overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="cl-wrap">
+    <aside class="cl-side">
+      <h2>🧩 Components</h2>
+      <a href="#gauge" class="active">Posture Gauge</a>
+      <a href="#risk">Risk Badge</a>
+      <a href="#stat">Stat Card</a>
+      <a href="#alert">Alert Item</a>
+      <a href="#toggle">Toggle Group</a>
+      <a href="#button">Buttons</a>
+      <a href="#silhouette">Silhouette</a>
+      <a href="#chart">Trend Chart</a>
+      <a href="#live">Live Indicator</a>
+      <a href="#nav">Navigation</a>
+    </aside>
+
+    <main class="cl-main">
+
+      <section class="cl-section" id="gauge">
+        <h1>Posture Gauge · วงกลมคะแนน</h1>
+        <p class="desc">SVG-based, accessible, animated · ใช้ stroke-dasharray แสดง progress · มี glow shadow ตามสี status</p>
+
+        <h2>States</h2>
+        <div class="preview">
+          <!-- Good -->
+          <svg class="gauge-svg" viewBox="0 0 200 200" style="width:160px;height:160px">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22E58D"/><stop offset="1" stop-color="#00E5C7"/></linearGradient></defs>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#1F2942" stroke-width="14"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="url(#g1)" stroke-width="14" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="90.48" transform="rotate(-90 100 100)" style="filter: drop-shadow(0 0 8px rgba(34,229,141,0.5));"/>
+            <text x="100" y="105" text-anchor="middle" fill="#F4F6FB" style="font-size:40px; font-weight:700">82</text>
+            <text x="100" y="125" text-anchor="middle" fill="#6B7896" style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase">/ 100</text>
+          </svg>
+
+          <!-- Caution -->
+          <svg class="gauge-svg" viewBox="0 0 200 200" style="width:160px;height:160px">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#1F2942" stroke-width="14"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#FFC23C" stroke-width="14" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="201" transform="rotate(-90 100 100)" style="filter: drop-shadow(0 0 8px rgba(255,194,60,0.5));"/>
+            <text x="100" y="105" text-anchor="middle" fill="#F4F6FB" style="font-size:40px; font-weight:700">68</text>
+            <text x="100" y="125" text-anchor="middle" fill="#6B7896" style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase">/ 100</text>
+          </svg>
+
+          <!-- Risk -->
+          <svg class="gauge-svg" viewBox="0 0 200 200" style="width:160px;height:160px">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#1F2942" stroke-width="14"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#FF4D6D" stroke-width="14" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="301" transform="rotate(-90 100 100)" style="filter: drop-shadow(0 0 8px rgba(255,77,109,0.5));"/>
+            <text x="100" y="105" text-anchor="middle" fill="#F4F6FB" style="font-size:40px; font-weight:700">45</text>
+            <text x="100" y="125" text-anchor="middle" fill="#6B7896" style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase">/ 100</text>
+          </svg>
+        </div>
+        <div class="code">// circumference = 2 × π × r = 2 × π × 80 ≈ 502.65
+// offset = circumference × (1 - score/100)
+stroke-dasharray="502.65"
+stroke-dashoffset="90.48"  // for score 82</div>
+      </section>
+
+      <section class="cl-section" id="risk">
+        <h1>Risk Badge · ป้ายระดับความเสี่ยง</h1>
+        <p class="desc">3 variants · ใช้กับ status (good/caution/risk) · มี icon เสมอเพื่อ color-blind safety</p>
+        <div class="preview">
+          <span class="risk-badge risk-low">● Low · ต่ำ</span>
+          <span class="risk-badge risk-medium">● Medium · ปานกลาง</span>
+          <span class="risk-badge risk-high">● High · สูง</span>
+        </div>
+      </section>
+
+      <section class="cl-section" id="stat">
+        <h1>Stat Card · การ์ดสถิติ</h1>
+        <p class="desc">Label + Value + Delta · ใช้ 4 ตัวในแถวล่างของ Dashboard</p>
+        <div class="preview" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:var(--sp-3)">
+          <div class="card stat" style="width:100%">
+            <div class="stat-label">Good Posture · ท่าถูก</div>
+            <div class="stat-value">4.2<span class="stat-unit"> / 6.4 ชม.</span></div>
+            <div class="stat-delta up">↑ 0.8 ชม. จากเมื่อวาน</div>
+          </div>
+          <div class="card stat" style="width:100%">
+            <div class="stat-label">Streak · ต่อเนื่อง</div>
+            <div class="stat-value">7<span class="stat-unit"> วัน</span></div>
+            <div class="stat-delta up">↑ ดีครบสัปดาห์!</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cl-section" id="alert">
+        <h1>Alert Item · รายการแจ้งเตือน</h1>
+        <p class="desc">Icon + Title + Meta + CTA · แต่ละ severity มีสี/ไอคอนต่างกัน</p>
+        <div class="preview" style="flex-direction:column; align-items:stretch; max-width:480px">
+          <div class="alert-item">
+            <div class="alert-icon risk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+            <div class="alert-body">
+              <div class="alert-title">คอเอียงไปข้างหน้า · Forward head</div>
+              <div class="alert-meta">09:48 · มุมคอ > 30° นาน 8 นาที</div>
+              <div class="alert-cta">→ ดึงคางเข้า เลื่อนจอให้ตรงระดับสายตา</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon caution"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <div class="alert-body">
+              <div class="alert-title">เอนหลังมากเกินไป · Slouching</div>
+              <div class="alert-meta">14:32 · นั่งต่อเนื่อง 45 นาที</div>
+              <div class="alert-cta">→ ยืดหลังเบาๆ 30 วินาที</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon good"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div class="alert-body">
+              <div class="alert-title">ท่าทางกลับสู่ปกติ · Recovered</div>
+              <div class="alert-meta">09:55 · หลังจากแจ้งเตือน</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cl-section" id="toggle">
+        <h1>Toggle Group · ปุ่มสลับ</h1>
+        <p class="desc">ใช้กับ time range, view mode, filter</p>
+        <div class="preview">
+          <div class="toggle">
+            <button>7D</button>
+            <button class="active">30D</button>
+            <button>90D</button>
+          </div>
+          <div class="toggle">
+            <button class="active">Day</button>
+            <button>Week</button>
+            <button>Month</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="cl-section" id="button">
+        <h1>Buttons · ปุ่ม</h1>
+        <div class="preview">
+          <button class="btn btn-primary">Primary CTA</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-primary" style="background:var(--status-risk)">หยุดติดตาม</button>
+          <button class="btn btn-ghost" disabled style="opacity:0.5">Disabled</button>
+        </div>
+      </section>
+
+      <section class="cl-section" id="silhouette">
+        <h1>Silhouette · ภาพท่าทาง</h1>
+        <p class="desc">Privacy-preserving icon แทนภาพกล้องจริง · เปลี่ยนสีตาม posture state</p>
+        <div class="preview">
+          <svg width="80" height="120" viewBox="0 0 120 160" style="color:var(--status-good)">
+            <circle cx="60" cy="28" r="14" fill="currentColor"/>
+            <path d="M 36 60 Q 60 50 84 60 L 80 110 Q 60 115 40 110 Z" fill="currentColor"/>
+            <path d="M 36 64 Q 22 80 24 110 L 30 110 Q 30 82 42 70 Z" fill="currentColor"/>
+            <path d="M 84 64 Q 98 80 96 110 L 90 110 Q 90 82 78 70 Z" fill="currentColor"/>
+            <rect x="46" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+            <rect x="62" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+          </svg>
+          <svg width="80" height="120" viewBox="0 0 120 160" style="color:var(--status-caution)">
+            <circle cx="60" cy="28" r="14" fill="currentColor"/>
+            <path d="M 36 60 Q 60 50 84 60 L 80 110 Q 60 115 40 110 Z" fill="currentColor"/>
+            <path d="M 36 64 Q 22 80 24 110 L 30 110 Q 30 82 42 70 Z" fill="currentColor"/>
+            <path d="M 84 64 Q 98 80 96 110 L 90 110 Q 90 82 78 70 Z" fill="currentColor"/>
+            <rect x="46" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+            <rect x="62" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+          </svg>
+          <svg width="80" height="120" viewBox="0 0 120 160" style="color:var(--status-risk)">
+            <circle cx="60" cy="28" r="14" fill="currentColor"/>
+            <path d="M 36 60 Q 60 50 84 60 L 80 110 Q 60 115 40 110 Z" fill="currentColor"/>
+            <path d="M 36 64 Q 22 80 24 110 L 30 110 Q 30 82 42 70 Z" fill="currentColor"/>
+            <path d="M 84 64 Q 98 80 96 110 L 90 110 Q 90 82 78 70 Z" fill="currentColor"/>
+            <rect x="46" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+            <rect x="62" y="110" width="12" height="44" rx="4" fill="currentColor"/>
+          </svg>
+        </div>
+      </section>
+
+      <section class="cl-section" id="chart">
+        <h1>Trend Chart · กราฟแนวโน้ม</h1>
+        <p class="desc">Area-line chart · gradient fill · dark grid · tooltip on hover</p>
+        <div class="card">
+          <div class="chart-wrap" style="height:200px">
+            <canvas id="chart1"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="cl-section" id="live">
+        <h1>Live Indicator · สถานะกำลังทำงาน</h1>
+        <p class="desc">Pulsing dot + label · ใช้ทุกที่ที่แสดงสถานะ realtime</p>
+        <div class="preview">
+          <div class="live-badge"><span class="live-dot"></span> Live · กำลังติดตาม</div>
+          <div class="posture-state-pill good">
+            <span class="state-dot good"></span>
+            Good Posture · ท่าทางดี
+          </div>
+          <div class="posture-state-pill caution">
+            <span class="state-dot caution"></span>
+            Caution · เอนหลัง
+          </div>
+          <div class="posture-state-pill risk">
+            <span class="state-dot risk"></span>
+            Risk · คอยื่น
+          </div>
+        </div>
+      </section>
+
+      <section class="cl-section" id="nav">
+        <h1>Navigation · เมนู</h1>
+        <p class="desc">Web: left sidebar · Mobile: bottom tab bar</p>
+        <h2>Web sidebar</h2>
+        <div class="preview" style="justify-content:flex-start; padding:var(--sp-3)">
+          <a href="#" class="nav-item active" style="min-width:200px">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/></svg>
+            Dashboard
+          </a>
+          <a href="#" class="nav-item" style="min-width:200px">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+            Real-time Monitor
+          </a>
+        </div>
+        <h2>Mobile tab bar</h2>
+        <div class="preview" style="background:var(--bg-primary); border-radius:24px; max-width:380px">
+          <div class="tabbar" style="position:relative; width:100%">
+            <a class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>Home</a>
+            <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/></svg>History</a>
+            <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>Live</a>
+            <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Alerts</a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    new Chart(document.getElementById('chart1').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['9','10','11','12','13','14','15'],
+        datasets: [{
+          data: [72,78,82,85,79,84,89],
+          borderColor: '#00E5C7',
+          backgroundColor: 'rgba(0,229,199,0.2)',
+          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#1F2942' }, ticks: { color: '#6B7896' } },
+          y: { min: 40, max: 100, grid: { color: '#1F2942' }, ticks: { color: '#6B7896' } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# PostureAI Pi client configuration
+# Copy to config.yaml and adjust.
+
+backend:
+  # URL ของ FastAPI backend — ค่า default ตรงกับ docker-compose service
+  url: http://localhost:8000
+  # timeout (วินาที) สำหรับ HTTP call
+  timeout: 5
+
+camera:
+  # index สำหรับ OpenCV VideoCapture (Pi Camera มักเป็น 0 ถ้าใช้ libcamera)
+  index: 0
+  # ความกว้าง/สูงของ frame ที่ใช้ประมวลผล
+  width: 640
+  height: 480
+  # flip: 0=none, 1=horizontal, -1=both
+  flip: 0
+
+detection:
+  # ระยะห่างระหว่าง sample (วินาที)
+  interval: 5
+  # โหมดประมวลผล: "mediapipe" (Python lib) หรือ "remote" (ส่งภาพให้ backend ทำเอง)
+  mode: mediapipe
+
+risk:
+  threshold: 60
+  seconds: 45
+
+buffer:
+  # path ของ SQLite ที่ใช้ buffer ตอน backend offline
+  path: ./buffer.sqlite
