@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="PostureAI - private, on-device posture monitoring">
+  <title>PostureAI | Posture monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="specs/tokens.css">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="risk.css">
+</head>
+<body>
+  <a class="skip" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+  <header class="topbar">
+    <a class="brand" href="/"><span> P </span><b>PostureAI</b></a>
+    <nav aria-label="เมนูหลัก"><a href="#monitor">ติดตามสด</a><a href="#history">ประวัติ</a><a href="#privacy">ความเป็นส่วนตัว</a></nav>
+    <button id="clearData" class="text-btn" type="button">ลบข้อมูลในเครื่อง</button>
+  </header>
+  <main id="main" class="container">
+    <section class="intro">
+      <p class="eyebrow">PRIVATE · ON-DEVICE AI</p>
+      <h1>ดูแลท่านั่งของคุณ<br><em>แบบเรียลไทม์</em></h1>
+      <p>AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก ข้อมูลที่จัดเก็บมีเพียงคะแนน เวลา และเหตุการณ์แจ้งเตือน</p>
+    </section>
+    <section id="monitor" class="grid">
+      <article class="camera card">
+        <div class="card-head"><h2>กล้องและการวิเคราะห์</h2><span id="cameraState" class="badge neutral">พร้อมเริ่ม</span></div>
+        <div class="video-wrap"><video id="video" autoplay muted playsinline aria-label="ภาพจากกล้อง"></video><canvas id="overlay" aria-hidden="true"></canvas><p id="cameraHelp">กดเริ่ม แล้วอนุญาตการใช้กล้อง</p></div>
+        <div class="actions"><button id="start" class="primary" type="button">เริ่มการวิเคราะห์</button><button id="stop" class="secondary" type="button" disabled>หยุดกล้อง</button></div>
+      </article>
+      <aside class="metrics">
+        <article class="score card"><p>POSTURE SCORE</p><output id="score">--</output><strong id="status">รอเริ่มต้น</strong><span id="advice">จัดกล้องให้เห็นช่วงไหล่และลำตัว</span></article>
+        <article id="officeRiskCard" class="risk-card card neutral" aria-live="polite"><p>OFFICE SYNDROME RISK</p><strong id="officeRisk">ยังไม่ประเมิน</strong><span id="riskReason">เริ่มการวิเคราะห์เพื่อประเมินความเสี่ยงจากท่านั่งและท่าค้าง</span></article>
+        <article class="card details"><h2>ตัวชี้วัด</h2><div><span>คอเอียง</span><b id="neck">--</b></div><div><span>ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div><div><span>การโน้มลำตัว</span><b id="torso">--</b></div><p class="disclaimer">เป็นข้อมูลเพื่อปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p></article>
+      </aside>
+    </section>
+    <section id="history" class="history-section">
+      <div class="section-title"><div><p class="eyebrow">LOCAL SQLITE DATABASE</p><h2>สรุปของวันนี้</h2></div><button id="refresh" class="secondary" type="button">รีเฟรช</button></div>
+      <div class="summary"><article class="card"><span>คะแนนเฉลี่ย</span><b id="average">--</b></article><article class="card"><span>การบันทึกวันนี้</span><b id="samples">0</b></article><article class="card"><span>แจ้งเตือน</span><b id="alerts">0</b></article></div>
+      <article class="card"><h2>เหตุการณ์ล่าสุด</h2><ol id="events" class="events"><li>ยังไม่มีข้อมูล เริ่มการวิเคราะห์เพื่อบันทึกผล</li></ol></article>
+    </section>
+    <section id="privacy" class="privacy card"><h2>ความเป็นส่วนตัว</h2><p>กล้องและโมเดล AI ทำงานในอุปกรณ์ของคุณเท่านั้น ระบบบันทึกเฉพาะคะแนน posture, มุมโดยประมาณ และเวลาไว้ใน SQLite บนเครื่องนี้ คุณลบได้ทุกเมื่อจากปุ่มด้านบน</p></section>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

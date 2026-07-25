@@ -1,0 +1,1 @@
+"""PostureAI FastAPI backend package."""

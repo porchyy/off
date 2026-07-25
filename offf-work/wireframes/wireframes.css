@@ -1,0 +1,104 @@
+/* =========================================================
+   PostureAI — Wireframes (low-fi)
+   Grayscale blocks only, no styling detail
+   ========================================================= */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #F5F5F7;
+  color: #1D1D1F;
+  padding: 32px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wf-header {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #1D1D1F;
+}
+.wf-header h1 { font-size: 24px; font-weight: 700; }
+.wf-header p { color: #6E6E73; font-size: 14px; margin-top: 4px; }
+
+.wf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+@media (max-width: 1200px) { .wf-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 800px)  { .wf-grid { grid-template-columns: 1fr; } }
+
+.wf-frame {
+  background: white;
+  border: 2px solid #1D1D1F;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.wf-frame.mobile { max-width: 375px; margin: 0 auto; }
+.wf-frame-title {
+  background: #1D1D1F;
+  color: white;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.wf-frame-title .num { background: white; color: #1D1D1F; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-size: 11px; }
+
+.wf-body { padding: 16px; min-height: 480px; }
+
+/* Generic blocks */
+.block { background: #E5E5EA; border: 1px dashed #8E8E93; border-radius: 4px; }
+.block.solid { background: #D1D1D6; border-style: solid; }
+.block.dark  { background: #1D1D1F; border-color: #1D1D1F; }
+.block.circle { border-radius: 50%; }
+
+.label { font-size: 10px; color: #6E6E73; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.annot { background: #FFF3CD; border: 1px solid #FFE69C; border-radius: 4px; padding: 8px 10px; font-size: 11px; color: #5C4400; line-height: 1.4; margin: 8px 0; }
+
+/* W1: Web Dashboard Overview */
+.w1-sidebar { width: 60px; background: #F2F2F7; border-right: 1px solid #C7C7CC; padding: 12px 8px; }
+.w1-topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #C7C7CC; margin-bottom: 16px; }
+.w1-topbar h2 { font-size: 14px; }
+.w1-hero { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.w1-hero > div { height: 130px; display: grid; place-items: center; }
+.w1-trend { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 12px; }
+.w1-trend > div { height: 110px; }
+.w1-bottom { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.w1-bottom > div { height: 70px; }
+
+/* W2: Real-time */
+.w2-stage { height: 280px; display: grid; place-items: center; background: #F2F2F7; border-radius: 8px; margin-bottom: 12px; position: relative; }
+.w2-stage .figure { width: 80px; height: 120px; }
+.w2-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.w2-row > div { height: 100px; }
+
+/* W3: Mobile Home */
+.w3-greeting { height: 50px; }
+.w3-hero { height: 200px; margin: 12px 0; }
+.w3-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0; }
+.w3-stats > div { height: 60px; }
+.w3-trend { height: 110px; margin: 12px 0; }
+.w3-cta { height: 50px; margin: 12px 0; }
+.w3-tabs { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: #F2F2F7; border-top: 1px solid #C7C7CC; display: grid; grid-template-columns: repeat(4, 1fr); }
+
+/* W4: Mobile History */
+.w4-filters { display: flex; gap: 6px; margin: 12px 0; }
+.w4-filters > div { width: 60px; height: 28px; border-radius: 14px; }
+.w4-chart { height: 180px; margin-bottom: 12px; }
+.w4-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.w4-compare > div { height: 70px; }
+
+/* W5: Mobile Alerts */
+.w5-filters { display: flex; gap: 6px; margin: 12px 0; }
+.w5-filters > div { width: 70px; height: 28px; border-radius: 14px; }
+.w5-alert { height: 70px; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; padding: 8px; }
+.w5-alert .icon { width: 32px; height: 32px; }
+
+.wf-nav {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1D1D1F; color: white; padding: 8px 16px; border-radius: 24px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
