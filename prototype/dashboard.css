@@ -1,0 +1,107 @@
+/* =========================================================
+   PostureAI — Web Dashboard · Overview
+   ========================================================= */
+
+/* 3-second rule: Posture score + risk visible above the fold */
+.hero-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-6);
+}
+
+@media (max-width: 1024px) {
+  .hero-row { grid-template-columns: 1fr; }
+}
+
+.hero-score {
+  display: flex; flex-direction: column; align-items: center;
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  position: relative;
+  overflow: hidden;
+}
+.hero-score::after {
+  content: ''; position: absolute; inset: -1px;
+  border-radius: var(--r-lg);
+  padding: 1px;
+  background: linear-gradient(135deg, var(--status-good) 0%, transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0.6; pointer-events: none;
+}
+
+.hero-title {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  margin-bottom: var(--sp-4);
+}
+
+.gauge-svg-lg { width: 220px; height: 220px; }
+.gauge-svg-lg .gauge-score { font-size: 48px; }
+
+.gauge-state-row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.gauge-state-name {
+  font-size: var(--fs-md); font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+}
+
+.risk-card {
+  display: flex; flex-direction: column; justify-content: space-between;
+  gap: var(--sp-5);
+}
+.risk-card-head { display: flex; align-items: center; gap: var(--sp-3); }
+.risk-icon-lg {
+  width: 48px; height: 48px;
+  border-radius: var(--r-md);
+  display: grid; place-items: center;
+}
+.risk-icon-lg.low    { background: rgba(34,229,141,0.15); color: var(--status-good); box-shadow: var(--shadow-glow-good); }
+.risk-icon-lg.medium { background: rgba(255,194,60,0.15); color: var(--status-caution); box-shadow: var(--shadow-glow-caution); }
+.risk-icon-lg.high   { background: rgba(255,77,109,0.15); color: var(--status-risk); box-shadow: var(--shadow-glow-risk); }
+
+.risk-title { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+.risk-sub   { font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+.risk-desc { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.5; }
+
+.risk-actions { display: flex; gap: var(--sp-2); }
+
+/* Trend section */
+.trend-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-6);
+}
+@media (max-width: 1024px) { .trend-section { grid-template-columns: 1fr; } }
+
+.chart-wrap { position: relative; height: 280px; }
+
+.chart-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4);
+  padding-top: var(--sp-4); border-top: 1px solid var(--border-subtle);
+  margin-top: var(--sp-5);
+}
+.chart-stat { }
+.chart-stat-label { font-size: var(--fs-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: var(--ls-wide); }
+.chart-stat-value { font-size: var(--fs-lg); font-weight: var(--fw-semibold); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* Alerts feed */
+.alert-feed { display: flex; flex-direction: column; gap: var(--sp-3); max-height: 320px; overflow-y: auto; }
+.alert-feed::-webkit-scrollbar { width: 6px; }
+.alert-feed::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+
+/* Bottom row */
+.bottom-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-6);
+}
+@media (max-width: 1024px) { .bottom-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .bottom-row { grid-template-columns: 1fr; } }

@@ -1,0 +1,1 @@
+.risk-card{display:grid;gap:6px;border-width:2px}.risk-card p{font-size:11px;letter-spacing:.12em;font-weight:700;margin:0}.risk-card strong{font-size:20px}.risk-card span{font-size:13px}.risk-card.good{border-color:var(--status-good)}.risk-card.good strong{color:var(--status-good)}.risk-card.risk{border-color:var(--status-risk)}.risk-card.risk strong{color:var(--status-risk)}

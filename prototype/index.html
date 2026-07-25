@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · PostureAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../specs/tokens.css" />
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div>
+          <div class="brand-name">PostureAI</div>
+          <div class="brand-sub">v1.0 · TH / EN</div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="index.html" class="nav-item active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </a>
+        <a href="realtime.html" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg>
+          Real-time Monitor
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          History / Trend
+        </a>
+        <a href="alerts.html" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Alerts
+          <span class="risk-badge risk-medium" style="margin-left:auto">3</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Devices</div>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8v8a2 2 0 0 1-2 2"/></svg>
+          Camera · 1 connected
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2l1.5 4M18 2l-1.5 4M12 6v4"/><circle cx="12" cy="14" r="6"/></svg>
+          Sensor · Connected
+        </a>
+      </div>
+
+      <div class="nav-section" style="margin-top:auto">
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div>
+          <h1>Dashboard Overview · ภาพรวมท่าทาง</h1>
+          <div class="sub">วันนี้ · 15 กรกฎาคม 2569 · อัปเดตล่าสุด 2 นาทีที่แล้ว</div>
+        </div>
+        <div style="display:flex; gap:var(--sp-3); align-items:center">
+          <div class="live-badge">
+            <span class="live-dot"></span>
+            Live · กำลังติดตาม
+          </div>
+          <button class="btn btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+      </header>
+
+      <!-- HERO ROW: score + risk + summary (3-sec rule) -->
+      <section class="hero-row">
+
+        <!-- Posture Gauge -->
+        <div class="hero-score">
+          <div class="hero-title">Posture Score · คะแนนท่าทางวันนี้</div>
+          <svg class="gauge-svg-lg" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#22E58D"/>
+                <stop offset="50%" stop-color="#FFC23C"/>
+                <stop offset="100%" stop-color="#FF4D6D"/>
+              </linearGradient>
+            </defs>
+            <!-- background ring -->
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#1F2942" stroke-width="14"/>
+            <!-- progress ring (82% of circumference = 2*pi*80 ≈ 502.65) -->
+            <circle cx="100" cy="100" r="80" fill="none"
+                    stroke="url(#gauge-grad)" stroke-width="14"
+                    stroke-linecap="round"
+                    stroke-dasharray="502.65"
+                    stroke-dashoffset="90.48"
+                    transform="rotate(-90 100 100)"
+                    class="gauge-track"
+                    style="filter: drop-shadow(0 0 12px rgba(34,229,141,0.5));"/>
+            <!-- tick marks -->
+            <g stroke="#2A3654" stroke-width="1">
+              <line x1="100" y1="20" x2="100" y2="28"/>
+              <line x1="180" y1="100" x2="172" y2="100"/>
+              <line x1="100" y1="180" x2="100" y2="172"/>
+              <line x1="20" y1="100" x2="28" y2="100"/>
+            </g>
+            <!-- center text -->
+            <text x="100" y="100" class="gauge-center gauge-score">82</text>
+            <text x="100" y="124" class="gauge-center gauge-label">/ 100</text>
+          </svg>
+          <div class="gauge-state-row">
+            <span class="risk-badge risk-low">● Good</span>
+            <span class="gauge-state-name" style="color:var(--status-good)">ดีมาก · Good Posture</span>
+          </div>
+          <div style="font-size:var(--fs-xs); color:var(--text-tertiary); margin-top:var(--sp-3); text-align:center">
+            ↑ 6 คะแนนจากเมื่อวาน
+          </div>
+        </div>
+
+        <!-- Risk Level -->
+        <div class="card risk-card">
+          <div>
+            <div class="hero-title">Risk Level · ระดับความเสี่ยง</div>
+          </div>
+          <div class="risk-card-head">
+            <div class="risk-icon-lg low">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div>
+              <div class="risk-title" style="color:var(--status-good)">Low · ต่ำ</div>
+              <div class="risk-sub">Updated 30s ago</div>
+            </div>
+          </div>
+          <div class="risk-desc">
+            ท่านั่งของคุณอยู่ในเกณฑ์ดีต่อสุขภาพหลัง และคอ<br/>
+            Your posture is in a healthy range for spine and neck today.
+          </div>
+          <div class="risk-actions">
+            <button class="btn btn-primary">ดูรายละเอียด</button>
+            <button class="btn btn-ghost">ตั้งเป้าหมาย</button>
+          </div>
+        </div>
+
+        <!-- Today summary -->
+        <div class="card">
+          <div class="hero-title">Today · สรุปวันนี้</div>
+          <div style="display:flex; flex-direction:column; gap:var(--sp-5); margin-top:var(--sp-4)">
+            <div>
+              <div style="font-size:var(--fs-xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:var(--ls-wide)">Active time · เวลาที่ใช้งาน</div>
+              <div style="font-size:var(--fs-2xl); font-weight:var(--fw-bold); font-variant-numeric:tabular-nums; margin-top:2px">6.4 <span style="font-size:var(--fs-sm); color:var(--text-secondary); font-weight:var(--fw-regular)">ชม.</span></div>
+            </div>
+            <div>
+              <div style="font-size:var(--fs-xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:var(--ls-wide)">Good posture · ท่าถูกต้อง</div>
+              <div style="font-size:var(--fs-2xl); font-weight:var(--fw-bold); color:var(--status-good); font-variant-numeric:tabular-nums; margin-top:2px">82<span style="font-size:var(--fs-sm); color:var(--text-secondary); font-weight:var(--fw-regular)">%</span></div>
+              <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; margin-top:var(--sp-2); overflow:hidden">
+                <div style="height:100%; width:82%; background:linear-gradient(90deg, var(--status-good), var(--brand-accent)); border-radius:3px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:var(--fs-xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:var(--ls-wide)">Alerts · การแจ้งเตือน</div>
+              <div style="font-size:var(--fs-2xl); font-weight:var(--fw-bold); color:var(--status-caution); font-variant-numeric:tabular-nums; margin-top:2px">3 <span style="font-size:var(--fs-sm); color:var(--text-secondary); font-weight:var(--fw-regular)">ครั้ง</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TREND + ALERTS -->
+      <section class="trend-section">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Posture Trend · แนวโน้มคะแนน</div>
+              <div class="card-sub">Average score per day · ค่าเฉลี่ยรายวัน</div>
+            </div>
+            <div class="toggle" id="range-toggle">
+              <button data-range="7">7D</button>
+              <button data-range="30" class="active">30D</button>
+              <button data-range="90">90D</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="trendChart"></canvas>
+          </div>
+          <div class="chart-stats">
+            <div class="chart-stat">
+              <div class="chart-stat-label">Avg · เฉลี่ย</div>
+              <div class="chart-stat-value">78.4</div>
+            </div>
+            <div class="chart-stat">
+              <div class="chart-stat-label">Best · สูงสุด</div>
+              <div class="chart-stat-value" style="color:var(--status-good)">94</div>
+            </div>
+            <div class="chart-stat">
+              <div class="chart-stat-label">Worst · ต่ำสุด</div>
+              <div class="chart-stat-value" style="color:var(--status-risk)">61</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent alerts -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Recent Alerts · แจ้งเตือนล่าสุด</div>
+              <div class="card-sub">3 events today</div>
+            </div>
+            <a href="alerts.html" style="font-size:var(--fs-xs)">ดูทั้งหมด →</a>
+          </div>
+          <div class="alert-feed">
+
+            <div class="alert-item">
+              <div class="alert-icon caution">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">เอนหลังมากเกินไป · Slouching detected</div>
+                <div class="alert-meta">14:32 · นั่งต่อเนื่อง 45 นาที</div>
+                <div class="alert-cta">→ ลองยืดหลังเบาๆ 30 วินาที</div>
+              </div>
+            </div>
+
+            <div class="alert-item">
+              <div class="alert-icon caution">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">นั่งนานเกินไป · Sedentary</div>
+                <div class="alert-meta">11:15 · ไม่ได้ลุกเป็นเวลา 1 ชม. 12 นาที</div>
+                <div class="alert-cta">→ ลุกเดินสั้นๆ แนะนำทุก 50 นาที</div>
+              </div>
+            </div>
+
+            <div class="alert-item">
+              <div class="alert-icon risk">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">คอเอียงไปข้างหน้า · Forward head</div>
+                <div class="alert-meta">09:48 · มุมคอ > 30° นาน 8 นาที</div>
+                <div class="alert-cta">→ ดึงคางเข้า เลื่อนจอให้ตรงระดับสายตา</div>
+              </div>
+            </div>
+
+            <div class="alert-item">
+              <div class="alert-icon good">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+              <div class="alert-body">
+                <div class="alert-title">ท่าทางกลับสู่ปกติ · Posture recovered</div>
+                <div class="alert-meta">09:55 · หลังจากแจ้งเตือน</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOTTOM ROW: stat cards -->
+      <section class="bottom-row">
+
+        <div class="card stat">
+          <div class="stat-label">Good Posture Hours · ชม.ท่าถูก</div>
+          <div class="stat-value">4.2<span class="stat-unit"> / 6.4 ชม.</span></div>
+          <div class="stat-delta up">↑ 0.8 ชม. จากเมื่อวาน</div>
+        </div>
+
+        <div class="card stat">
+          <div class="stat-label">Streak · ต่อเนื่อง</div>
+          <div class="stat-value">7<span class="stat-unit"> วัน</span></div>
+          <div class="stat-delta up">↑ ดีครบสัปดาห์!</div>
+        </div>
+
+        <div class="card stat">
+          <div class="stat-label">Daily Goal · เป้าหมาย</div>
+          <div class="stat-value">82<span class="stat-unit">%</span></div>
+          <div class="stat-delta up">↑ ทะลุเป้า 80%</div>
+        </div>
+
+        <div class="card stat">
+          <div class="stat-label">Break Reminders · เตือนลุก</div>
+          <div class="stat-value">5<span class="stat-unit"> / 8 ครั้ง</span></div>
+          <div class="stat-delta down">↓ 2 ครั้งจากเมื่อวาน</div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // ============== TREND CHART ==============
+    const days30 = Array.from({length: 30}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (29 - i));
+      return d;
+    });
+    const labels30 = days30.map(d => `${d.getDate()}/${d.getMonth()+1}`);
+    const data30 = [72,68,75,80,82,79,85,88,84,76,71,65,69,74,78,82,85,87,90,86,82,79,75,72,76,80,84,86,89,82];
+
+    const days7 = Array.from({length: 7}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      return d;
+    });
+    const labels7 = days7.map(d => ['อา','จ','อ','พ','พฤ','ศ','ส'][d.getDay()]);
+    const data7 = [76,80,84,86,89,82,82];
+
+    const days90 = Array.from({length: 90}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (89 - i));
+      return d;
+    });
+    const labels90 = days90.map((d,i) => i % 15 === 0 ? `${d.getDate()}/${d.getMonth()+1}` : '');
+    const data90 = Array.from({length: 90}, (_, i) => 65 + Math.round(Math.sin(i/8)*8) + Math.round(Math.random()*10));
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 280);
+    grad.addColorStop(0, 'rgba(0, 229, 199, 0.25)');
+    grad.addColorStop(1, 'rgba(0, 229, 199, 0)');
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels30,
+        datasets: [{
+          data: data30,
+          borderColor: '#00E5C7',
+          backgroundColor: grad,
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#00E5C7',
+          pointHoverBorderColor: '#0A0E1A',
+          pointHoverBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161E33',
+            borderColor: '#2A3654',
+            borderWidth: 1,
+            titleColor: '#F4F6FB',
+            bodyColor: '#A8B3CF',
+            padding: 12,
+            displayColors: false,
+            callbacks: {
+              label: (ctx) => `Score: ${ctx.parsed.y} / 100`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#1F2942', drawBorder: false },
+            ticks: { color: '#6B7896', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+          },
+          y: {
+            min: 40, max: 100,
+            grid: { color: '#1F2942', drawBorder: false },
+            ticks: { color: '#6B7896', font: { size: 11 }, stepSize: 20 }
+          }
+        }
+      }
+    });
+
+    // Toggle range
+    document.querySelectorAll('#range-toggle button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#range-toggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const range = btn.dataset.range;
+        if (range === '7')  { chart.data.labels = labels7;  chart.data.datasets[0].data = data7; }
+        if (range === '30') { chart.data.labels = labels30; chart.data.datasets[0].data = data30; }
+        if (range === '90') { chart.data.labels = labels90; chart.data.datasets[0].data = data90; }
+        chart.update();
+      });
+    });
+  </script>
+</body>
+</html>

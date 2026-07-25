@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Alerts · PostureAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../specs/tokens.css" />
+  <link rel="stylesheet" href="mobile.css" />
+</head>
+<body>
+  <div class="flow-nav">
+    <a href="mobile-home.html">Home</a>
+    <a href="mobile-history.html">History</a>
+    <a href="mobile-alerts.html" class="active">Alerts</a>
+  </div>
+
+  <div class="mobile-stage">
+    <div class="mobile-frame">
+      <div class="notch"></div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><rect x="0" y="6" width="2" height="4"/><rect x="4" y="4" width="2" height="6"/><rect x="8" y="2" width="2" height="8"/><rect x="12" y="0" width="2" height="10"/></svg>
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor"><path d="M1 6 Q 7 0 13 6"/><path d="M3 8 Q 7 4 11 8"/></svg>
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="18" height="9" rx="2"/><rect x="2" y="2" width="13" height="6" rx="1" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="app-content">
+        <div class="greeting">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div>
+              <div class="hi">Alerts · การแจ้งเตือน</div>
+              <div class="name" style="font-size:var(--fs-xl)">3 เหตุการณ์วันนี้</div>
+            </div>
+            <button style="background:var(--bg-tertiary); border:1px solid var(--border-subtle); border-radius:var(--r-md); padding:8px; color:var(--text-secondary)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="m-filter-row" style="margin-top:var(--sp-4)">
+          <button class="m-chip active">ทั้งหมด · 3</button>
+          <button class="m-chip">High · 1</button>
+          <button class="m-chip">Medium · 2</button>
+          <button class="m-chip">วันนี้</button>
+          <button class="m-chip">สัปดาห์นี้</button>
+        </div>
+
+        <!-- Alert list -->
+        <div class="m-alerts-list">
+
+          <div class="alert-item" style="border-left: 3px solid var(--status-risk); background:rgba(255,77,109,0.06)">
+            <div class="alert-icon risk">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            </div>
+            <div class="alert-body">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px">
+                <div class="alert-title">คอเอียงไปข้างหน้า · Forward head</div>
+                <span class="risk-badge risk-high">High</span>
+              </div>
+              <div class="alert-meta">09:48 · นาน 8 นาที</div>
+              <div class="alert-cta">→ ดึงคางเข้า เลื่อนจอให้ตรงระดับสายตา</div>
+            </div>
+          </div>
+
+          <div class="alert-item" style="border-left: 3px solid var(--status-caution)">
+            <div class="alert-icon caution">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <div class="alert-body">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px">
+                <div class="alert-title">เอนหลังมากเกินไป · Slouching</div>
+                <span class="risk-badge risk-medium">Med</span>
+              </div>
+              <div class="alert-meta">14:32 · นั่งต่อเนื่อง 45 นาที</div>
+              <div class="alert-cta">→ ยืดหลังเบาๆ 30 วินาที</div>
+            </div>
+          </div>
+
+          <div class="alert-item" style="border-left: 3px solid var(--status-caution)">
+            <div class="alert-icon caution">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="alert-body">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px">
+                <div class="alert-title">นั่งนานเกินไป · Sedentary</div>
+                <span class="risk-badge risk-medium">Med</span>
+              </div>
+              <div class="alert-meta">11:15 · ไม่ได้ลุก 1 ชม. 12 นาที</div>
+              <div class="alert-cta">→ ลุกเดินสั้นๆ แนะนำทุก 50 นาที</div>
+            </div>
+          </div>
+
+          <div class="alert-item" style="border-left: 3px solid var(--status-good); opacity:0.7">
+            <div class="alert-icon good">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="alert-body">
+              <div class="alert-title">ท่าทางกลับสู่ปกติ · Recovered</div>
+              <div class="alert-meta">09:55 · หลังจากแจ้งเตือน</div>
+            </div>
+          </div>
+
+          <div style="font-size:var(--fs-xs); color:var(--text-tertiary); text-align:center; margin-top:var(--sp-3); padding:var(--sp-3)">
+            —— เมื่อวานซืน ——
+          </div>
+
+          <div class="alert-item" style="opacity:0.7">
+            <div class="alert-icon caution">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <div class="alert-body">
+              <div class="alert-title">นั่งนาน · Sedentary</div>
+              <div class="alert-meta">14 ก.ค. · 16:20</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="tabbar">
+        <a class="tab" href="mobile-home.html">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>
+          Home
+        </a>
+        <a class="tab" href="mobile-history.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          History
+        </a>
+        <a class="tab" href="realtime.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6"/></svg>
+          Live
+        </a>
+        <a class="tab active" href="mobile-alerts.html">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Alerts
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

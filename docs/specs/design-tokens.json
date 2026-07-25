@@ -1,0 +1,144 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "PostureAI Design Tokens",
+  "version": "1.0.0",
+  "description": "Dark Tech / Modern design system for Posture Monitoring System. Bilingual TH+EN.",
+  "meta": {
+    "generatedAt": "2026-07-15",
+    "platforms": ["web", "ios", "android"],
+    "accessibility": {
+      "contrastTarget": "WCAG AA (4.5:1 normal, 3:1 large)",
+      "colorBlindSafe": true,
+      "notes": "Status colors paired with icons + labels to avoid color-only meaning. Tested against protanopia/deuteranopia."
+    }
+  },
+  "color": {
+    "bg": {
+      "primary":    { "value": "#0A0E1A", "description": "Main background — deep navy" },
+      "secondary":  { "value": "#0F1525", "description": "Card / panel background" },
+      "tertiary":   { "value": "#161E33", "description": "Elevated surface / hover" },
+      "overlay":    { "value": "#000000CC", "description": "Modal overlay" }
+    },
+    "border": {
+      "subtle":   { "value": "#1F2942", "description": "Hairline dividers" },
+      "default":  { "value": "#2A3654", "description": "Card borders" },
+      "strong":   { "value": "#3A4870", "description": "Focus rings" }
+    },
+    "text": {
+      "primary":    { "value": "#F4F6FB", "description": "Headings, primary text" },
+      "secondary":  { "value": "#A8B3CF", "description": "Body text" },
+      "tertiary":   { "value": "#6B7896", "description": "Captions, placeholders" },
+      "inverse":    { "value": "#0A0E1A", "description": "Text on light/accent bg" }
+    },
+    "brand": {
+      "primary":   { "value": "#5B8DEF", "description": "Brand blue — primary CTA" },
+      "primaryHover": { "value": "#7BA3F5" },
+      "accent":    { "value": "#00E5C7", "description": "Cyan accent — highlights" }
+    },
+    "status": {
+      "good":      { "value": "#22E58D", "description": "Good posture / Low risk",  "icon": "check-circle" },
+      "caution":   { "value": "#FFC23C", "description": "Caution / Medium risk",    "icon": "alert-triangle" },
+      "risk":      { "value": "#FF4D6D", "description": "Bad posture / High risk",  "icon": "x-circle" },
+      "info":      { "value": "#5B8DEF", "description": "Neutral info",              "icon": "info" }
+    },
+    "chart": {
+      "linePrimary":  { "value": "#00E5C7" },
+      "lineSecondary":{ "value": "#5B8DEF" },
+      "fillGradientTop": { "value": "#00E5C740" },
+      "fillGradientBottom": { "value": "#00E5C700" },
+      "grid":         { "value": "#1F2942" },
+      "axisLabel":    { "value": "#6B7896" }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans":  { "value": "'Inter', 'Noto Sans Thai', -apple-system, system-ui, sans-serif" },
+      "mono":  { "value": "'JetBrains Mono', 'SF Mono', monospace" },
+      "display": { "value": "'Inter', 'Noto Sans Thai', sans-serif" }
+    },
+    "size": {
+      "xs":   { "value": "11px", "lineHeight": "1.4" },
+      "sm":   { "value": "13px", "lineHeight": "1.5" },
+      "base": { "value": "15px", "lineHeight": "1.6" },
+      "md":   { "value": "17px", "lineHeight": "1.5" },
+      "lg":   { "value": "20px", "lineHeight": "1.4" },
+      "xl":   { "value": "24px", "lineHeight": "1.3" },
+      "2xl":  { "value": "32px", "lineHeight": "1.2" },
+      "3xl":  { "value": "48px", "lineHeight": "1.1" },
+      "4xl":  { "value": "64px", "lineHeight": "1.0" }
+    },
+    "weight": {
+      "regular":  { "value": "400" },
+      "medium":   { "value": "500" },
+      "semibold": { "value": "600" },
+      "bold":     { "value": "700" }
+    },
+    "letterSpacing": {
+      "tight":  { "value": "-0.02em" },
+      "normal": { "value": "0" },
+      "wide":   { "value": "0.04em" },
+      "caps":   { "value": "0.08em" }
+    }
+  },
+  "spacing": {
+    "0":   { "value": "0" },
+    "1":   { "value": "4px" },
+    "2":   { "value": "8px" },
+    "3":   { "value": "12px" },
+    "4":   { "value": "16px" },
+    "5":   { "value": "20px" },
+    "6":   { "value": "24px" },
+    "8":   { "value": "32px" },
+    "10":  { "value": "40px" },
+    "12":  { "value": "48px" },
+    "16":  { "value": "64px" },
+    "20":  { "value": "80px" },
+    "24":  { "value": "96px" }
+  },
+  "radius": {
+    "none": { "value": "0" },
+    "sm":   { "value": "4px" },
+    "md":   { "value": "8px" },
+    "lg":   { "value": "12px" },
+    "xl":   { "value": "16px" },
+    "2xl":  { "value": "24px" },
+    "full": { "value": "9999px" }
+  },
+  "shadow": {
+    "none":  { "value": "none" },
+    "sm":    { "value": "0 1px 2px rgba(0,0,0,0.4)" },
+    "md":    { "value": "0 4px 12px rgba(0,0,0,0.5)" },
+    "lg":    { "value": "0 12px 32px rgba(0,0,0,0.6)" },
+    "glowGood":   { "value": "0 0 24px rgba(34,229,141,0.4)" },
+    "glowCaution":{ "value": "0 0 24px rgba(255,194,60,0.4)" },
+    "glowRisk":   { "value": "0 0 24px rgba(255,77,109,0.5)" }
+  },
+  "motion": {
+    "duration": {
+      "fast":   { "value": "120ms" },
+      "normal": { "value": "240ms" },
+      "slow":   { "value": "400ms" },
+      "pulse":  { "value": "1800ms" }
+    },
+    "easing": {
+      "default":  { "value": "cubic-bezier(0.4, 0, 0.2, 1)" },
+      "in":       { "value": "cubic-bezier(0.4, 0, 1, 1)" },
+      "out":      { "value": "cubic-bezier(0, 0, 0.2, 1)" },
+      "spring":   { "value": "cubic-bezier(0.34, 1.56, 0.64, 1)" }
+    }
+  },
+  "breakpoint": {
+    "mobile":  { "value": "480px" },
+    "tablet":  { "value": "768px" },
+    "desktop": { "value": "1024px" },
+    "wide":    { "value": "1440px" }
+  },
+  "zIndex": {
+    "base":    { "value": "0" },
+    "raised":  { "value": "10" },
+    "sticky":  { "value": "100" },
+    "overlay": { "value": "1000" },
+    "modal":   { "value": "1100" },
+    "toast":   { "value": "1200" }
+  }
+}

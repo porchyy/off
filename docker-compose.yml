@@ -1,0 +1,43 @@
+# PostureAI — local development stack.
+#
+# Usage:
+#   docker compose up --build
+#
+# Services:
+#   backend  - FastAPI on :8000, SQLite at ./database/postureai.sqlite
+#   web      - Static frontend on :3000, proxies /api to backend
+
+services:
+  backend:
+    container_name: postureai-backend
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      POSTUREAI_DATA_DIR: /app/database
+      POSTUREAI_CORS_ORIGINS: "*"
+      POSTUREAI_HOST: 0.0.0.0
+      POSTUREAI_PORT: 8000
+    volumes:
+      - ./database:/app/database
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  web:
+    container_name: postureai-web
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
