@@ -137,17 +137,25 @@ async function begin() {
     return;
   }
   start.disabled = true;
-  state('กำลังโหลด AI');
   try {
-    const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm');
-    landmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-        delegate: 'GPU'
-      },
-      runningMode: 'VIDEO',
-      numPoses: 1
-    });
+    let vision, modelPath;
+    try {
+      vision = await FilesetResolver.forVisionTasks('./wasm');
+      modelPath = './models/pose_landmarker_lite.task';
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+        runningMode: 'VIDEO',
+        numPoses: 1
+      });
+    } catch {
+      vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm');
+      modelPath = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+        runningMode: 'VIDEO',
+        numPoses: 1
+      });
+    }
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     video.srcObject = stream;
     await video.play();
