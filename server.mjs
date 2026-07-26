@@ -38,9 +38,10 @@ createServer(async (req, res) => {
     }
     if (url.pathname === '/api/data' && req.method === 'DELETE') { db.exec('DELETE FROM samples; DELETE FROM alerts;'); return json(res,200,{ok:true}); }
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res,405,{error:'Method not allowed'});
+    const frontendDir = join(root, 'frontend');
     const pathname = url.pathname === '/' ? '/index.html' : url.pathname;
-    const file = normalize(join(root, pathname));
-    if (!file.startsWith(root) || file.endsWith('.sqlite') || file.includes('.github')) return json(res,403,{error:'Forbidden'});
+    const file = normalize(join(frontendDir, pathname));
+    if (!file.startsWith(frontendDir) || file.endsWith('.sqlite') || file.includes('.github')) return json(res,403,{error:'Forbidden'});
     const info = await stat(file); if (!info.isFile()) return json(res,404,{error:'Not found'});
     res.writeHead(200, {'content-type':types[extname(file)] || 'application/octet-stream','cache-control':'no-store'}); if(req.method === 'HEAD') return res.end(); res.end(await readFile(file));
   } catch (error) { console.error(error); json(res,500,{error:'Server error'}); }
