@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "start": "node server.mjs", "dev": "node --watch server.mjs" },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test:frontend": "npm --prefix frontend test",
+    "test:backend": "python -m pytest backend",
+    "test": "npm run test:frontend && npm run test:backend"
+  },
   "engines": { "node": ">=22" }
 }

@@ -1,5 +1,6 @@
 import { FilesetResolver, PoseLandmarker, DrawingUtils } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js?module';
 import { createStorage, defaultSettings } from './storage.js';
+import { scorePose } from './pose-utils.js';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
@@ -42,18 +43,6 @@ function applyStorageMode() {
   $('settingsNote').textContent = demo
     ? 'โหมดตัวอย่างจะเก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ถ้าล้างข้อมูลเว็บหรือเปลี่ยนเบราว์เซอร์ ประวัติจะหาย'
     : 'การเปลี่ยน path ฐานข้อมูลจะมีผลหลังรีสตาร์ท server เพื่อย้ายไฟล์ SQLite ไปตำแหน่งใหม่';
-}
-
-function scorePose(l) {
-  const nose = l[0], ls = l[11], rs = l[12], lh = l[23], rh = l[24];
-  if (![nose, ls, rs, lh, rh].every(x => x?.visibility > 0.45)) return null;
-  const sh = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 };
-  const hip = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 };
-  const neck = Math.abs(Math.atan2(nose.x - sh.x, nose.y - sh.y) * 180 / Math.PI);
-  const shoulders = Math.abs(ls.y - rs.y) * 100;
-  const torso = Math.abs(Math.atan2(sh.x - hip.x, sh.y - hip.y) * 180 / Math.PI);
-  const score = Math.max(0, Math.min(100, 100 - Math.max(0, neck - 12) * 2.3 - shoulders * 1.4 - Math.max(0, torso - 7) * 2));
-  return { neck, shoulders, torso, score };
 }
 
 function updateRisk(m) {

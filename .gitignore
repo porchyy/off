@@ -17,6 +17,7 @@ yarn-error.log*
 
 # Build outputs
 frontend/dist/
+.pytest_cache/
 backend/.pytest_cache/
 backend/.ruff_cache/
 backend/.mypy_cache/

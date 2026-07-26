@@ -27,7 +27,11 @@ def ensure_defaults(db: Session) -> None:
             db.add(Setting(key=key, value=json.dumps(value)))
     db.commit()
     # Always keep dataDir in sync with the resolved data dir at boot.
-    db.add(Setting(key="dataDir", value=json.dumps(str(settings.data_dir.resolve()))))
+    data_dir_row = db.get(Setting, "dataDir")
+    if data_dir_row is None:
+        db.add(Setting(key="dataDir", value=json.dumps(str(settings.data_dir.resolve()))))
+    else:
+        data_dir_row.value = json.dumps(str(settings.data_dir.resolve()))
     db.commit()
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 import json
 from pathlib import Path
 
@@ -11,9 +12,20 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
+from .database import Base, SessionLocal, engine
 from .routes import router
+from .settings_store import ensure_defaults
 
-app = FastAPI(title="PostureAI Backend", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(engine)
+    with SessionLocal() as db:
+        ensure_defaults(db)
+    yield
+
+
+app = FastAPI(title="PostureAI Backend", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

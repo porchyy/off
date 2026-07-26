@@ -31,13 +31,6 @@ from .settings_store import DEFAULTS, ensure_defaults, get_all
 router = APIRouter()
 
 
-@router.on_event("startup")
-def _on_startup() -> None:  # pragma: no cover - simple wiring
-    Base.metadata.create_all(engine)
-    with SessionLocal() as db:
-        ensure_defaults(db)
-
-
 @router.get("/api/health", response_model=HealthResponse)
 def health(db: Session = Depends(get_db)) -> HealthResponse:
     try:
