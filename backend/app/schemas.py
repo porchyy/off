@@ -5,34 +5,38 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Severity = Literal["caution", "risk"]
 
 
-class HealthResponse(BaseModel):
+class ApiModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class HealthResponse(ApiModel):
     ok: bool
-    db_ok: bool
-    db_path: str
-    data_dir: str
+    db_ok: bool = Field(serialization_alias="dbOk")
+    db_path: str = Field(serialization_alias="dbPath")
+    data_dir: str = Field(serialization_alias="dataDir")
     time: str
 
 
-class SettingsModel(BaseModel):
-    risk_threshold: int = Field(ge=1, le=99)
-    risk_seconds: int = Field(ge=5, le=600)
-    data_dir: str
-    sound_enabled: bool
-    desktop_enabled: bool
-    pending_data_dir: str | None = None
+class SettingsModel(ApiModel):
+    risk_threshold: int = Field(ge=1, le=99, serialization_alias="riskThreshold")
+    risk_seconds: int = Field(ge=5, le=600, serialization_alias="riskSeconds")
+    data_dir: str = Field(serialization_alias="dataDir")
+    sound_enabled: bool = Field(serialization_alias="soundEnabled")
+    desktop_enabled: bool = Field(serialization_alias="desktopEnabled")
+    pending_data_dir: str | None = Field(default=None, serialization_alias="pendingDataDir")
 
 
-class SettingsUpdate(BaseModel):
-    risk_threshold: int | None = Field(default=None, ge=1, le=99)
-    risk_seconds: int | None = Field(default=None, ge=5, le=600)
-    data_dir: str | None = None
-    sound_enabled: bool | None = None
-    desktop_enabled: bool | None = None
+class SettingsUpdate(ApiModel):
+    risk_threshold: int | None = Field(default=None, ge=1, le=99, alias="riskThreshold")
+    risk_seconds: int | None = Field(default=None, ge=5, le=600, alias="riskSeconds")
+    data_dir: str | None = Field(default=None, alias="dataDir")
+    sound_enabled: bool | None = Field(default=None, alias="soundEnabled")
+    desktop_enabled: bool | None = Field(default=None, alias="desktopEnabled")
 
 
 class SampleIn(BaseModel):
