@@ -49,7 +49,7 @@ def test_health_check():
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
-    assert data["db_ok"] is True
+    assert data["dbOk"] is True
     assert "time" in data
 
 
@@ -57,30 +57,46 @@ def test_get_settings():
     response = client.get("/api/settings")
     assert response.status_code == 200
     data = response.json()
-    assert data["risk_threshold"] == 60
-    assert data["risk_seconds"] == 45
-    assert data["sound_enabled"] is True
-    assert data["desktop_enabled"] is False
+    assert data["riskThreshold"] == 60
+    assert data["riskSeconds"] == 45
+    assert data["soundEnabled"] is True
+    assert data["desktopEnabled"] is False
 
 
 def test_update_settings():
     payload = {
-        "risk_threshold": 75,
-        "risk_seconds": 30,
+        "riskThreshold": 75,
+        "riskSeconds": 30,
+        "soundEnabled": False,
+        "desktopEnabled": True,
+    }
+    response = client.put("/api/settings", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["riskThreshold"] == 75
+    assert data["riskSeconds"] == 30
+    assert data["soundEnabled"] is False
+    assert data["desktopEnabled"] is True
+
+    # Verify persistent update
+    get_res = client.get("/api/settings")
+    assert get_res.json()["riskThreshold"] == 75
+
+
+def test_update_settings_accepts_internal_field_names():
+    payload = {
+        "risk_threshold": 70,
+        "risk_seconds": 35,
         "sound_enabled": False,
         "desktop_enabled": True,
     }
     response = client.put("/api/settings", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert data["risk_threshold"] == 75
-    assert data["risk_seconds"] == 30
-    assert data["sound_enabled"] is False
-    assert data["desktop_enabled"] is True
-
-    # Verify persistent update
-    get_res = client.get("/api/settings")
-    assert get_res.json()["risk_threshold"] == 75
+    assert data["riskThreshold"] == 70
+    assert data["riskSeconds"] == 35
+    assert data["soundEnabled"] is False
+    assert data["desktopEnabled"] is True
 
 
 def test_update_settings_clamping():
@@ -90,8 +106,8 @@ def test_update_settings_clamping():
     response = client.put("/api/settings", json={"risk_threshold": 95, "risk_seconds": 10})
     assert response.status_code == 200
     data = response.json()
-    assert data["risk_threshold"] == 95
-    assert data["risk_seconds"] == 10
+    assert data["riskThreshold"] == 95
+    assert data["riskSeconds"] == 10
 
 
 def test_add_sample_success():
