@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -167,7 +167,7 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
 
 
 @router.get("/api/export")
-def export(format: str = Query(default="csv"), db: Session = Depends(get_db)):
+def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = Depends(get_db)):
     samples = db.execute(text(
         "SELECT 'sample' AS type, id, score, neck, shoulders, torso, "
         "NULL AS severity, NULL AS message, created_at FROM samples ORDER BY id"
