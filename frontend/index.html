@@ -3,158 +3,308 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a0e1a">
-  <meta name="description" content="PostureAI - private, on-device posture monitoring">
-  <title>PostureAI | Posture monitor</title>
+  <meta name="theme-color" content="#0c1024">
+  <meta name="description" content="PostureAI - ระบบติดตามท่านั่งด้วย AI แบบส่วนตัว ทำงานบนอุปกรณ์ของคุณ">
+  <title>PostureAI | ระบบติดตามท่านั่ง</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="risk.css">
 </head>
 <body>
   <a class="skip" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+  <!-- ── Top Navigation Bar ── -->
   <header class="topbar">
-    <a class="brand" href="/"><span>P</span><b>PostureAI</b></a>
-    <nav aria-label="เมนูหลัก">
-      <a href="#monitor">ติดตามสด</a>
-      <a href="#history">ประวัติ</a>
-      <a href="#settings">ตั้งค่า</a>
-      <a href="#privacy">ความเป็นส่วนตัว</a>
-    </nav>
-    <button id="clearData" class="text-btn" type="button">ลบข้อมูลในเครื่อง</button>
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <span class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 1 0 10 5 5 0 0 1 0-10z"/><path d="M12 14c-6 0-8 3-8 5v1h16v-1c0-2-2-5-8-5z"/></svg>
+        </span>
+        <b>PostureAI</b>
+        <span class="brand-tag">v1.0</span>
+      </a>
+      <nav aria-label="เมนูหลัก">
+        <a href="#monitor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          ติดตามสด
+        </a>
+        <a href="#history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ประวัติ
+        </a>
+        <a href="#settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          ตั้งค่า
+        </a>
+        <a href="#privacy">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          ความเป็นส่วนตัว
+        </a>
+      </nav>
+      <button id="clearData" class="text-btn danger-text" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
+        ลบข้อมูลในเครื่อง
+      </button>
+    </div>
   </header>
 
   <main id="main" class="container">
-    <p id="demoBanner" class="demo-banner" hidden>โหมดตัวอย่าง: ข้อมูลเก็บชั่วคราวในเบราว์เซอร์นี้เท่านั้น (localStorage) — ไม่มีเซิร์ฟเวอร์/ฐานข้อมูลถาวร</p>
+
+    <!-- ── Demo Banner ── -->
+    <p id="demoBanner" class="demo-banner" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <strong>โหมดตัวอย่าง:</strong> ข้อมูลเก็บชั่วคราวในเบราว์เซอร์นี้เท่านั้น (localStorage) — ไม่มีเซิร์ฟเวอร์/ฐานข้อมูลถาวร
+    </p>
+
+    <!-- ── Hero Section ── -->
     <section class="intro">
-      <p class="eyebrow">PRIVATE · ON-DEVICE AI</p>
+      <p class="eyebrow">🛡️ PRIVATE · ON-DEVICE AI</p>
       <h1>ดูแลท่านั่งของคุณ<br><em>แบบเรียลไทม์</em></h1>
-      <p>AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก เวอร์ชันนี้เก็บเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือนไว้ในเครื่องของผู้ใช้</p>
+      <p class="intro-desc">AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก<br>เวอร์ชันนี้เก็บเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือนไว้ในเครื่องของผู้ใช้</p>
     </section>
 
-    <section id="monitor" class="grid">
-      <article class="camera card">
-        <div class="card-head">
-          <h2>กล้องและการวิเคราะห์</h2>
-          <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
+    <!-- ══════════════════════════════════════════
+         SECTION 1: ติดตามสด (Live Monitor)
+         ══════════════════════════════════════════ -->
+    <section id="monitor" class="section-block">
+      <div class="section-header">
+        <div class="section-icon monitor-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
         </div>
-        <div class="video-wrap">
-          <video id="video" autoplay muted playsinline aria-label="ภาพจากกล้อง"></video>
-          <canvas id="overlay" aria-hidden="true"></canvas>
-          <div id="cameraSignal" class="camera-signal neutral" aria-live="polite">รอเริ่มตรวจจับ</div>
-          <p id="cameraHelp">กดเริ่ม แล้วอนุญาตการใช้กล้อง</p>
+        <div>
+          <h2 class="section-heading">ติดตามสด</h2>
+          <p class="section-sub">ระบบตรวจจับท่านั่งด้วยกล้องเว็บแคมแบบเรียลไทม์</p>
         </div>
-        <div class="actions">
-          <button id="start" class="primary" type="button">เริ่มการวิเคราะห์</button>
-          <button id="stop" class="secondary" type="button" disabled>หยุดกล้อง</button>
-          <button id="testAlert" class="secondary" type="button">ทดสอบแจ้งเตือน</button>
-        </div>
-      </article>
+      </div>
 
-      <aside class="metrics">
-        <article class="score card">
-          <p>POSTURE SCORE</p>
-          <output id="score">--</output>
-          <strong id="status">รอเริ่มต้น</strong>
-          <span id="advice">จัดกล้องให้เห็นช่วงไหล่และลำตัว</span>
+      <div class="grid">
+        <!-- Camera Panel -->
+        <article class="camera card">
+          <div class="card-head">
+            <h3>กล้องและการวิเคราะห์</h3>
+            <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
+          </div>
+          <div class="video-wrap">
+            <video id="video" autoplay muted playsinline aria-label="ภาพจากกล้อง"></video>
+            <canvas id="overlay" aria-hidden="true"></canvas>
+            <div id="cameraSignal" class="camera-signal neutral" aria-live="polite">รอเริ่มตรวจจับ</div>
+            <p id="cameraHelp">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>กดเริ่ม แล้วอนุญาตการใช้กล้อง</span>
+            </p>
+          </div>
+          <div class="actions">
+            <button id="start" class="primary" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              เริ่มการวิเคราะห์
+            </button>
+            <button id="stop" class="secondary" type="button" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              หยุดกล้อง
+            </button>
+            <button id="testAlert" class="outline" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              ทดสอบแจ้งเตือน
+            </button>
+          </div>
         </article>
-        <article id="officeRiskCard" class="risk-card card neutral" aria-live="polite">
-          <p>OFFICE SYNDROME RISK</p>
-          <strong id="officeRisk">ยังไม่ประเมิน</strong>
-          <span id="riskReason">เริ่มการวิเคราะห์เพื่อประเมินความเสี่ยงจากท่านั่งและท่าค้าง</span>
-        </article>
-        <article class="card details">
-          <h2>ตัวชี้วัด</h2>
-          <div><span>คอเอียง</span><b id="neck">--</b></div>
-          <div><span>ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div>
-          <div><span>การโน้มลำตัว</span><b id="torso">--</b></div>
-          <p class="disclaimer">เป็นข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
-        </article>
-      </aside>
+
+        <!-- Metrics Sidebar -->
+        <aside class="metrics">
+          <!-- Posture Score -->
+          <article class="score card">
+            <p class="metric-label">POSTURE SCORE</p>
+            <output id="score">--</output>
+            <strong id="status">รอเริ่มต้น</strong>
+            <span id="advice" class="advice-text">จัดกล้องให้เห็นช่วงไหล่และลำตัว</span>
+          </article>
+
+          <!-- Office Syndrome Risk -->
+          <article id="officeRiskCard" class="risk-card card neutral" aria-live="polite">
+            <p class="metric-label">OFFICE SYNDROME RISK</p>
+            <strong id="officeRisk">ยังไม่ประเมิน</strong>
+            <span id="riskReason">เริ่มการวิเคราะห์เพื่อประเมินความเสี่ยงจากท่านั่งและท่าค้าง</span>
+          </article>
+
+          <!-- Detail Metrics -->
+          <article class="card details">
+            <h3>ตัวชี้วัดเชิงลึก</h3>
+            <div class="detail-row"><span>🔄 คอเอียง</span><b id="neck">--</b></div>
+            <div class="detail-row"><span>⚖️ ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div>
+            <div class="detail-row"><span>📐 การโน้มลำตัว</span><b id="torso">--</b></div>
+            <p class="disclaimer">⚕️ เป็นข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
+          </article>
+        </aside>
+      </div>
     </section>
 
-    <section id="history" class="history-section">
-      <div class="section-title">
+    <!-- ══════════════════════════════════════════
+         SECTION 2: ประวัติ (History)
+         ══════════════════════════════════════════ -->
+    <section id="history" class="section-block">
+      <div class="section-header">
+        <div class="section-icon history-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
         <div>
           <p class="eyebrow" id="historyEyebrow">ประวัติ (เก็บในเบราว์เซอร์)</p>
-          <h2>สรุปของวันนี้</h2>
+          <h2 class="section-heading">สรุปของวันนี้</h2>
         </div>
-        <div class="actions">
-          <button id="exportCsv" class="secondary" type="button">Export CSV</button>
-          <button id="exportJson" class="secondary" type="button">Export JSON</button>
-          <button id="refresh" class="secondary" type="button">รีเฟรช</button>
+        <div class="actions ml-auto">
+          <button id="exportCsv" class="outline small" type="button">📄 Export CSV</button>
+          <button id="exportJson" class="outline small" type="button">📋 Export JSON</button>
+          <button id="refresh" class="outline small" type="button">🔄 รีเฟรช</button>
         </div>
       </div>
+
+      <!-- Summary Cards -->
       <div class="summary">
-        <article class="card"><span>คะแนนเฉลี่ย</span><b id="average">--</b></article>
-        <article class="card"><span>การบันทึกวันนี้</span><b id="samples">0</b></article>
-        <article class="card"><span>แจ้งเตือน</span><b id="alerts">0</b></article>
+        <article class="card summary-card">
+          <span class="summary-label">คะแนนเฉลี่ย</span>
+          <b id="average" class="summary-value">--</b>
+        </article>
+        <article class="card summary-card">
+          <span class="summary-label">การบันทึกวันนี้</span>
+          <b id="samples" class="summary-value">0</b>
+        </article>
+        <article class="card summary-card">
+          <span class="summary-label">แจ้งเตือน</span>
+          <b id="alerts" class="summary-value">0</b>
+        </article>
       </div>
+
+      <!-- Charts -->
       <div class="chart-grid">
         <article class="card chart-card">
-          <h2>คะแนนเฉลี่ยรายวัน</h2>
+          <h3>📊 คะแนนเฉลี่ยรายวัน</h3>
           <canvas id="dailyChart" width="720" height="260"></canvas>
         </article>
         <article class="card chart-card">
-          <h2>แจ้งเตือนรายสัปดาห์</h2>
+          <h3>🔔 แจ้งเตือนรายสัปดาห์</h3>
           <canvas id="weeklyChart" width="720" height="260"></canvas>
         </article>
       </div>
+
+      <!-- Recent Events -->
       <article class="card">
-        <h2>เหตุการณ์ล่าสุด</h2>
+        <h3>📋 เหตุการณ์ล่าสุด</h3>
         <ol id="events" class="events"><li>ยังไม่มีข้อมูล เริ่มการวิเคราะห์เพื่อบันทึกผล</li></ol>
       </article>
     </section>
 
-    <section id="settings" class="settings-section">
-      <div class="section-title">
-        <div>
-          <p class="eyebrow">SETTINGS</p>
-          <h2>ตั้งค่าการตรวจจับ</h2>
+    <!-- ══════════════════════════════════════════
+         SECTION 3: ตั้งค่า (Settings)
+         ══════════════════════════════════════════ -->
+    <section id="settings" class="section-block">
+      <div class="section-header">
+        <div class="section-icon settings-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </div>
-        <span id="healthState" class="badge neutral">กำลังเช็กระบบ</span>
+        <div>
+          <h2 class="section-heading">ตั้งค่าการตรวจจับ</h2>
+          <p class="section-sub">ปรับค่าเพื่อให้เหมาะกับลักษณะการนั่งทำงานของคุณ</p>
+        </div>
+        <span id="healthState" class="badge neutral ml-auto">กำลังเช็กระบบ</span>
       </div>
+
       <div class="settings-grid">
         <label class="card setting">
-          <span>คะแนนต่ำกว่าเท่าไรถือว่าเสี่ยง</span>
+          <span class="setting-label">⚠️ คะแนนต่ำกว่าเท่าไรถือว่าเสี่ยง</span>
           <input id="riskThreshold" type="number" min="1" max="99" step="1">
         </label>
         <label class="card setting">
-          <span>นั่งผิดท่าต่อเนื่องกี่วินาทีถึงขึ้นแดง</span>
+          <span class="setting-label">⏱️ นั่งผิดท่าต่อเนื่องกี่วินาทีถึงขึ้นแดง</span>
           <input id="riskSeconds" type="number" min="5" max="600" step="5">
         </label>
         <label id="dataDirField" class="card setting" hidden>
-          <span>ตำแหน่งฐานข้อมูล <em>(เฉพาะตอนรันกับ Node server)</em></span>
+          <span class="setting-label">📁 ตำแหน่งฐานข้อมูล <em>(เฉพาะตอนรันกับ Node server)</em></span>
           <input id="dataDir" type="text" autocomplete="off">
         </label>
         <label class="card setting toggle">
-          <span>เสียงแจ้งเตือน</span>
+          <span class="setting-label">🔊 เสียงแจ้งเตือน</span>
           <input id="soundEnabled" type="checkbox">
         </label>
         <label class="card setting toggle">
-          <span>Desktop notification</span>
+          <span class="setting-label">🔔 Desktop notification</span>
           <input id="desktopEnabled" type="checkbox">
         </label>
       </div>
+
       <div class="actions settings-actions">
-        <button id="saveSettings" class="primary" type="button">บันทึกตั้งค่า</button>
-        <button id="requestNotify" class="secondary" type="button">ขอสิทธิ์แจ้งเตือน</button>
+        <button id="saveSettings" class="primary" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          บันทึกตั้งค่า
+        </button>
+        <button id="requestNotify" class="outline" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          ขอสิทธิ์แจ้งเตือน
+        </button>
       </div>
       <p id="settingsNote" class="settings-note">เวอร์ชันนี้เก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ปิดแท็บหรือล้างข้อมูลเว็บไซต์จะทำให้ประวัติหาย</p>
     </section>
 
-    <section id="privacy" class="privacy card">
-      <h2>ความเป็นส่วนตัว</h2>
-      <p>กล้องและโมเดล AI ทำงานในอุปกรณ์ของคุณ วิดีโอไม่ถูกส่งไปยัง server ระบบบันทึกเฉพาะคะแนน posture, มุมโดยประมาณ และเวลาไว้ในเครื่องนี้ คุณลบหรือ export ข้อมูลได้จากหน้าเว็บ</p>
+    <!-- ══════════════════════════════════════════
+         SECTION 4: ความเป็นส่วนตัว (Privacy)
+         ══════════════════════════════════════════ -->
+    <section id="privacy" class="section-block">
+      <div class="section-header">
+        <div class="section-icon privacy-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div>
+          <h2 class="section-heading">ความเป็นส่วนตัว</h2>
+          <p class="section-sub">ข้อมูลของคุณอยู่ในมือคุณเสมอ</p>
+        </div>
+      </div>
+      <div class="card privacy-card">
+        <div class="privacy-grid">
+          <div class="privacy-item">
+            <div class="privacy-icon">🛡️</div>
+            <div>
+              <strong>ประมวลผลในเครื่อง</strong>
+              <p>กล้องและโมเดล AI ทำงานในอุปกรณ์ของคุณ วิดีโอไม่ถูกส่งไปยัง server ใดทั้งสิ้น</p>
+            </div>
+          </div>
+          <div class="privacy-item">
+            <div class="privacy-icon">📊</div>
+            <div>
+              <strong>เก็บเฉพาะตัวเลข</strong>
+              <p>ระบบบันทึกเฉพาะคะแนน posture, มุมโดยประมาณ และเวลาไว้ในเครื่องนี้เท่านั้น</p>
+            </div>
+          </div>
+          <div class="privacy-item">
+            <div class="privacy-icon">🗑️</div>
+            <div>
+              <strong>ลบหรือ export ได้ตลอด</strong>
+              <p>คุณสามารถลบหรือ export ข้อมูลทั้งหมดได้จากหน้าเว็บนี้ตลอดเวลา</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
+
   </main>
+
+  <!-- ── Risk Popup ── -->
   <div id="riskPopup" class="risk-popup" role="alert" aria-live="assertive" hidden>
-    <strong>เสี่ยงจากท่านั่ง</strong>
-    <span>ลุกพักหรือปรับเก้าอี้/จอภาพสักครู่</span>
+    <div class="risk-popup-icon">⚠️</div>
+    <div class="risk-popup-content">
+      <strong>เสี่ยงจากท่านั่ง</strong>
+      <span>ลุกพักหรือปรับเก้าอี้/จอภาพสักครู่</span>
+    </div>
     <button id="closePopup" class="secondary" type="button">รับทราบ</button>
   </div>
+
+  <!-- ── Toast ── -->
   <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer">
+    <p>PostureAI — ระบบติดตามท่านั่งแบบส่วนตัว · พัฒนาด้วย MediaPipe + JavaScript</p>
+  </footer>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>
