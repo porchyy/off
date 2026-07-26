@@ -22,6 +22,7 @@ backend/.pytest_cache/
 backend/.ruff_cache/
 backend/.mypy_cache/
 raspberrypi/.pytest_cache/
+.tmp-*/
 
 # Database
 postureai.sqlite
