@@ -193,6 +193,10 @@ def test_export_csv_and_json():
     assert "exportedAt" in json_data
     assert len(json_data["rows"]) == 2
 
+    # Test Invalid export format validation
+    invalid_res = client.get("/api/export?format=xml")
+    assert invalid_res.status_code == 422
+
 
 def test_clear_data():
     client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})

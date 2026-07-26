@@ -355,8 +355,12 @@ window.addEventListener('online', () => toast('กลับมาออนไล
 window.addEventListener('offline', () => toast('ออฟไลน์: AI จาก CDN อาจเริ่มไม่ได้'));
 window.addEventListener('beforeunload', end);
 
-storage = await createStorage();
-applyStorageMode();
-await loadSettings();
-await checkHealth();
-await loadDashboard();
+async function initApp() {
+  storage = await createStorage();
+  applyStorageMode();
+  await loadSettings();
+  await checkHealth();
+  await loadDashboard();
+}
+
+initApp();
