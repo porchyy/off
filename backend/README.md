@@ -19,6 +19,24 @@ python -m app
 The server starts on `http://localhost:8000` by default. Interactive docs live
 at `http://localhost:8000/docs`.
 
+## Testing
+
+Install development dependencies and run pytest:
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+Tests cover:
+- Health check and database connection status
+- Settings read, write, and range clamping
+- Posture sample ingestion and score bounds validation
+- Alert recording and severity validation
+- Today's summary and 14-day stats aggregation
+- Export to CSV and JSON formats
+- Complete database clearing
+
 ## Configuration
 
 Environment variables (loaded via `pydantic-settings`, supports `.env`):
@@ -37,13 +55,8 @@ env var) to actually move the SQLite file.
 
 ## Schema
 
-`Base.metadata.create_all()` runs on startup and creates three tables:
+FastAPI lifespan handler initializes the database on boot (`Base.metadata.create_all()`):
 
 - `samples(id, score, neck, shoulders, torso, created_at)`
 - `alerts(id, severity, message, created_at)`
 - `settings(key, value)` — key/value JSON-encoded strings
-
-The same SQLite file format as the old `server.mjs` — drop-in compatible if
-you have an existing `postureai.sqlite` (the only addition is the new
-`dataDir` key in the `settings` table, which the original code stored in
-`postureai.config.json` instead).

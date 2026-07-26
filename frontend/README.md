@@ -6,9 +6,11 @@ Static HTML/JS/CSS ที่ใช้ MediaPipe Pose ใน browser — ปร�
 ## โครงสร้าง
 
 - `index.html` — entry point (ใช้ relative path กับ Vite)
-- `app.js` — camera, MediaPipe, scoring, alerts
+- `app.js` — camera, MediaPipe, UI bindings, alerts
+- `pose-utils.js` — scoring algorithm, posture metric calculations
 - `storage.js` — backend (HTTP) vs demo (localStorage) abstraction
-- `app.css` — UI styling
+- `app.css` / `risk.css` — UI styling
+- `tests/` — unit test suite (`pose.test.js`, `storage.test.js`)
 
 ## Dev
 
@@ -21,6 +23,18 @@ npm run dev
 เปิด `http://localhost:5173` — Vite จะ proxy `/api/*` ไปยัง FastAPI backend
 (ค่า default `http://localhost:8000`, override ได้ด้วย env
 `POSTUREAI_BACKEND_URL=http://host:port`)
+
+## Testing
+
+```powershell
+npm test
+```
+
+รัน unit tests ทั้งหมดด้วย Node.js Native Test Runner (`node --test`) ครอบคลุม:
+- การคำนวณคะแนน MediaPipe Pose (Score, Neck, Shoulders, Torso)
+- การคัดกรอง Landmark ความชัดเจนต่ำ (Visibility threshold)
+- LocalStorage fallback storage (Demo mode)
+- การบันทึก/อ่านตั้งค่า, Samples, Alerts, Summary, Stats, Export (CSV/JSON) และ Clear data
 
 ## Build
 

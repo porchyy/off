@@ -9,6 +9,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Tests](https://img.shields.io/badge/Tests-22%2F22%20PASS-2ea44f?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/porchyy/offf)
 [![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
@@ -37,6 +38,7 @@
 | 📊 **กราฟสถิติ** | คะแนนเฉลี่ยรายวัน + แจ้งเตือนรายสัปดาห์ย้อนหลัง |
 | 📤 **Export ข้อมูล** | ดาวน์โหลดประวัติเป็น CSV หรือ JSON |
 | 🗑️ **ลบข้อมูลได้ทันที** | ปุ่มลบข้อมูลทั้งหมดในแอป |
+| 🧪 **Unit Tests ครบถ้วน** | มีชุดทดสอบแบบอัตโนมัติ 22/22 Tests (Frontend + Backend) |
 | 🍓 **Raspberry Pi Client** | Python client รองรับการทำงานบน Pi ด้วย OpenCV + MediaPipe |
 | 🐳 **Docker Ready** | `docker compose up --build` พร้อมใช้งาน |
 
@@ -49,13 +51,15 @@ OfficeGuardian-AI/
 ├── frontend/               # 🌐 Vite + Vanilla JS (port 5173)
 │   ├── index.html          #    หน้าหลัก
 │   ├── app.js              #    โลจิกหลัก + MediaPipe integration
-│   ├── storage.js          #    Backend API client wrapper
+│   ├── pose-utils.js       #    มอดูลคำนวณคะแนนและมุมท่าทาง
+│   ├── storage.js          #    Backend API client wrapper + localStorage fallback
 │   ├── app.css / risk.css  #    Styling
+│   ├── tests/              #    🧪 Unit tests สำหรับ Frontend (node --test)
 │   └── vite.config.js      #    Proxy /api → FastAPI backend
 │
 ├── backend/                # ⚙️ FastAPI + SQLAlchemy (port 8000)
 │   ├── app/
-│   │   ├── main.py         #    FastAPI app + CORS + static serve
+│   │   ├── main.py         #    FastAPI app + CORS + lifespan bootstrap + static serve
 │   │   ├── routes.py       #    API routes ทั้งหมด
 │   │   ├── config.py       #    pydantic-settings (env vars)
 │   │   ├── models.py       #    SQLAlchemy ORM models
@@ -63,7 +67,9 @@ OfficeGuardian-AI/
 │   │   ├── database.py     #    SQLite engine + session factory
 │   │   ├── settings_store.py #  Default settings + upsert helper
 │   │   └── export.py       #    CSV export helper
+│   ├── tests/              #    🧪 Unit tests สำหรับ Backend (pytest)
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   └── .env.example
 │
 ├── raspberrypi/            # 🍓 Python client สำหรับ Raspberry Pi
@@ -136,15 +142,19 @@ npm run dev
 
 ---
 
-### วิธีที่ 3: Raspberry Pi Client (optional)
+## 🧪 การรันทดสอบ (Automated Testing)
+
+โปรเจกต์นี้มีชุดทดสอบอัตโนมัติ (Unit Tests) ครอบคลุมทั้ง Frontend และ Backend:
 
 ```bash
-cd raspberrypi
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp config.example.yaml config.yaml
-python posture_client.py --config config.yaml
+# รัน Unit Tests ทั้งหมด (ทั้ง Frontend และ Backend)
+npm test
+
+# รันเฉพาะ Frontend Unit Tests (Node.js Native Test Runner)
+npm run test:frontend
+
+# รันเฉพาะ Backend Unit Tests (Pytest + FastAPI TestClient)
+npm run test:backend
 ```
 
 ---
@@ -200,7 +210,8 @@ python posture_client.py --config config.yaml
 | Backend Framework | FastAPI | 0.115 |
 | ASGI Server | Uvicorn | 0.32 |
 | ORM | SQLAlchemy | 2.0 |
-| Validation | Pydantic | 2.10 |
+| Testing (Frontend) | Node Test Runner | Node 22+ |
+| Testing (Backend) | Pytest + TestClient | 8.3 |
 | Database | SQLite (local) | — |
 | Python Runtime | Python | 3.12+ |
 | Node.js Runtime | Node.js | 22+ |
@@ -216,20 +227,6 @@ python posture_client.py --config config.yaml
 - [Database schema](database/README.md)
 - [Docker setup](docker/README.md)
 - [Project docs](docs/README.md)
-
----
-
-## ⚠️ ขอบเขตเวอร์ชันนี้
-
-เวอร์ชันนี้เหมาะสำหรับการใช้งาน **บนเครื่องเดียว** (single-user, local)  
-ข้อมูลไม่ซิงก์ข้ามเครื่อง และยังไม่มีระบบบัญชีผู้ใช้
-
-หากต้องการใช้งานหลายคนหรือ deploy สาธารณะ ควรเพิ่ม:
-- 🔐 Authentication & Authorization
-- 🔒 HTTPS (TLS)
-- 🗄️ Database server (PostgreSQL/MySQL แทน SQLite)
-- 💾 Backup strategy
-- 📋 Data access policy
 
 ---
 
