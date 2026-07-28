@@ -19,6 +19,7 @@ let frame;
 let lastVideoTime = -1;
 let lastSave = 0;
 let lastAlert = 0;
+let lastVoiceAlert = 0;
 let lastMetricAt = 0;
 let poorPostureMs = 0;
 let detectionSignal = 'neutral';
@@ -450,10 +451,14 @@ function notifyRisk(force = false, message = 'กรุณายืดหลั�
   if (!force && now - lastAlert < 15000) return;
   lastAlert = now;
   $('riskPopup').hidden = false;
-  if (settings.voiceEnabled) {
-    speakThaiAlert(message);
-  } else if (settings.soundEnabled) {
-    playBeep();
+  
+  if (force || now - lastVoiceAlert >= 30000) {
+    lastVoiceAlert = now;
+    if (settings.voiceEnabled) {
+      speakThaiAlert(message);
+    } else if (settings.soundEnabled) {
+      playBeep();
+    }
   }
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
     new Notification('PostureAI: เสี่ยงจากท่านั่ง', { body: message });

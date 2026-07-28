@@ -20,7 +20,7 @@ sqlite_path: Path = settings.sqlite_path
 
 engine = create_engine(
     f"sqlite:///{sqlite_path.as_posix()}",
-    connect_args={"check_same_thread": False},
+    connect_args={"check_same_thread": False, "timeout": 30},
     future=True,
 )
 

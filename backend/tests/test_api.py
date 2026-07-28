@@ -210,3 +210,11 @@ def test_clear_data():
     sum_res = client.get("/api/summary")
     assert sum_res.json()["samples"] == 0
     assert sum_res.json()["alerts"] == []
+
+
+def test_prune_data():
+    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
+    prune_res = client.post("/api/data/prune?days=90")
+    assert prune_res.status_code == 200
+    assert prune_res.json() == {"ok": True}
+

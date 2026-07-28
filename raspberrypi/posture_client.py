@@ -58,15 +58,37 @@ def main(argv: list[str] | None = None) -> int:
     backend_url = config["backend"]["url"]
     uploader = Uploader(url=backend_url, timeout=config["backend"].get("timeout", 5))
 
-    camera = open_camera(config["camera"])
+    consecutive_failures = 0
+    camera = None
     try:
+        camera = open_camera(config["camera"])
         while True:
-            run_detection_cycle(camera, config, uploader)
+            try:
+                run_detection_cycle(camera, config, uploader)
+                consecutive_failures = 0
+            except Exception as exc:
+                consecutive_failures += 1
+                logger.error("detection cycle error (failure %s): %s", consecutive_failures, exc)
+                if consecutive_failures >= 3:
+                    logger.warning("re-opening camera after %s consecutive failures...", consecutive_failures)
+                    try:
+                        if camera:
+                            camera.release()
+                    except Exception:
+                        pass
+                    time.sleep(2)
+                    camera = open_camera(config["camera"])
+                    consecutive_failures = 0
+
             if args.once:
                 break
-            time.sleep(config["detection"]["interval"])
+            time.sleep(config.get("detection", {}).get("interval", 0.5))
     finally:
-        camera.release()
+        if camera:
+            try:
+                camera.release()
+            except Exception:
+                pass
     return 0
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -204,6 +204,16 @@ def clear_data(db: Session = Depends(get_db)) -> OkResponse:
     db.execute(delete(Alert))
     db.commit()
     return OkResponse()
+
+
+@router.post("/api/data/prune", response_model=OkResponse)
+def prune_old_data(days: int = Query(default=90, ge=1, le=365), db: Session = Depends(get_db)) -> OkResponse:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    db.execute(delete(Sample).where(Sample.created_at < cutoff))
+    db.execute(delete(Alert).where(Alert.created_at < cutoff))
+    db.commit()
+    return OkResponse()
+
 
 
 # ── OAuth & SSO Authentication Routes ── #
