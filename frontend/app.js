@@ -2,7 +2,6 @@ import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@m
 import { createStorage, defaultSettings } from './storage.js';
 import { scorePose } from './pose-utils.js';
 import * as PoseModel from './pose-model.js';
-import { initAuth, subscribeAuth, loginWithOAuth, loginAsDemo, logout, getToken } from './auth.js';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
@@ -615,11 +614,9 @@ $('trainModelBtn')?.addEventListener('click', async () => {
     useCustomModel = true;
     updateModelStatusBadge();
 
-    // Auto-sync to user's cloud account if logged in
-    if (getToken()) {
-      const synced = await PoseModel.syncModelToCloud(getToken());
-      if (synced) toast('☁️ บันทึกซิงก์โมเดลขึ้นคลาวด์ข้ามเครื่องเรียบร้อยแล้ว');
-    }
+    // Auto-save trained AI model to local browser storage (IndexedDB)
+    await PoseModel.saveModelToLocal();
+    toast('💾 บันทึกโมเดล AI ส่วนตัวลงในเบราว์เซอร์เรียบร้อยแล้ว');
   } catch (err) {
     console.error(err);
     toast(err.message || 'เกิดข้อผิดพลาดในการเทรนโมเดล');
@@ -699,46 +696,6 @@ $('desktopEnabled')?.addEventListener('change', async (e) => {
   }
 });
 
-$('ssoForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = $('loginEmail')?.value || 'employee@company.com';
-  const name = $('loginName')?.value || 'สมชาย พนักงานออฟฟิศ';
-  try {
-    const user = await loginAsDemo(email, name);
-    const m = $('loginModal');
-    if (m) m.hidden = true;
-    toast(`🟢 เข้าสู่ระบบในนาม "${user.name}" เรียบร้อยแล้ว (เปิดซิงก์ข้อมูลข้ามเครื่อง)`);
-  } catch {
-    toast('เข้าสู่ระบบไม่สำเร็จ');
-  }
-});
-
-$('btnLoginGoogle')?.addEventListener('click', async () => {
-  try {
-    const email = $('loginEmail')?.value || 'user@gmail.com';
-    const name = $('loginName')?.value || 'Google Employee';
-    const user = await loginAsDemo(email, name);
-    const m = $('loginModal');
-    if (m) m.hidden = true;
-    toast(`🟢 เข้าสู่ระบบด้วย Google Workspace (${user.name}) เรียบร้อยแล้ว`);
-  } catch {
-    toast('เข้าสู่ระบบ Google ไม่สำเร็จ');
-  }
-});
-
-$('btnLoginMicrosoft')?.addEventListener('click', async () => {
-  try {
-    const email = $('loginEmail')?.value || 'user@outlook.com';
-    const name = $('loginName')?.value || 'Microsoft 365 Employee';
-    const user = await loginAsDemo(email, name);
-    const m = $('loginModal');
-    if (m) m.hidden = true;
-    toast(`🔷 เข้าสู่ระบบด้วย Microsoft 365 (${user.name}) เรียบร้อยแล้ว`);
-  } catch {
-    toast('เข้าสู่ระบบ Microsoft 365 ไม่สำเร็จ');
-  }
-});
-
 window.addEventListener('online', () => toast('กลับมาออนไลน์แล้ว สามารถโหลด AI จาก CDN ได้'));
 window.addEventListener('offline', () => toast('ออฟไลน์: AI จาก CDN อาจเริ่มไม่ได้'));
 window.addEventListener('beforeunload', end);
@@ -798,55 +755,19 @@ function initViewRouter() {
 // Initialize View Router for separate pages synchronously
 initViewRouter();
 
-/* ── SSO Auth & Cloud Model Sync Integration ── */
-subscribeAuth(async (user, token) => {
-  const btnLogin = $('btnOpenLoginModal');
-  const badge = $('userProfileBadge');
-  const avatar = $('userAvatar');
-  const name = $('userName');
-
-  if (user) {
-    if (btnLogin) btnLogin.hidden = true;
-    if (badge) badge.hidden = false;
-    if (name) name.textContent = user.name;
-    if (avatar) avatar.textContent = user.provider === 'google' ? '🟢' : (user.provider === 'microsoft' ? '🔷' : '👤');
-
-    // Auto-sync personal custom AI model from cloud if user has one saved
-    if (token) {
-      const synced = await PoseModel.syncModelFromCloud(token);
-      if (synced) {
-        updateTrainerUI();
-        useCustomModel = true;
-        const toggle = $('toggleCustomModel');
-        if (toggle) toggle.checked = true;
-        updateModelStatusBadge();
-        toast(`☁️ โหลดโมเดล AI ส่วนตัวของ ${user.name} เรียบร้อยแล้ว`);
-      }
-    }
-  } else {
-    if (btnLogin) btnLogin.hidden = false;
-    if (badge) badge.hidden = true;
-  }
-});
-
-// Auth Modal triggers
-$('btnOpenLoginModal')?.addEventListener('click', () => { const m = $('loginModal'); if (m) m.hidden = false; });
-$('btnCloseLoginModal')?.addEventListener('click', () => { const m = $('loginModal'); if (m) m.hidden = true; });
-$('btnLogout')?.addEventListener('click', () => {
-  logout();
-  toast('ออกจากระบบเรียบร้อยแล้ว');
-});
-
 async function initApp() {
-  initAuth();
   storage = await createStorage();
   applyStorageMode();
   await loadSettings();
   await checkHealth();
   await loadDashboard();
 
-  // Try loading default local custom model if present
-  await PoseModel.loadModelFromUrl('./models/custom/model.json');
+  // Try loading saved personal model from local IndexedDB first
+  const loadedLocal = await PoseModel.loadModelFromLocal();
+  if (!loadedLocal) {
+    // Fallback to loading default model from URL if available
+    await PoseModel.loadModelFromUrl('./models/custom/model.json');
+  }
   updateTrainerUI();
   updateModelStatusBadge();
 }

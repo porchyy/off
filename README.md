@@ -9,7 +9,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/Tests-33%2F33%20PASS-2ea44f?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/porchyy/off)
+[![Tests](https://img.shields.io/badge/Tests-29%2F29%20PASS-2ea44f?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/porchyy/off)
 [![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
@@ -32,14 +32,14 @@
 | ฟีเจอร์ | รายละเอียด |
 |---------|------------|
 | 🎯 **วิเคราะห์ท่านั่งแบบ Real-time** | ใช้ MediaPipe Pose ตรวจจับ landmark บนร่างกาย คำนวณคะแนน 0–100 |
-| 🧠 **โหมดเทรน AI ท่านั่งเอง** | เทรน Neural Network ส่วนตัวผ่าน TensorFlow.js ในเบราว์เซอร์ (100% Offline) เซฟ/โหลดโมเดลได้ |
+| 🧠 **โหมดเทรน AI ท่านั่งเอง** | เทรน Neural Network ส่วนตัวผ่าน TensorFlow.js ในเบราว์เซอร์ (100% Offline) เซฟ/โหลดโมเดลแบบ Local |
 | 🔴 **Office Syndrome Risk** | แสดงระดับความเสี่ยงเป็นสี (เขียว/แดง) ตามคะแนนและเวลาที่นั่งผิดท่าต่อเนื่อง |
 | 🔔 **แจ้งเตือนหลายช่องทาง** | Popup, เสียง Beep, เสียงพูดภาษาไทย (Speech Synthesis), Desktop Notification |
 | ⚙️ **ตั้งค่าได้เอง** | ปรับ threshold คะแนนเสี่ยง, เวลาก่อนแจ้งเตือน, เปิด/ปิดเสียง |
 | 📊 **กราฟสถิติ** | คะแนนเฉลี่ยรายวัน + แจ้งเตือนรายสัปดาห์ย้อนหลัง |
 | 📤 **Export ข้อมูล** | ดาวน์โหลดประวัติเป็น CSV หรือ JSON |
 | 🗑️ **ลบข้อมูลได้ทันที** | ปุ่มลบข้อมูลทั้งหมดในแอป และ API สั่ง Prune ข้อมูลเก่า |
-| 🧪 **Unit Tests ครบถ้วน** | มีชุดทดสอบแบบอัตโนมัติ 33/33 Tests (Frontend + Backend) |
+| 🧪 **Unit Tests ครบถ้วน** | มีชุดทดสอบแบบอัตโนมัติ 29/29 Tests (Frontend 13 + Backend 16) |
 | 🍓 **Raspberry Pi 5 Client** | Python client รองรับการทำงานบน Pi 5 ด้วย OpenCV + MediaPipe + Auto-Reconnect |
 | 🐳 **Docker Ready** | `docker compose up --build` พร้อมใช้งาน |
 

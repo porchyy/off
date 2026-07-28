@@ -270,83 +270,39 @@ export function resetModel() {
 }
 
 /**
- * Uploads current trained model to user's cloud account
+ * Saves current trained model to browser IndexedDB storage (100% Offline)
  */
-export async function syncModelToCloud(token) {
-  if (!model || !isModelReady || !token) return false;
+export async function saveModelToLocal(key = 'indexeddb://custom-posture-model') {
+  if (!model || !isModelReady) return false;
   const tf = getTf();
   if (!tf) return false;
 
-  let savedJson = null;
-  let savedWeightsB64 = null;
-
   try {
-    await model.save(tf.io.withSaveHandler(async (artifacts) => {
-      savedJson = JSON.stringify(artifacts.modelTopology);
-      if (artifacts.weightData) {
-        const bytes = new Uint8Array(artifacts.weightData);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        savedWeightsB64 = btoa(binary);
-      }
-      return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyBytes: savedJson ? savedJson.length : 0 } };
-    }));
-
-    if (!savedJson || !savedWeightsB64) return false;
-
-    const resp = await fetch('/api/user/model', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        modelJson: savedJson,
-        weightsBase64: savedWeightsB64
-      })
-    });
-    return resp.ok;
+    await model.save(key);
+    return true;
   } catch (e) {
-    console.warn('[pose-model] Failed to sync model to cloud:', e);
+    console.warn('[pose-model] Failed to save model to IndexedDB:', e);
     return false;
   }
 }
 
 /**
- * Downloads user's personal model from cloud and loads it into memory
+ * Loads saved personal model from browser IndexedDB storage (100% Offline)
  */
-export async function syncModelFromCloud(token) {
-  if (!token) return false;
+export async function loadModelFromLocal(key = 'indexeddb://custom-posture-model') {
   const tf = getTf();
   if (!tf) return false;
 
   try {
-    const resp = await fetch('/api/user/model', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!resp.ok) return false;
-    const data = await resp.json();
-
-    const modelTopology = JSON.parse(data.modelJson);
-    const binary = atob(data.weightsBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
+    const loadedModel = await tf.loadLayersModel(key);
+    if (model) {
+      model.dispose();
     }
-
-    const loadedModel = await tf.loadLayersModel(tf.io.fromMemory({
-      modelTopology,
-      weightData: bytes.buffer
-    }));
-
-    if (model) model.dispose();
     model = loadedModel;
     isModelReady = true;
     return true;
-  } catch (e) {
-    console.warn('[pose-model] Failed to sync model from cloud:', e);
+  } catch {
     return false;
   }
 }
+

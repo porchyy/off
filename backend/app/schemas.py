@@ -96,38 +96,3 @@ class ExportResponse(BaseModel):
 class OkResponse(BaseModel):
     ok: bool = True
 
-
-class UserOut(ApiModel):
-    id: str
-    email: str
-    name: str
-    avatar_url: str | None = Field(default=None, serialization_alias="avatarUrl")
-    provider: str
-
-
-class OAuthLoginIn(ApiModel):
-    provider: Literal["google", "microsoft"]
-    id_token: str = Field(alias="idToken")
-
-
-class DemoLoginIn(ApiModel):
-    email: str = Field(default="demo.employee@company.com")
-    name: str = Field(default="Demo Employee")
-
-
-class TokenResponse(ApiModel):
-    access_token: str = Field(serialization_alias="accessToken")
-    token_type: str = Field(default="bearer", serialization_alias="tokenType")
-    user: UserOut
-
-
-class CustomModelIn(ApiModel):
-    model_json: str = Field(alias="modelJson")
-    weights_base64: str = Field(alias="weightsBase64")
-
-
-class CustomModelOut(ApiModel):
-    user_id: str = Field(serialization_alias="userId")
-    model_json: str = Field(serialization_alias="modelJson")
-    weights_base64: str = Field(serialization_alias="weightsBase64")
-    updated_at: str = Field(serialization_alias="updatedAt")
