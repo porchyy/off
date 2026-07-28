@@ -16,8 +16,10 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://localhost:3000",
         alias="POSTUREAI_CORS_ORIGINS",
     )
-    host: str = Field(default="0.0.0.0", alias="POSTUREAI_HOST")
-    port: int = Field(default=8000, alias="POSTUREAI_PORT")
+    secret_key: str = Field(
+        default="postureai-sso-secret-key-change-in-production",
+        alias="POSTUREAI_SECRET_KEY",
+    )
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

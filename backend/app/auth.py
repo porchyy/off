@@ -10,11 +10,10 @@ from typing import Any
 from fastapi import Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 
+from .config import settings
 from .database import get_db
 from .models import User
 
-# Simple HMAC secret for JWT session tokens (or local offline tokens)
-SECRET_KEY = "postureai-sso-secret-key-change-in-production"
 TOKEN_EXPIRY_SECONDS = 30 * 24 * 3600  # 30 days
 
 
@@ -41,7 +40,7 @@ def create_access_token(user_id: str) -> str:
     # Lightweight HMAC-SHA256 signature using Python stdlib
     import hmac
     import hashlib
-    sig = hmac.new(SECRET_KEY.encode('utf-8'), signature_input.encode('utf-8'), hashlib.sha256).digest()
+    sig = hmac.new(settings.secret_key.encode('utf-8'), signature_input.encode('utf-8'), hashlib.sha256).digest()
     sig_b64 = _urlsafe_b64encode(sig)
     return f"{signature_input}.{sig_b64}"
 
@@ -57,7 +56,7 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
 
         import hmac
         import hashlib
-        expected_sig = hmac.new(SECRET_KEY.encode('utf-8'), signature_input.encode('utf-8'), hashlib.sha256).digest()
+        expected_sig = hmac.new(settings.secret_key.encode('utf-8'), signature_input.encode('utf-8'), hashlib.sha256).digest()
         if _urlsafe_b64encode(expected_sig) != sig_b64:
             return None
 
