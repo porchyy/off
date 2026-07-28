@@ -1,6 +1,8 @@
-import { FilesetResolver, PoseLandmarker, DrawingUtils } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js?module';
+import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js?module';
 import { createStorage, defaultSettings } from './storage.js';
 import { scorePose } from './pose-utils.js';
+import * as PoseModel from './pose-model.js';
+import { initAuth, subscribeAuth, loginWithOAuth, loginAsDemo, logout, getToken } from './auth.js';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
@@ -21,6 +23,8 @@ let lastMetricAt = 0;
 let poorPostureMs = 0;
 let detectionSignal = 'neutral';
 let settings = { ...defaultSettings };
+let latestMetrics = null;
+let useCustomModel = false;
 
 const toast = msg => {
   const el = $('toast');
@@ -101,19 +105,142 @@ async function save(m) {
   }
 }
 
-function draw(result) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!result.landmarks?.length) return;
-  const colors = detectionSignal === 'risk'
-    ? { line: '#ff4d6d', dot: '#ff9aaa', glow: 'rgba(255,77,109,.28)' }
-    : { line: '#22e58d', dot: '#00e5c7', glow: 'rgba(34,229,141,.22)' };
-  ctx.save();
-  ctx.fillStyle = colors.glow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
-  const d = new DrawingUtils(ctx);
-  d.drawConnectors(result.landmarks[0], PoseLandmarker.POSE_CONNECTIONS, { color: colors.line, lineWidth: 5 });
-  d.drawLandmarks(result.landmarks[0], { color: colors.dot, radius: 5 });
+function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (!landmarks || landmarks.length === 0) return;
+
+  const isRisk = signal === 'risk';
+  const mainColor = isRisk ? '#ff4d6d' : '#00e5c7';
+  const glowColor = isRisk ? 'rgba(255, 77, 109, 0.7)' : 'rgba(0, 229, 199, 0.7)';
+  const secondaryColor = isRisk ? '#ff9aaa' : '#80f5e5';
+
+  const lm = landmarks;
+  const getPt = idx => (lm[idx] && (lm[idx].visibility === undefined || lm[idx].visibility > 0.35))
+    ? { x: lm[idx].x * w, y: lm[idx].y * h }
+    : null;
+
+  const nose = getPt(0);
+  const lEar = getPt(7);
+  const rEar = getPt(8);
+  const lShoulder = getPt(11);
+  const rShoulder = getPt(12);
+  const lElbow = getPt(13);
+  const rElbow = getPt(14);
+  const lWrist = getPt(15);
+  const rWrist = getPt(16);
+  const lHip = getPt(23);
+  const rHip = getPt(24);
+
+  // Helper: Draw Glowing Neon Line
+  function drawLine(p1, p2, width = 3.5, dashed = false) {
+    if (!p1 || !p2) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = mainColor;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 12;
+    ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([6, 6]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Helper: Draw Glowing Node Ring
+  function drawNode(pt, radius = 5.5) {
+    if (!pt) return;
+    ctx.save();
+    // Outer aura
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius + 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = isRisk ? 'rgba(255, 77, 109, 0.25)' : 'rgba(0, 229, 199, 0.25)';
+    ctx.fill();
+
+    // Node core
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#080c18';
+    ctx.strokeStyle = secondaryColor;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 1. Draw Upper Body Connections (No facial detail clutter!)
+  drawLine(lShoulder, rShoulder, 4.5);
+
+  if (lShoulder && rShoulder) {
+    const sCenter = { x: (lShoulder.x + rShoulder.x) / 2, y: (lShoulder.y + rShoulder.y) / 2 };
+    if (nose) drawLine(nose, sCenter, 2.5);
+    if (lEar) drawLine(lEar, lShoulder, 2);
+    if (rEar) drawLine(rEar, rShoulder, 2);
+
+    if (lHip && rHip) {
+      const hCenter = { x: (lHip.x + rHip.x) / 2, y: (lHip.y + rHip.y) / 2 };
+      drawLine(sCenter, hCenter, 3.5);
+    }
+  }
+
+  // Arms
+  drawLine(lShoulder, lElbow, 3.5);
+  drawLine(lElbow, lWrist, 3.5);
+  drawLine(rShoulder, rElbow, 3.5);
+  drawLine(rElbow, rWrist, 3.5);
+
+  // Torso Sides & Hips
+  drawLine(lShoulder, lHip, 3);
+  drawLine(rShoulder, rHip, 3);
+  drawLine(lHip, rHip, 3.5);
+
+  // 2. Horizontal Level Reference Line across Shoulders (HUD Guide)
+  if (lShoulder && rShoulder) {
+    const minX = Math.min(lShoulder.x, rShoulder.x) - 50;
+    const maxX = Math.max(lShoulder.x, rShoulder.x) + 50;
+    const avgY = (lShoulder.y + rShoulder.y) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(minX, avgY);
+    ctx.lineTo(maxX, avgY);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Draw Clean Joint Nodes
+  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist, lHip, rHip].forEach(pt => {
+    drawNode(pt, 5.5);
+  });
+
+  // 4. Futuristic HUD Overlay Card on Canvas (Top-Left)
+  if (metrics) {
+    ctx.save();
+    const hudW = 200;
+    const hudH = 56;
+    ctx.fillStyle = 'rgba(8, 12, 24, 0.82)';
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(16, 16, hudW, hudH, 8);
+    else ctx.rect(16, 16, hudW, hudH);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`คะแนนท่านั่ง: ${metrics.score ?? '--'}/100`, 28, 38);
+    ctx.fillStyle = mainColor;
+    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | ไหล่: ${metrics.shoulders ?? '--'}°`, 28, 58);
+    ctx.restore();
+  }
 }
 
 function loop() {
@@ -121,12 +248,20 @@ function loop() {
   if (video.currentTime !== lastVideoTime) {
     lastVideoTime = video.currentTime;
     const result = landmarker.detectForVideo(video, performance.now());
-    draw(result);
-    const m = result.landmarks?.[0] && scorePose(result.landmarks[0]);
-    if (m) {
+    const calculated = result.landmarks?.[0] && scorePose(result.landmarks[0]);
+    if (calculated) {
+      latestMetrics = calculated;
+      let m = calculated;
+      if (useCustomModel && PoseModel.isReady()) {
+        const customPred = PoseModel.predict(calculated);
+        if (customPred) {
+          m = customPred;
+        }
+      }
       update(m);
       save(m);
     }
+    drawSleekSkeleton(ctx, result.landmarks?.[0], detectionSignal, latestMetrics);
   }
   frame = requestAnimationFrame(loop);
 }
@@ -208,6 +343,7 @@ async function loadSettings() {
   $('riskThreshold').value = settings.riskThreshold;
   $('riskSeconds').value = settings.riskSeconds;
   $('soundEnabled').checked = settings.soundEnabled;
+  if ($('voiceEnabled')) $('voiceEnabled').checked = settings.voiceEnabled !== false;
   $('desktopEnabled').checked = settings.desktopEnabled;
   if (!storage.isDemo) $('dataDir').value = settings.dataDir || '';
 }
@@ -218,6 +354,7 @@ async function saveSettings() {
     riskSeconds: Number($('riskSeconds').value),
     dataDir: storage.isDemo ? 'localStorage' : $('dataDir').value,
     soundEnabled: $('soundEnabled').checked,
+    voiceEnabled: $('voiceEnabled') ? $('voiceEnabled').checked : true,
     desktopEnabled: $('desktopEnabled').checked
   };
   settings = { ...settings, ...await storage.saveSettings(payload) };
@@ -288,13 +425,38 @@ function drawBarChart(target, rows, field, maxValue, color) {
   });
 }
 
-function notifyRisk(force = false) {
+function speakThaiAlert(message = 'กรุณายืดหลังตรงและปรับระดับคอครับ') {
+  if (!('speechSynthesis' in window)) {
+    playBeep();
+    return;
+  }
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.lang = 'th-TH';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const thVoice = voices.find(v => v.lang && (v.lang.includes('th') || v.lang.includes('TH')));
+    if (thVoice) utterance.voice = thVoice;
+    window.speechSynthesis.speak(utterance);
+  } catch {
+    playBeep();
+  }
+}
+
+function notifyRisk(force = false, message = 'กรุณายืดหลังตรงและปรับระดับคอขึ้นครับ') {
   const now = Date.now();
   if (!force && now - lastAlert < 15000) return;
+  lastAlert = now;
   $('riskPopup').hidden = false;
-  if (settings.soundEnabled) playBeep();
+  if (settings.voiceEnabled) {
+    speakThaiAlert(message);
+  } else if (settings.soundEnabled) {
+    playBeep();
+  }
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('PostureAI: เสี่ยงจากท่านั่ง', { body: 'ลุกพักหรือปรับเก้าอี้/จอภาพสักครู่' });
+    new Notification('PostureAI: เสี่ยงจากท่านั่ง', { body: message });
   }
 }
 
@@ -330,20 +492,15 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 
-start.addEventListener('click', begin);
-stop.addEventListener('click', end);
-$('refresh').addEventListener('click', loadDashboard);
-$('saveSettings').addEventListener('click', saveSettings);
-$('exportCsv').addEventListener('click', () => downloadExport('csv'));
-$('exportJson').addEventListener('click', () => downloadExport('json'));
-$('testAlert').addEventListener('click', () => notifyRisk(true));
-$('closePopup').addEventListener('click', () => $('riskPopup').hidden = true);
-$('requestNotify').addEventListener('click', async () => {
-  if (!('Notification' in window)) return toast('เบราว์เซอร์นี้ไม่รองรับ desktop notification');
-  const permission = await Notification.requestPermission();
-  toast(permission === 'granted' ? 'อนุญาต desktop notification แล้ว' : 'ยังไม่ได้อนุญาต desktop notification');
-});
-$('clearData').addEventListener('click', async () => {
+start?.addEventListener('click', begin);
+stop?.addEventListener('click', end);
+$('refresh')?.addEventListener('click', loadDashboard);
+$('saveSettings')?.addEventListener('click', saveSettings);
+$('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
+$('exportJson')?.addEventListener('click', () => downloadExport('json'));
+$('testAlert')?.addEventListener('click', () => notifyRisk(true));
+$('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
+$('clearData')?.addEventListener('click', async () => {
   const ok = confirm(storage.isDemo ? 'ลบประวัติและแจ้งเตือนทั้งหมดจากเบราว์เซอร์นี้?' : 'ลบประวัติและแจ้งเตือนทั้งหมดจากฐานข้อมูลในเครื่อง?');
   if (!ok) return;
   await storage.clear();
@@ -351,16 +508,342 @@ $('clearData').addEventListener('click', async () => {
   toast('ลบข้อมูลแล้ว');
 });
 
+/* ── Custom AI Trainer Handlers ── */
+function updateTrainerUI() {
+  const counts = PoseModel.getExampleCounts();
+  const cGood = $('countGood');
+  const cCaution = $('countCaution');
+  const cRisk = $('countRisk');
+  const cTotal = $('countTotal');
+  if (cGood) cGood.textContent = counts.good;
+  if (cCaution) cCaution.textContent = counts.caution;
+  if (cRisk) cRisk.textContent = counts.risk;
+  if (cTotal) cTotal.textContent = counts.total;
+
+  const ready = PoseModel.isReady();
+  const saveBtn = $('saveModelBtn');
+  if (saveBtn) saveBtn.disabled = !ready;
+  const readyBadge = $('modelReadyBadge');
+  if (readyBadge) {
+    readyBadge.textContent = ready ? 'พร้อมใช้งาน' : 'ยังไม่มีโมเดล';
+    readyBadge.className = `badge ${ready ? 'good' : 'neutral'}`;
+  }
+}
+
+function updateModelStatusBadge() {
+  const badge = $('modelStatusBadge');
+  const activeAiBadge = $('activeAiBadge');
+
+  if (useCustomModel && PoseModel.isReady()) {
+    if (badge) {
+      badge.textContent = 'ใช้โมเดลที่เทรนเอง (Active)';
+      badge.className = 'badge good';
+    }
+    if (activeAiBadge) {
+      activeAiBadge.textContent = '🧠 AI ส่วนตัว (Active)';
+      activeAiBadge.className = 'badge good';
+    }
+  } else {
+    if (badge) {
+      badge.textContent = 'ใช้สูตรคำนวณเดิม';
+      badge.className = 'badge neutral';
+    }
+    if (activeAiBadge) {
+      activeAiBadge.textContent = 'สูตรคำนวณมาตรฐาน';
+      activeAiBadge.className = 'badge neutral';
+    }
+  }
+}
+
+function handleTag(label, name) {
+  if (!running || !latestMetrics) {
+    toast('กรุณาเปิดเริ่มกล้องเพื่อสแกนและบันทึกตัวอย่างท่านั่ง');
+    return;
+  }
+  PoseModel.addExample(latestMetrics, label);
+  updateTrainerUI();
+  const counts = PoseModel.getExampleCounts();
+  toast(`บันทึกตัวอย่าง "${name}" แล้ว (${counts[label]} ตัวอย่าง)`);
+}
+
+$('tagGood')?.addEventListener('click', () => handleTag('good', 'ท่านี้ดี'));
+$('tagCaution')?.addEventListener('click', () => handleTag('caution', 'ท่านี้ระวัง'));
+$('tagRisk')?.addEventListener('click', () => handleTag('risk', 'ท่านี้แย่'));
+
+$('clearSamples')?.addEventListener('click', () => {
+  PoseModel.clearExamples();
+  updateTrainerUI();
+  toast('ล้างตัวอย่างที่เก็บไว้เรียบร้อย');
+});
+
+$('trainModelBtn')?.addEventListener('click', async () => {
+  const counts = PoseModel.getExampleCounts();
+  if (counts.total === 0) {
+    toast('กรุณาเก็บตัวอย่างท่านั่งอย่างน้อย 15-20 ตัวอย่างต่อป้ายกำกับก่อนเทรน');
+    return;
+  }
+
+  const box = $('trainProgressBox');
+  const bar = $('trainProgressBar');
+  const text = $('trainStatusText');
+  const pctText = $('trainPercent');
+
+  if (box) box.hidden = false;
+  $('trainModelBtn').disabled = true;
+
+  try {
+    await PoseModel.trainModel({
+      onEpochEnd: (epoch, totalEpochs, logs) => {
+        const pct = Math.round((epoch / totalEpochs) * 100);
+        if (bar) bar.style.width = `${pct}%`;
+        if (pctText) pctText.textContent = `${pct}%`;
+        if (text) text.textContent = `เทรน Epoch ${epoch}/${totalEpochs} (Loss: ${logs.loss.toFixed(3)})`;
+      }
+    });
+
+    if (text) text.textContent = 'เทรนโมเดลสำเร็จ!';
+    toast('🎉 เทรนโมเดล AI ส่วนตัวสำเร็จแล้ว!');
+    updateTrainerUI();
+
+    const toggle = $('toggleCustomModel');
+    if (toggle) toggle.checked = true;
+    useCustomModel = true;
+    updateModelStatusBadge();
+
+    // Auto-sync to user's cloud account if logged in
+    if (getToken()) {
+      const synced = await PoseModel.syncModelToCloud(getToken());
+      if (synced) toast('☁️ บันทึกซิงก์โมเดลขึ้นคลาวด์ข้ามเครื่องเรียบร้อยแล้ว');
+    }
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'เกิดข้อผิดพลาดในการเทรนโมเดล');
+  } finally {
+    $('trainModelBtn').disabled = false;
+    setTimeout(() => { if (box) box.hidden = true; }, 3500);
+  }
+});
+
+$('saveModelBtn')?.addEventListener('click', async () => {
+  try {
+    await PoseModel.saveModel('custom-posture-model');
+    toast('💾 ดาวน์โหลดไฟล์โมเดลสำเร็จ');
+  } catch (err) {
+    toast(err.message || 'บันทึกโมเดลไม่สำเร็จ');
+  }
+});
+
+$('loadModelBtn')?.addEventListener('click', () => {
+  $('modelFileInput')?.click();
+});
+
+$('modelFileInput')?.addEventListener('change', async (e) => {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
+  try {
+    await PoseModel.loadModel(files);
+    updateTrainerUI();
+    const toggle = $('toggleCustomModel');
+    if (toggle) toggle.checked = true;
+    useCustomModel = true;
+    updateModelStatusBadge();
+    toast('📂 โหลดโมเดลที่เลือกเรียบร้อย');
+  } catch (err) {
+    console.error(err);
+    toast('โหลดโมเดลไม่สำเร็จ กรุณาเลือกไฟล์ model.json และ model.weights.bin พร้อมกัน');
+  }
+});
+
+$('toggleCustomModel')?.addEventListener('change', (e) => {
+  if (e.target.checked && !PoseModel.isReady()) {
+    toast('ยังไม่มีโมเดลที่เทรนสำเร็จ กรุณาเก็บตัวอย่างแล้วกดเทรน หรือโหลดไฟล์โมเดลก่อน');
+    e.target.checked = false;
+    useCustomModel = false;
+    updateModelStatusBadge();
+    return;
+  }
+  useCustomModel = e.target.checked;
+  updateModelStatusBadge();
+  toast(useCustomModel ? 'สลับมาใช้โมเดลที่เทรนเอง' : 'สลับกลับไปใช้สูตรคำนวณเดิม');
+});
+
+/* ── Chart Tabs & Notification Handlers ── */
+$('btnDailyChart')?.addEventListener('click', () => {
+  $('btnDailyChart').classList.add('active');
+  $('btnWeeklyChart').classList.remove('active');
+  $('dailyChart').style.display = 'block';
+  $('weeklyChart').style.display = 'none';
+});
+
+$('btnWeeklyChart')?.addEventListener('click', () => {
+  $('btnWeeklyChart').classList.add('active');
+  $('btnDailyChart').classList.remove('active');
+  $('weeklyChart').style.display = 'block';
+  $('dailyChart').style.display = 'none';
+});
+
+$('desktopEnabled')?.addEventListener('change', async (e) => {
+  if (e.target.checked && 'Notification' in window) {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      toast('ยังไม่ได้อนุญาต desktop notification ในเบราว์เซอร์');
+      e.target.checked = false;
+    } else {
+      toast('อนุญาต desktop notification เรียบร้อยแล้ว');
+    }
+  }
+});
+
+$('ssoForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('loginEmail')?.value || 'employee@company.com';
+  const name = $('loginName')?.value || 'สมชาย พนักงานออฟฟิศ';
+  try {
+    const user = await loginAsDemo(email, name);
+    const m = $('loginModal');
+    if (m) m.hidden = true;
+    toast(`🟢 เข้าสู่ระบบในนาม "${user.name}" เรียบร้อยแล้ว (เปิดซิงก์ข้อมูลข้ามเครื่อง)`);
+  } catch {
+    toast('เข้าสู่ระบบไม่สำเร็จ');
+  }
+});
+
+$('btnLoginGoogle')?.addEventListener('click', async () => {
+  try {
+    const email = $('loginEmail')?.value || 'user@gmail.com';
+    const name = $('loginName')?.value || 'Google Employee';
+    const user = await loginAsDemo(email, name);
+    const m = $('loginModal');
+    if (m) m.hidden = true;
+    toast(`🟢 เข้าสู่ระบบด้วย Google Workspace (${user.name}) เรียบร้อยแล้ว`);
+  } catch {
+    toast('เข้าสู่ระบบ Google ไม่สำเร็จ');
+  }
+});
+
+$('btnLoginMicrosoft')?.addEventListener('click', async () => {
+  try {
+    const email = $('loginEmail')?.value || 'user@outlook.com';
+    const name = $('loginName')?.value || 'Microsoft 365 Employee';
+    const user = await loginAsDemo(email, name);
+    const m = $('loginModal');
+    if (m) m.hidden = true;
+    toast(`🔷 เข้าสู่ระบบด้วย Microsoft 365 (${user.name}) เรียบร้อยแล้ว`);
+  } catch {
+    toast('เข้าสู่ระบบ Microsoft 365 ไม่สำเร็จ');
+  }
+});
+
 window.addEventListener('online', () => toast('กลับมาออนไลน์แล้ว สามารถโหลด AI จาก CDN ได้'));
 window.addEventListener('offline', () => toast('ออฟไลน์: AI จาก CDN อาจเริ่มไม่ได้'));
 window.addEventListener('beforeunload', end);
 
+/* ── SPA View Router (Separate Pages / Views) ── */
+function initViewRouter() {
+  const navLinks = document.querySelectorAll('.topbar nav a');
+  const sections = document.querySelectorAll('main > section');
+
+  function showView(targetId) {
+    const validIds = Array.from(sections).map(s => s.id);
+    const activeId = validIds.includes(targetId) ? targetId : 'monitor';
+
+    sections.forEach(sec => {
+      sec.style.display = '';
+      if (sec.id === activeId) {
+        sec.classList.add('active');
+      } else {
+        sec.classList.remove('active');
+      }
+    });
+
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href') || '';
+      const linkId = href.replace(/^#\/?/, '');
+      if (linkId === activeId) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    showView(hash);
+  });
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href') || '';
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href.replace(/^#\/?/, '');
+        window.location.hash = targetId;
+        showView(targetId);
+      }
+    });
+  });
+
+  const initialHash = window.location.hash.replace(/^#\/?/, '') || 'monitor';
+  showView(initialHash);
+}
+
+// Initialize View Router for separate pages synchronously
+initViewRouter();
+
+/* ── SSO Auth & Cloud Model Sync Integration ── */
+subscribeAuth(async (user, token) => {
+  const btnLogin = $('btnOpenLoginModal');
+  const badge = $('userProfileBadge');
+  const avatar = $('userAvatar');
+  const name = $('userName');
+
+  if (user) {
+    if (btnLogin) btnLogin.hidden = true;
+    if (badge) badge.hidden = false;
+    if (name) name.textContent = user.name;
+    if (avatar) avatar.textContent = user.provider === 'google' ? '🟢' : (user.provider === 'microsoft' ? '🔷' : '👤');
+
+    // Auto-sync personal custom AI model from cloud if user has one saved
+    if (token) {
+      const synced = await PoseModel.syncModelFromCloud(token);
+      if (synced) {
+        updateTrainerUI();
+        useCustomModel = true;
+        const toggle = $('toggleCustomModel');
+        if (toggle) toggle.checked = true;
+        updateModelStatusBadge();
+        toast(`☁️ โหลดโมเดล AI ส่วนตัวของ ${user.name} เรียบร้อยแล้ว`);
+      }
+    }
+  } else {
+    if (btnLogin) btnLogin.hidden = false;
+    if (badge) badge.hidden = true;
+  }
+});
+
+// Auth Modal triggers
+$('btnOpenLoginModal')?.addEventListener('click', () => { const m = $('loginModal'); if (m) m.hidden = false; });
+$('btnCloseLoginModal')?.addEventListener('click', () => { const m = $('loginModal'); if (m) m.hidden = true; });
+$('btnLogout')?.addEventListener('click', () => {
+  logout();
+  toast('ออกจากระบบเรียบร้อยแล้ว');
+});
+
 async function initApp() {
+  initAuth();
   storage = await createStorage();
   applyStorageMode();
   await loadSettings();
   await checkHealth();
   await loadDashboard();
+
+  // Try loading default local custom model if present
+  await PoseModel.loadModelFromUrl('./models/custom/model.json');
+  updateTrainerUI();
+  updateModelStatusBadge();
 }
 
 initApp();

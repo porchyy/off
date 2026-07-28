@@ -4,8 +4,8 @@ import { readFile, stat, mkdir } from 'node:fs/promises';
 import { join, normalize, extname } from 'node:path';
 
 const root = process.cwd();
-// Keep operational data outside the source tree. Override with POSTUREAI_DATA_DIR if needed.
-const dataDir = process.env.POSTUREAI_DATA_DIR || 'E:\\PostureAI\\data';
+// Keep operational data in workspace database directory. Override with POSTUREAI_DATA_DIR if needed.
+const dataDir = process.env.POSTUREAI_DATA_DIR || join(root, 'database');
 await mkdir(dataDir, { recursive: true });
 const dbPath = join(dataDir, 'postureai.sqlite');
 const db = new DatabaseSync(dbPath);

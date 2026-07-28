@@ -9,8 +9,9 @@ const KEYS = {
 export const defaultSettings = {
   riskThreshold: 60,
   riskSeconds: 45,
-  dataDir: 'E:\\PostureAI\\data',
+  dataDir: 'database',
   soundEnabled: true,
+  voiceEnabled: true,
   desktopEnabled: false
 };
 

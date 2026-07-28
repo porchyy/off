@@ -26,9 +26,13 @@
         <span class="brand-tag">v1.0</span>
       </a>
       <nav aria-label="เมนูหลัก">
-        <a href="#monitor">
+        <a href="#monitor" class="active">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
           ติดตามสด
+        </a>
+        <a href="#trainer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></svg>
+          เทรน AI
         </a>
         <a href="#history">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -43,10 +47,18 @@
           ความเป็นส่วนตัว
         </a>
       </nav>
-      <button id="clearData" class="text-btn danger-text" type="button">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
-        ลบข้อมูลในเครื่อง
-      </button>
+      <div id="userAuthWrap" class="auth-bar-wrap">
+        <button id="btnOpenLoginModal" class="btn-auth-login" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          🔑 เข้าสู่ระบบ SSO
+        </button>
+        <div id="userProfileBadge" class="user-badge" hidden>
+          <span id="userAvatar" class="avatar-circle">👤</span>
+          <span id="userName" class="user-name">Employee</span>
+          <span class="sync-dot" title="ซิงก์ข้อมูลข้ามเครื่องเรียบร้อยแล้ว"></span>
+          <button id="btnLogout" class="btn-logout" type="button" title="ออกจากระบบ">✕</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -58,17 +70,16 @@
       <strong>โหมดตัวอย่าง:</strong> ข้อมูลเก็บชั่วคราวในเบราว์เซอร์นี้เท่านั้น (localStorage) — ไม่มีเซิร์ฟเวอร์/ฐานข้อมูลถาวร
     </p>
 
-    <!-- ── Hero Section ── -->
-    <section class="intro">
-      <p class="eyebrow">🛡️ PRIVATE · ON-DEVICE AI</p>
-      <h1>ดูแลท่านั่งของคุณ<br><em>แบบเรียลไทม์</em></h1>
-      <p class="intro-desc">AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก<br>เวอร์ชันนี้เก็บเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือนไว้ในเครื่องของผู้ใช้</p>
-    </section>
-
     <!-- ══════════════════════════════════════════
          SECTION 1: ติดตามสด (Live Monitor)
          ══════════════════════════════════════════ -->
-    <section id="monitor" class="section-block">
+    <section id="monitor" class="section-block active">
+      <!-- Hero Section inside Monitor -->
+      <div class="intro">
+        <p class="eyebrow">🛡️ PRIVATE · ON-DEVICE AI</p>
+        <h1>ดูแลท่านั่งของคุณ<br><em>แบบเรียลไทม์</em></h1>
+        <p class="intro-desc">AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก<br>เวอร์ชันนี้เก็บเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือนไว้ในเครื่องของผู้ใช้</p>
+      </div>
       <div class="section-header">
         <div class="section-icon monitor-accent">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
@@ -84,7 +95,10 @@
         <article class="camera card">
           <div class="card-head">
             <h3>กล้องและการวิเคราะห์</h3>
-            <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
+            <div class="badge-group ml-auto">
+              <span id="activeAiBadge" class="badge neutral">สูตรคำนวณมาตรฐาน</span>
+              <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
+            </div>
           </div>
           <div class="video-wrap">
             <video id="video" autoplay muted playsinline aria-label="ภาพจากกล้อง"></video>
@@ -103,10 +117,6 @@
             <button id="stop" class="secondary" type="button" disabled>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
               หยุดกล้อง
-            </button>
-            <button id="testAlert" class="outline" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              ทดสอบแจ้งเตือน
             </button>
           </div>
         </article>
@@ -137,6 +147,94 @@
             <p class="disclaimer">⚕️ เป็นข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
           </article>
         </aside>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: โหมดเทรน AI (Custom AI Trainer)
+         ══════════════════════════════════════════ -->
+    <section id="trainer" class="section-block">
+      <div class="section-header">
+        <div class="section-icon trainer-accent">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></svg>
+        </div>
+        <div>
+          <h2 class="section-heading">เทรน AI ท่านั่งของฉันเอง</h2>
+          <p class="section-sub">เทรน Neural Network ส่วนตัวในเบราว์เซอร์ ปรับแต่งให้เหมาะกับสรีระของคุณ (100% Offline)</p>
+        </div>
+        <div class="mode-toggle-wrap ml-auto">
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleCustomModel">
+            <span class="toggle-label">ใช้โมเดลที่เทรนเอง</span>
+          </label>
+          <span id="modelStatusBadge" class="badge neutral">ใช้สูตรคำนวณเดิม</span>
+        </div>
+      </div>
+
+      <div class="trainer-grid">
+        <!-- Step 1: Collect Training Examples -->
+        <article class="card trainer-card">
+          <div class="card-head">
+            <h3>1. เก็บตัวอย่างท่านั่ง (Dataset)</h3>
+            <span class="hint-text">ขณะกล้องกำลังทำงาน</span>
+          </div>
+          <p class="trainer-desc">นั่งในแต่ละท่าแล้วกดปุ่มเพื่อบันทึกตัวอย่างมุมร่างกายปัจจุบัน (แนะนำอย่างน้อยป้ายกำกับละ 15-20 ตัวอย่าง)</p>
+          
+          <div class="tag-actions">
+            <button id="tagGood" class="tag-btn tag-good" type="button">
+              <span>🟢 ท่านี้ดี</span>
+              <b id="countGood" class="tag-badge">0</b>
+            </button>
+            <button id="tagCaution" class="tag-btn tag-caution" type="button">
+              <span>🟡 ท่านี้ระวัง</span>
+              <b id="countCaution" class="tag-badge">0</b>
+            </button>
+            <button id="tagRisk" class="tag-btn tag-risk" type="button">
+              <span>🔴 ท่านี้แย่</span>
+              <b id="countRisk" class="tag-badge">0</b>
+            </button>
+          </div>
+
+          <div class="dataset-info">
+            <span>ตัวอย่างทั้งหมด: <b id="countTotal">0</b> / 45</span>
+            <button id="clearSamples" class="text-btn danger-text small" type="button">🗑️ ล้างตัวอย่างที่เก็บไว้</button>
+          </div>
+        </article>
+
+        <!-- Step 2: Train & Manage Model -->
+        <article class="card trainer-card">
+          <div class="card-head">
+            <h3>2. เทรนและจัดการโมเดล</h3>
+            <span id="modelReadyBadge" class="badge neutral">ยังไม่มีโมเดล</span>
+          </div>
+          <p class="trainer-desc">เมื่อเก็บตัวอย่างเพียงพอแล้ว กดปุ่มเทรนโมเดลเพื่อสร้าง AI ส่วนตัวของคุณ หรือบันทึก/โหลดไฟล์โมเดล</p>
+
+          <div class="trainer-actions">
+            <button id="trainModelBtn" class="primary" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              เทรนโมเดล
+            </button>
+            <button id="saveModelBtn" class="outline" type="button" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              บันทึกโมเดล
+            </button>
+            <button id="loadModelBtn" class="outline" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              โหลดโมเดลที่เทรนไว้
+            </button>
+            <input type="file" id="modelFileInput" multiple accept=".json,.bin" hidden>
+          </div>
+
+          <div id="trainProgressBox" class="progress-box" hidden>
+            <div class="progress-header">
+              <span id="trainStatusText">กำลังเทรน...</span>
+              <span id="trainPercent">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div id="trainProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -175,17 +273,19 @@
         </article>
       </div>
 
-      <!-- Charts -->
-      <div class="chart-grid">
-        <article class="card chart-card">
-          <h3>📊 คะแนนเฉลี่ยรายวัน</h3>
+      <!-- Charts with Tab Switcher -->
+      <article class="card chart-card">
+        <div class="chart-header">
+          <div class="chart-tabs">
+            <button id="btnDailyChart" class="chart-tab active" type="button">📊 คะแนนเฉลี่ยรายวัน</button>
+            <button id="btnWeeklyChart" class="chart-tab" type="button">🔔 แจ้งเตือนรายสัปดาห์</button>
+          </div>
+        </div>
+        <div class="chart-container">
           <canvas id="dailyChart" width="720" height="260"></canvas>
-        </article>
-        <article class="card chart-card">
-          <h3>🔔 แจ้งเตือนรายสัปดาห์</h3>
-          <canvas id="weeklyChart" width="720" height="260"></canvas>
-        </article>
-      </div>
+          <canvas id="weeklyChart" width="720" height="260" style="display: none;"></canvas>
+        </div>
+      </article>
 
       <!-- Recent Events -->
       <article class="card">
@@ -223,8 +323,12 @@
           <input id="dataDir" type="text" autocomplete="off">
         </label>
         <label class="card setting toggle">
-          <span class="setting-label">🔊 เสียงแจ้งเตือน</span>
+          <span class="setting-label">🔊 เสียงแจ้งเตือน (Beep)</span>
           <input id="soundEnabled" type="checkbox">
+        </label>
+        <label class="card setting toggle">
+          <span class="setting-label">🗣️ เสียงพูดเตือนภาษาไทย ("กรุณายืดหลังตรงครับ")</span>
+          <input id="voiceEnabled" type="checkbox">
         </label>
         <label class="card setting toggle">
           <span class="setting-label">🔔 Desktop notification</span>
@@ -237,9 +341,13 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           บันทึกตั้งค่า
         </button>
-        <button id="requestNotify" class="outline" type="button">
+        <button id="testAlert" class="outline" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          ขอสิทธิ์แจ้งเตือน
+          ทดสอบเสียง/ป๊อปอัปแจ้งเตือน
+        </button>
+        <button id="clearData" class="outline danger-text" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
+          ลบประวัติในเครื่อง
         </button>
       </div>
       <p id="settingsNote" class="settings-note">เวอร์ชันนี้เก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ปิดแท็บหรือล้างข้อมูลเว็บไซต์จะทำให้ประวัติหาย</p>
@@ -297,6 +405,46 @@
     <button id="closePopup" class="secondary" type="button">รับทราบ</button>
   </div>
 
+  <!-- ── SSO Login Modal ── -->
+  <div id="loginModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔑 เข้าสู่ระบบองค์กร (SSO)</h3>
+        <button id="btnCloseLoginModal" class="modal-close" type="button">✕</button>
+      </div>
+      <p class="modal-sub">ซิงก์โมเดล AI ส่วนตัว และสถิติสุขภาพของคุณข้ามเครื่องทันที</p>
+      
+      <form id="ssoForm" class="sso-form">
+        <label class="input-field mb-12">
+          <span>📧 อีเมลพนักงาน / บัญชีองค์กร</span>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="employee@company.com" required value="employee@company.com">
+        </label>
+        <label class="input-field mb-16">
+          <span>👤 ชื่อผู้ใช้งาน</span>
+          <input id="loginName" type="text" autocomplete="name" placeholder="สมชาย พนักงานออฟฟิศ" required value="สมชาย พนักงานออฟฟิศ">
+        </label>
+
+        <div class="sso-options">
+          <button id="btnLoginSubmit" class="btn-sso btn-demo-sso" type="submit">
+            🚀 เข้าสู่ระบบและเปิดซิงก์ข้อมูล
+          </button>
+          
+          <div class="divider"><span>หรือเลือกบัญชีด่วน</span></div>
+
+          <button id="btnLoginGoogle" class="btn-sso btn-google" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            Google Workspace (Quick Login)
+          </button>
+
+          <button id="btnLoginMicrosoft" class="btn-sso btn-ms" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#00a4ef" d="M1 13h10v10H1z"/><path fill="#7fba00" d="M13 1h10v10H13z"/><path fill="#ffb900" d="M13 13h10v10H13z"/></svg>
+            Microsoft 365 (Quick Login)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ── Toast ── -->
   <div id="toast" role="status" aria-live="polite"></div>
 
@@ -305,6 +453,7 @@
     <p>PostureAI — ระบบติดตามท่านั่งแบบส่วนตัว · พัฒนาด้วย MediaPipe + JavaScript</p>
   </footer>
 
+  <script src="tf.min.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

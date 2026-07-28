@@ -10,21 +10,28 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
 
+from .auth import create_access_token, get_current_user, get_current_user_optional, verify_oauth_token
 from .config import settings
 from .database import SessionLocal, engine, get_db
 from .export import rows_to_csv
-from .models import Alert, Base, Sample, Setting
+from .models import Alert, Base, CustomModelArtifact, Sample, Setting, User
 from .schemas import (
     AlertIn,
     AlertOut,
+    CustomModelIn,
+    CustomModelOut,
+    DemoLoginIn,
     ExportResponse,
     HealthResponse,
+    OAuthLoginIn,
     OkResponse,
     SampleIn,
     SettingsModel,
     SettingsUpdate,
     StatsResponse,
     SummaryResponse,
+    TokenResponse,
+    UserOut,
 )
 from .settings_store import DEFAULTS, ensure_defaults, get_all
 
@@ -195,5 +202,124 @@ def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = 
 def clear_data(db: Session = Depends(get_db)) -> OkResponse:
     db.execute(delete(Sample))
     db.execute(delete(Alert))
+    db.commit()
+    return OkResponse()
+
+
+# ── OAuth & SSO Authentication Routes ── #
+
+@router.post("/api/auth/oauth", response_model=TokenResponse)
+def oauth_login(payload: OAuthLoginIn, db: Session = Depends(get_db)) -> TokenResponse:
+    user_info = verify_oauth_token(payload.provider, payload.id_token)
+    user_id = user_info["sub"]
+    
+    user = db.get(User, user_id)
+    if user is None:
+        user = User(
+            id=user_id,
+            email=user_info["email"],
+            name=user_info["name"],
+            avatar_url=user_info.get("avatar_url"),
+            provider=payload.provider,
+        )
+        db.add(user)
+    else:
+        user.name = user_info["name"]
+        if user_info.get("avatar_url"):
+            user.avatar_url = user_info["avatar_url"]
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(user.id)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserOut(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            avatar_url=user.avatar_url,
+            provider=user.provider,
+        ),
+    )
+
+
+@router.post("/api/auth/demo", response_model=TokenResponse)
+def demo_login(payload: DemoLoginIn, db: Session = Depends(get_db)) -> TokenResponse:
+    user_id = f"demo_{payload.email.replace('@', '_at_')}"
+    user = db.get(User, user_id)
+    if user is None:
+        user = User(
+            id=user_id,
+            email=payload.email,
+            name=payload.name,
+            avatar_url=None,
+            provider="demo",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    token = create_access_token(user.id)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserOut(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            avatar_url=user.avatar_url,
+            provider=user.provider,
+        ),
+    )
+
+
+@router.get("/api/auth/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
+    return UserOut(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        avatar_url=current_user.avatar_url,
+        provider=current_user.provider,
+    )
+
+
+# ── Cross-Device Personal AI Model Cloud Sync Routes ── #
+
+@router.get("/api/user/model", response_model=CustomModelOut)
+def get_user_model(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> CustomModelOut:
+    artifact = db.get(CustomModelArtifact, current_user.id)
+    if artifact is None:
+        raise HTTPException(status_code=404, detail="No custom model found for this user")
+    return CustomModelOut(
+        user_id=artifact.user_id,
+        model_json=artifact.model_json,
+        weights_base64=artifact.weights_base64,
+        updated_at=artifact.updated_at,
+    )
+
+
+@router.put("/api/user/model", response_model=OkResponse)
+def save_user_model(
+    payload: CustomModelIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> OkResponse:
+    artifact = db.get(CustomModelArtifact, current_user.id)
+    if artifact is None:
+        artifact = CustomModelArtifact(
+            user_id=current_user.id,
+            model_json=payload.model_json,
+            weights_base64=payload.weights_base64,
+        )
+        db.add(artifact)
+    else:
+        artifact.model_json = payload.model_json
+        artifact.weights_base64 = payload.weights_base64
+        artifact.updated_at = datetime.now(timezone.utc).isoformat()
     db.commit()
     return OkResponse()
