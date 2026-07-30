@@ -2,7 +2,7 @@
 # Build context: repo root (so nginx.conf from docker/ is reachable).
 # Run via: docker build -f docker/Dockerfile.frontend .
 
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install

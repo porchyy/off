@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
@@ -28,8 +29,12 @@ from .schemas import (
 )
 from .settings_store import DEFAULTS, ensure_defaults, get_all
 
-router = APIRouter()
 
+def json_dumps(value: Any) -> str:
+    return json.dumps(value)
+
+
+router = APIRouter()
 
 @router.get("/api/health", response_model=HealthResponse)
 def health(db: Session = Depends(get_db)) -> HealthResponse:
@@ -61,6 +66,7 @@ def read_settings(db: Session = Depends(get_db)) -> SettingsModel:
         risk_seconds=raw["riskSeconds"],
         data_dir=raw["dataDir"],
         sound_enabled=raw["soundEnabled"],
+        voice_enabled=raw["voiceEnabled"],
         desktop_enabled=raw["desktopEnabled"],
     )
 
@@ -76,6 +82,7 @@ def write_settings(payload: SettingsUpdate, db: Session = Depends(get_db)) -> Se
         "riskSeconds": _clamp_int(payload.risk_seconds, 5, 600, current["riskSeconds"]),
         "dataDir": new_dir,
         "soundEnabled": bool(payload.sound_enabled) if payload.sound_enabled is not None else current["soundEnabled"],
+        "voiceEnabled": bool(payload.voice_enabled) if payload.voice_enabled is not None else current["voiceEnabled"],
         "desktopEnabled": bool(payload.desktop_enabled) if payload.desktop_enabled is not None else current["desktopEnabled"],
     }
     for key, value in next_values.items():
@@ -91,14 +98,11 @@ def write_settings(payload: SettingsUpdate, db: Session = Depends(get_db)) -> Se
         risk_seconds=next_values["riskSeconds"],
         data_dir=str(settings.data_dir.resolve()),
         sound_enabled=next_values["soundEnabled"],
+        voice_enabled=next_values["voiceEnabled"],
         desktop_enabled=next_values["desktopEnabled"],
         pending_data_dir=next_values["dataDir"] if pending else None,
     )
 
-
-def json_dumps(value: Any) -> str:
-    import json
-    return json.dumps(value)
 
 
 @router.post("/api/samples", status_code=201, response_model=OkResponse)

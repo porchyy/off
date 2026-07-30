@@ -18,6 +18,12 @@ sudo usermod -aG docker $USER || true
 # 2. Build and launch full-stack containers
 echo "🐳 [2/4] Building & launching Docker Compose stack..."
 cd "$(dirname "$0")/.."
+
+# Wait until Docker daemon is ready
+echo "⏳ Waiting for Docker daemon..."
+sudo systemctl start docker 2>/dev/null || true
+until sudo docker info >/dev/null 2>&1; do sleep 1; done
+
 sudo docker compose down --remove-orphans || true
 sudo docker compose up --build -d
 
@@ -29,16 +35,15 @@ PROJECT_DIR="$(pwd)"
 sudo bash -c "cat <<EOF > $SERVICE_PATH
 [Unit]
 Description=PostureAI OfficeGuardian Container Stack
-After=docker.service
+After=docker.service network-online.target
 Requires=docker.service
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
-Restart=always
+Type=simple
+Restart=on-failure
 RestartSec=5s
 WorkingDirectory=$PROJECT_DIR
-ExecStart=/usr/bin/docker compose up -d
+ExecStart=/usr/bin/docker compose up
 ExecStop=/usr/bin/docker compose down
 
 [Install]

@@ -1,13 +1,10 @@
 """PostureAI Raspberry Pi client.
 
-Skeleton — main loop ที่:
+Main loop ที่:
   1. เปิดกล้อง
-  2. จับ pose ด้วย MediaPipe
+  2. จับ pose ด้วย MediaPipe (client/detect.py)
   3. คำนวณคะแนน + ส่ง sample ไป backend
-  4. แจ้ง alert ถ้าคะแนนตกต่อเนื่องเกิน threshold
-
-TODO: port logic จาก frontend/app.js (MediaPipe Pose ใน browser) มาเป็น
-Python เวอร์ชัน
+  4. แจ้ง alert ถ้าคะแนนตกต่อเนื่องเกิน riskSeconds threshold
 """
 
 from __future__ import annotations

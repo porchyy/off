@@ -60,6 +60,7 @@ def test_get_settings():
     assert data["riskThreshold"] == 60
     assert data["riskSeconds"] == 45
     assert data["soundEnabled"] is True
+    assert data["voiceEnabled"] is True
     assert data["desktopEnabled"] is False
 
 
@@ -68,6 +69,7 @@ def test_update_settings():
         "riskThreshold": 75,
         "riskSeconds": 30,
         "soundEnabled": False,
+        "voiceEnabled": False,
         "desktopEnabled": True,
     }
     response = client.put("/api/settings", json=payload)
@@ -76,11 +78,13 @@ def test_update_settings():
     assert data["riskThreshold"] == 75
     assert data["riskSeconds"] == 30
     assert data["soundEnabled"] is False
+    assert data["voiceEnabled"] is False
     assert data["desktopEnabled"] is True
 
     # Verify persistent update
     get_res = client.get("/api/settings")
     assert get_res.json()["riskThreshold"] == 75
+    assert get_res.json()["voiceEnabled"] is False
 
 
 def test_update_settings_accepts_internal_field_names():
@@ -100,14 +104,19 @@ def test_update_settings_accepts_internal_field_names():
 
 
 def test_update_settings_clamping():
-    # Out of range threshold (max 99, min 1)
-    payload = {"risk_threshold": 150, "risk_seconds": 1}
-    # Pydantic validation error or clamping test
-    response = client.put("/api/settings", json={"risk_threshold": 95, "risk_seconds": 10})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["riskThreshold"] == 95
-    assert data["riskSeconds"] == 10
+    # risk_threshold: Pydantic rejects values outside ge=1, le=99 range
+    bad_threshold = client.put("/api/settings", json={"riskThreshold": 150})
+    assert bad_threshold.status_code == 422  # Pydantic validation error
+
+    bad_seconds = client.put("/api/settings", json={"riskSeconds": 1})
+    assert bad_seconds.status_code == 422  # below ge=5
+
+    # Values at boundary should be accepted
+    ok_res = client.put("/api/settings", json={"riskThreshold": 99, "riskSeconds": 5})
+    assert ok_res.status_code == 200
+    data = ok_res.json()
+    assert data["riskThreshold"] == 99
+    assert data["riskSeconds"] == 5
 
 
 def test_add_sample_success():
