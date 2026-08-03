@@ -20,7 +20,7 @@ services:
           memory: 1024M
     environment:
       POSTUREAI_DATA_DIR: /app/database
-      POSTUREAI_CORS_ORIGINS: "http://localhost:3000,http://localhost:8000"
+      POSTUREAI_CORS_ORIGINS: "*"
       POSTUREAI_HOST: 0.0.0.0
       POSTUREAI_PORT: 8000
     volumes:

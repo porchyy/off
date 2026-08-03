@@ -27,7 +27,6 @@ class SettingsModel(ApiModel):
     risk_seconds: int = Field(ge=5, le=600, serialization_alias="riskSeconds")
     data_dir: str = Field(serialization_alias="dataDir")
     sound_enabled: bool = Field(serialization_alias="soundEnabled")
-    voice_enabled: bool = Field(default=True, serialization_alias="voiceEnabled")
     desktop_enabled: bool = Field(serialization_alias="desktopEnabled")
     pending_data_dir: str | None = Field(default=None, serialization_alias="pendingDataDir")
 
@@ -37,7 +36,6 @@ class SettingsUpdate(ApiModel):
     risk_seconds: int | None = Field(default=None, ge=5, le=600, alias="riskSeconds")
     data_dir: str | None = Field(default=None, alias="dataDir")
     sound_enabled: bool | None = Field(default=None, alias="soundEnabled")
-    voice_enabled: bool | None = Field(default=None, alias="voiceEnabled")
     desktop_enabled: bool | None = Field(default=None, alias="desktopEnabled")
 
 

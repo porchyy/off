@@ -15,7 +15,6 @@ DEFAULTS: dict[str, Any] = {
     "riskSeconds": 45,
     "dataDir": str(settings.data_dir.resolve()),
     "soundEnabled": True,
-    "voiceEnabled": True,
     "desktopEnabled": False,
 }
 

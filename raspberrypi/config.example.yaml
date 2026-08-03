@@ -1,5 +1,5 @@
 # PostureAI Pi client configuration
-# Copy to config.yaml and adjust.
+# setup-pi5.sh creates config.yaml from this file automatically.
 
 backend:
   # URL ของ FastAPI backend — ค่า default ตรงกับ docker-compose service
@@ -8,8 +8,11 @@ backend:
   timeout: 5
 
 camera:
-  # index สำหรับ OpenCV VideoCapture (Pi Camera มักเป็น 0 ถ้าใช้ libcamera)
-  index: 0
+  # Pi 5 default: Pi Camera through Picamera2. Set auto to also fall back to USB.
+  backend: picamera2
+  # index ใช้กับ USB camera (OpenCV) เท่านั้น; auto = ตรวจหา /dev/video*
+  index: auto
+  retries: 3
   # ความกว้าง/สูงของ frame ที่ใช้ประมวลผล
   width: 640
   height: 480
@@ -19,12 +22,24 @@ camera:
 detection:
   # ระยะห่างระหว่าง sample (วินาที)
   interval: 5
-  # โหมดประมวลผล: "mediapipe" (Python lib) หรือ "remote" (ส่งภาพให้ backend ทำเอง)
+  # โหมดที่รองรับในรุ่นนี้: mediapipe (ประมวลผลบน Pi เท่านั้น)
   mode: mediapipe
+  # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น
+  model: ../frontend/public/models/pose_landmarker_full.task
 
 risk:
   threshold: 60
   seconds: 45
+  # เว้นระยะก่อนเล่นเสียงซ้ำ ขณะที่ท่ายังไม่ดีขึ้น
+  cooldown: 30
+
+sound:
+  enabled: true
+  # ดูรายชื่ออุปกรณ์ด้วย: aplay -L (ส่วนใหญ่ใช้ default ได้เลย)
+  device: default
+  volume: 0.75
+  # เว้นว่างเพื่อใช้เสียง beep ในตัว หรือระบุไฟล์ WAV เช่น ./alert.wav
+  file:
 
 buffer:
   # path ของ SQLite ที่ใช้ buffer ตอน backend offline

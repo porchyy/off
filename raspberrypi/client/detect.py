@@ -4,38 +4,51 @@ from __future__ import annotations
 
 import logging
 import math
+import time
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_pose_detector = None
+_pose_detector: MediaPipePoseDetector | None = None
+_detector_model_path: Path | None = None
 
 
 class MediaPipePoseDetector:
     """Wrapper for MediaPipe Pose landmarker matching frontend posture scoring."""
 
-    def __init__(self) -> None:
+    def __init__(self, model_path: Path) -> None:
         import mediapipe as mp  # type: ignore
 
-        self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=0,  # Lite model for fast inference on Raspberry Pi
-            smooth_landmarks=True,
-            min_detection_confidence=0.45,
-            min_tracking_confidence=0.45,
+        if not model_path.is_file():
+            raise FileNotFoundError(f"Pose Landmarker Full model not found: {model_path}")
+        self.mp = mp
+        self._last_timestamp_ms = -1
+        options = mp.tasks.vision.PoseLandmarkerOptions(
+            base_options=mp.tasks.BaseOptions(model_asset_path=str(model_path)),
+            running_mode=mp.tasks.vision.RunningMode.VIDEO,
+            num_poses=1,
+            min_pose_detection_confidence=0.5,
+            min_pose_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
         )
+        self.pose = mp.tasks.vision.PoseLandmarker.create_from_options(options)
 
-    def calculate_metrics(self, frame: Any) -> dict[str, float] | None:
+    def calculate_metrics(self, frame: Any, color_space: str = "bgr") -> dict[str, float] | None:
         import cv2  # type: ignore
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(rgb)
+        if color_space not in {"bgr", "rgb"}:
+            raise ValueError(f"unsupported camera color space: {color_space}")
+        rgb = frame if color_space == "rgb" else cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image = self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=rgb)
+        timestamp_ms = max(int(time.monotonic() * 1000), self._last_timestamp_ms + 1)
+        self._last_timestamp_ms = timestamp_ms
+        results = self.pose.detect_for_video(image, timestamp_ms)
 
         if not results.pose_landmarks:
             return None
 
-        landmarks = results.pose_landmarks.landmark
+        landmarks = results.pose_landmarks[0]
         if len(landmarks) < 25:
             return None
 
@@ -68,20 +81,36 @@ class MediaPipePoseDetector:
             "torso": round(torso, 1),
         }
 
+    def close(self) -> None:
+        self.pose.close()
 
-def get_detector() -> Any:
-    global _pose_detector
-    if _pose_detector is None:
+
+def get_detector(model_path: str | Path) -> MediaPipePoseDetector:
+    global _pose_detector, _detector_model_path
+    resolved_model_path = Path(model_path).resolve()
+    if _pose_detector is None or _detector_model_path != resolved_model_path:
+        if _pose_detector is not None:
+            _pose_detector.close()
         try:
-            _pose_detector = MediaPipePoseDetector()
-            logger.info("initialized MediaPipe Pose detector (model_complexity=0)")
+            _pose_detector = MediaPipePoseDetector(resolved_model_path)
+            _detector_model_path = resolved_model_path
+            logger.info("initialized MediaPipe Pose Landmarker Full: %s", resolved_model_path)
         except Exception as exc:
-            logger.warning("could not initialize MediaPipe (%s), falling back to demo metrics", exc)
-            _pose_detector = "fallback"
+            # Sending fabricated values is worse than temporarily sending no
+            # values: it can create false posture alerts and corrupt history.
+            raise RuntimeError(f"could not initialize MediaPipe Pose: {exc}") from exc
     return _pose_detector
 
 
-def run_detection_cycle(camera: Any, config: dict, uploader: Any) -> None:
+def close_detector() -> None:
+    global _pose_detector, _detector_model_path
+    if _pose_detector is not None:
+        _pose_detector.close()
+    _pose_detector = None
+    _detector_model_path = None
+
+
+def run_detection_cycle(camera: Any, config: dict, uploader: Any, alert_controller: Any | None = None) -> None:
     """Read one frame, calculate pose metrics, and forward to backend."""
     import cv2  # type: ignore
 
@@ -90,32 +119,19 @@ def run_detection_cycle(camera: Any, config: dict, uploader: Any) -> None:
         logger.warning("failed to read frame from camera")
         return
 
-    flip = camera.flip
+    flip = getattr(camera, "flip", 0)
     if flip:
         frame = cv2.flip(frame, flip)
 
-    detector = get_detector()
-    if detector != "fallback":
-        metrics = detector.calculate_metrics(frame)
-    else:
-        metrics = _placeholder_metrics()
+    detector = get_detector(config["detection"]["model"])
+    metrics = detector.calculate_metrics(frame, getattr(camera, "color_space", "bgr"))
 
     if metrics:
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
         uploader.send_sample(metrics)
 
-        # Check risk threshold for alert trigger
-        threshold = config.get("risk", {}).get("threshold", 60)
-        if metrics["score"] < threshold:
-            logger.info("low posture score detected (%s < %s), sending alert", metrics["score"], threshold)
-            uploader.send_alert({
-                "severity": "risk",
-                "message": f"ตรวจพบท่านั่งที่ควรปรับ (คะแนน {metrics['score']})"
-            })
+        if alert_controller is not None:
+            alert_controller.update(metrics)
     else:
         logger.debug("no pose landmarks detected in frame")
-
-
-def _placeholder_metrics() -> dict[str, float]:
-    return {"score": 75.0, "neck": 15.0, "shoulders": 10.0, "torso": 5.0}

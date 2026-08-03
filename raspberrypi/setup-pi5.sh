@@ -1,65 +1,125 @@
-#!/bin/bash
-# ==============================================================================
-# PostureAI / OfficeGuardian — Raspberry Pi 5 One-Command Automated Setup
-# ==============================================================================
+#!/usr/bin/env bash
+# PostureAI — Raspberry Pi 5 all-in-one installer (Pi Camera + web + backend).
+set -Eeuo pipefail
 
-set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+INSTALL_USER="${SUDO_USER:-$USER}"
+DOCKER_BIN="$(command -v docker || true)"
 
-echo "🚀 [PostureAI] Starting Raspberry Pi 5 System Setup..."
+fail() { echo "ERROR: $*" >&2; exit 1; }
 
-# 1. Update APT and install required dependencies
-echo "📦 [1/4] Installing system dependencies & Docker..."
-sudo apt-get update -y
-sudo apt-get install -y docker.io docker-compose-v2 python3-venv git curl
+if [ "$(uname -m)" != "aarch64" ]; then
+    fail "This installer requires a 64-bit ARM Raspberry Pi OS (aarch64)."
+fi
+if [ ! -r /etc/os-release ]; then
+    fail "Cannot identify the operating system. Raspberry Pi OS Bookworm is required."
+fi
+. /etc/os-release
+if [ "${VERSION_CODENAME:-}" != "bookworm" ]; then
+    fail "Raspberry Pi OS Bookworm is required (found ${PRETTY_NAME:-unknown})."
+fi
+if [ "$EUID" -eq 0 ]; then
+    fail "Run this script as your normal Pi user, without sudo."
+fi
 
-# Add current user to docker group
-sudo usermod -aG docker $USER || true
+echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
+sudo apt-get update
+sudo apt-get install -y \
+    docker.io docker-compose-v2 python3-venv python3-picamera2 python3-opencv \
+    libgl1 alsa-utils curl
 
-# 2. Build and launch full-stack containers
-echo "🐳 [2/4] Building & launching Docker Compose stack..."
-cd "$(dirname "$0")/.."
+DOCKER_BIN="$(command -v docker || true)"
+[ -n "$DOCKER_BIN" ] || fail "docker was not installed successfully"
+sudo "$DOCKER_BIN" compose version >/dev/null || fail "Docker Compose v2 is unavailable after installation"
 
-# Wait until Docker daemon is ready
-echo "⏳ Waiting for Docker daemon..."
-sudo systemctl start docker 2>/dev/null || true
-until sudo docker info >/dev/null 2>&1; do sleep 1; done
+echo "[2/6] Granting camera/audio access to $INSTALL_USER..."
+sudo usermod -aG docker,video,audio "$INSTALL_USER"
 
-sudo docker compose down --remove-orphans || true
-sudo docker compose up --build -d
+echo "[3/6] Creating the Pi sensor environment..."
+cd "$SCRIPT_DIR"
+python3 -m venv --system-site-packages .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+MODEL_PATH="$PROJECT_DIR/frontend/public/models/pose_landmarker_full.task"
+if [ ! -s "$MODEL_PATH" ]; then
+    echo "Downloading MediaPipe Pose Landmarker Full model..."
+    mkdir -p "$(dirname "$MODEL_PATH")"
+    curl -fL --retry 2 -o "$MODEL_PATH" \
+        https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
+fi
+if [ ! -f config.yaml ]; then
+    cp config.example.yaml config.yaml
+fi
 
-# 3. Create Systemd Service for Auto-Start on Reboot
-echo "⚙️ [3/4] Registering Systemd auto-start service..."
-SERVICE_PATH="/etc/systemd/system/postureai.service"
-PROJECT_DIR="$(pwd)"
+echo "[4/6] Building and starting the web/backend containers..."
+cd "$PROJECT_DIR"
+mkdir -p database
+sudo "$DOCKER_BIN" compose up --build -d --remove-orphans
 
-sudo bash -c "cat <<EOF > $SERVICE_PATH
+echo "Waiting for backend health check..."
+for attempt in $(seq 1 30); do
+    if curl -fsS http://127.0.0.1:8000/api/health >/dev/null; then
+        break
+    fi
+    if [ "$attempt" -eq 30 ]; then
+        sudo "$DOCKER_BIN" compose ps
+        fail "backend did not become healthy; inspect logs with: sudo docker compose logs backend"
+    fi
+    sleep 2
+done
+
+echo "[5/6] Verifying MediaPipe, Pi Camera, and backend..."
+cd "$SCRIPT_DIR"
+.venv/bin/python posture_client.py --config config.yaml --check
+
+echo "[6/6] Registering services to start after every reboot..."
+sudo tee /etc/systemd/system/postureai-stack.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI OfficeGuardian Container Stack
-After=docker.service network-online.target
+Description=PostureAI web and backend containers
+Wants=network-online.target
+After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
-Type=simple
-Restart=on-failure
-RestartSec=5s
+Type=oneshot
+RemainAfterExit=yes
 WorkingDirectory=$PROJECT_DIR
-ExecStart=/usr/bin/docker compose up
-ExecStop=/usr/bin/docker compose down
+ExecStart=$DOCKER_BIN compose up -d --remove-orphans
+ExecStop=$DOCKER_BIN compose down
+TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
-EOF"
+EOF
+
+sudo tee /etc/systemd/system/postureai-client.service >/dev/null <<EOF
+[Unit]
+Description=PostureAI Pi Camera sensor client
+Wants=network-online.target
+After=network-online.target postureai-stack.service
+Requires=postureai-stack.service
+
+[Service]
+Type=simple
+User=$INSTALL_USER
+SupplementaryGroups=video audio
+WorkingDirectory=$SCRIPT_DIR
+Environment=PYTHONUNBUFFERED=1
+ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/posture_client.py --config $SCRIPT_DIR/config.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable postureai.service
+sudo systemctl enable --now postureai-stack.service
+sudo systemctl enable --now postureai-client.service
 
-# 4. Display Access Details
-PI_IP=$(hostname -I | awk '{print $1}')
-echo ""
-echo "=============================================================================="
-echo "✅ [PostureAI] Setup Completed Successfully!"
-echo "=============================================================================="
-echo "🌐 Local LAN Access URL:  http://$PI_IP:3000"
-echo "⚙️  Backend Health Check: http://$PI_IP:8000/api/health"
-echo "🔄 Auto-start service registered (postureai.service enabled)"
-echo "=============================================================================="
+PI_IP="$(hostname -I | awk '{print $1}')"
+echo
+echo "PostureAI is ready. Open: http://$PI_IP:3000"
+echo "Status: sudo systemctl status postureai-stack postureai-client"
+echo "Logs:   sudo journalctl -u postureai-client -f"

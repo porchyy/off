@@ -55,11 +55,10 @@ if (tfPkgDir && existsSync(join(tfPkgDir, 'tf.min.js'))) {
 const customModelsDir = join(publicDir, 'models', 'custom');
 mkdirSync(customModelsDir, { recursive: true });
 
-if (!existsSync(join(publicDir, 'models', 'pose_landmarker_lite.task'))) {
+if (!existsSync(join(publicDir, 'models', 'pose_landmarker_full.task'))) {
   console.warn(
-    '[copy-ai-assets] NOTE: public/models/pose_landmarker_lite.task is missing.\n' +
+    '[copy-ai-assets] NOTE: public/models/pose_landmarker_full.task is missing.\n' +
     '  The app will not be able to start pose detection until you download it once — see\n' +
     '  public/models/README.md for instructions.'
   );
 }
-

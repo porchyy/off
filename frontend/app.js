@@ -1,4 +1,3 @@
-import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js?module';
 import { createStorage, defaultSettings } from './storage.js';
 import { scorePose } from './pose-utils.js';
 import * as PoseModel from './pose-model.js';
@@ -9,6 +8,11 @@ const canvas = $('overlay');
 const ctx = canvas.getContext('2d');
 const start = $('start');
 const stop = $('stop');
+
+// This file is copied to public/ during npm install. Keep it as a runtime
+// import so Vite serves the local MediaPipe runtime without bundling it.
+const visionTasksUrl = '/vision_bundle.js';
+const loadVisionTasks = () => import(/* @vite-ignore */ visionTasksUrl);
 
 let storage;
 let landmarker;
@@ -273,22 +277,28 @@ async function begin() {
   }
   start.disabled = true;
   try {
-    let vision, modelPath;
+    const { FilesetResolver, PoseLandmarker } = await loadVisionTasks();
+    const vision = await FilesetResolver.forVisionTasks('./wasm');
+    const modelPath = './models/pose_landmarker_full.task';
     try {
-      vision = await FilesetResolver.forVisionTasks('./wasm');
-      modelPath = './models/pose_landmarker_lite.task';
       landmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
         runningMode: 'VIDEO',
-        numPoses: 1
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
       });
     } catch {
-      vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm');
-      modelPath = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+      // GPU delegates are not available in every browser. CPU keeps the
+      // application usable without sending camera frames to a remote service.
       landmarker = await PoseLandmarker.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+        baseOptions: { modelAssetPath: modelPath, delegate: 'CPU' },
         runningMode: 'VIDEO',
-        numPoses: 1
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
       });
     }
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
@@ -306,8 +316,8 @@ async function begin() {
     console.error(e);
     state('เริ่มไม่ได้', 'risk');
     start.disabled = false;
-    toast(navigator.onLine ? 'เปิดกล้องหรือ AI ไม่สำเร็จ โปรดอนุญาตกล้องแล้วลองใหม่' : 'ไม่มีอินเทอร์เน็ต จึงโหลด AI จาก CDN ไม่ได้');
-    $('cameraHelp').textContent = 'ถ้าต้องใช้งานออฟไลน์เต็มรูปแบบ ให้ดาวน์โหลด MediaPipe model มาเสิร์ฟในเครื่องแทน CDN';
+    toast('เปิดกล้องหรือ AI ไม่สำเร็จ โปรดอนุญาตกล้องแล้วลองใหม่');
+    $('cameraHelp').textContent = 'ตรวจสอบว่าไฟล์ AI ในเครื่องถูกติดตั้งครบ แล้วอนุญาตการใช้กล้อง';
   }
 }
 
@@ -316,6 +326,8 @@ function end() {
   cancelAnimationFrame(frame);
   stream?.getTracks().forEach(t => t.stop());
   stream = null;
+  landmarker?.close();
+  landmarker = null;
   video.srcObject = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   detectionSignal = 'neutral';
