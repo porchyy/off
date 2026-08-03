@@ -90,7 +90,7 @@ def run_detection_cycle(camera: Any, config: dict, uploader: Any) -> None:
         logger.warning("failed to read frame from camera")
         return
 
-    flip = getattr(camera, "_postureai_flip", 0)
+    flip = camera.flip
     if flip:
         frame = cv2.flip(frame, flip)
 

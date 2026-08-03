@@ -8,8 +8,22 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def open_camera(config: dict) -> Any:
-    """Open the configured camera with retry logic. Returns an object with read()/release()."""
+class Camera:
+    """Camera adapter that keeps client metadata outside OpenCV objects."""
+
+    def __init__(self, device: Any, flip: int) -> None:
+        self.device = device
+        self.flip = flip
+
+    def read(self) -> tuple[bool, Any]:
+        return self.device.read()
+
+    def release(self) -> None:
+        self.device.release()
+
+
+def open_camera(config: dict) -> Camera:
+    """Open the configured camera with retry logic."""
     import cv2  # type: ignore
 
     index = int(config.get("index", 0))
@@ -25,11 +39,9 @@ def open_camera(config: dict) -> Any:
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         if cap.isOpened():
             logger.info("opened camera index=%s width=%s height=%s flip=%s (attempt %s)", index, width, height, flip, attempt)
-            cap._postureai_flip = flip  # type: ignore[attr-defined]
-            return cap
+            return Camera(cap, flip)
         logger.warning("failed to open camera index=%s on attempt %s/%s", index, attempt, retries)
         if cap:
             cap.release()
 
     raise RuntimeError(f"failed to open camera at index {index} after {retries} attempts")
-
