@@ -1391,3 +1391,74 @@ body {
   .container { padding: 32px 18px 72px; }
   .badge-group { width: 100%; margin-top: 6px; flex-wrap: wrap; }
 }
+
+/* Presentation hierarchy */
+.intro {
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: end;
+  gap: 48px;
+  padding: 12px 0 40px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.intro-copy { max-width: 680px; }
+.intro h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  margin-bottom: 14px;
+}
+.intro-desc { max-width: 610px; font-size: 15px; }
+
+.system-overview {
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.overview-title {
+  margin: 0 0 12px;
+  color: var(--text-heading);
+  font-size: 13px;
+  font-weight: 700;
+}
+.system-overview dl { margin: 0; }
+.system-overview dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.system-overview dt { color: var(--text-secondary); }
+.system-overview dd { margin: 0; color: var(--text-heading); font-weight: 600; text-align: right; }
+
+.section-header { margin-top: 32px; margin-bottom: 20px; }
+.section-heading { font-size: 22px; }
+.card-head { padding-bottom: 14px; margin-bottom: 0; border-bottom: 1px solid var(--border-subtle); }
+.camera.card { padding: 20px; }
+.metrics { gap: 14px; }
+.score { padding: 24px; border-top: 3px solid var(--brand-primary); }
+.score output { font-size: 64px; }
+.risk-card { border-left: 3px solid var(--border-default); }
+.risk-card.good { border-left-color: var(--status-good); }
+.risk-card.risk { border-left-color: var(--status-risk); }
+.details { padding-top: 20px; }
+.detail-row { padding: 12px 0; }
+.disclaimer { margin-top: 12px; color: var(--text-tertiary); font-size: 12px; }
+
+.summary { gap: 14px; }
+.summary-card { border-radius: 10px; }
+.chart-card { padding: 20px; }
+.events li { border-radius: 8px; }
+.settings-grid, .privacy-grid { gap: 14px; }
+.privacy-card { padding: 8px 24px; }
+.privacy-item { padding: 18px 0; }
+
+@media (max-width: 900px) {
+  .intro { grid-template-columns: 1fr; gap: 22px; }
+  .system-overview { max-width: 460px; }
+}

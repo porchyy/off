@@ -58,9 +58,19 @@
     <section id="monitor" class="section-block active">
       <!-- Hero Section inside Monitor -->
       <div class="intro">
-        <p class="eyebrow">ระบบติดตามท่านั่งในเครือข่ายภายใน</p>
-        <h1>ติดตามท่านั่ง<br><em>อย่างเป็นระบบ</em></h1>
-        <p class="intro-desc">ประมวลผลภาพจาก Pi Camera ภายในระบบ และบันทึกเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือน</p>
+        <div class="intro-copy">
+          <p class="eyebrow">ระบบติดตามท่านั่งในเครือข่ายภายใน</p>
+          <h1>ติดตามท่านั่ง<br><em>อย่างเป็นระบบ</em></h1>
+          <p class="intro-desc">ประมวลผลภาพจาก Pi Camera ภายในระบบ และบันทึกเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือน</p>
+        </div>
+        <aside class="system-overview" aria-label="สรุปองค์ประกอบของระบบ">
+          <p class="overview-title">องค์ประกอบของระบบ</p>
+          <dl>
+            <div><dt>อุปกรณ์</dt><dd>Raspberry Pi 5</dd></div>
+            <div><dt>การประมวลผล</dt><dd>ภายในอุปกรณ์</dd></div>
+            <div><dt>ข้อมูลที่จัดเก็บ</dt><dd>คะแนนและเหตุการณ์</dd></div>
+          </dl>
+        </aside>
       </div>
       <div class="section-header">
         <div class="section-icon monitor-accent">
@@ -109,7 +119,7 @@
         <aside class="metrics">
           <!-- Posture Score -->
           <article class="score card">
-            <p class="metric-label">POSTURE SCORE</p>
+            <p class="metric-label">คะแนนท่านั่ง</p>
             <output id="score">--</output>
             <strong id="status">รอเริ่มต้น</strong>
             <span id="advice" class="advice-text">จัดกล้องให้เห็นช่วงไหล่และลำตัว</span>
@@ -117,7 +127,7 @@
 
           <!-- Office Syndrome Risk -->
           <article id="officeRiskCard" class="risk-card card neutral" aria-live="polite">
-            <p class="metric-label">OFFICE SYNDROME RISK</p>
+            <p class="metric-label">การประเมินความเสี่ยง</p>
             <strong id="officeRisk">ยังไม่ประเมิน</strong>
             <span id="riskReason">เริ่มการวิเคราะห์เพื่อประเมินความเสี่ยงจากท่านั่งและท่าค้าง</span>
           </article>
