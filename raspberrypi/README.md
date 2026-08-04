@@ -109,6 +109,7 @@ python posture_client.py --config config.yaml
 
 1. **Live camera pipeline**: Pi Camera จับภาพต่อเนื่องหนึ่งชุดที่ 640×480 / 10 FPS
    ในหน่วยความจำเท่านั้น แล้วส่งเป็น WebRTC ไปยัง dashboard ใน LAN (ไม่มีการบันทึกภาพลงดิสก์)
+   Picamera2 ใช้ชื่อ `RGB888`; หน้าเว็บแสดงชื่อ V4L2 ที่เทียบเท่ากันคือ `RGB3` (24-bit RGB).
 2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.2 วินาที
    (5 FPS) → POST เฉพาะคะแนนไป backend
 3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`

@@ -433,7 +433,11 @@ function connectPiCamera() {
     } else if (message.type === 'answer') {
       await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
     } else if (message.type === 'stream_info') {
+      const colorMode = message.displayColorMode || message.cameraFormat || 'unknown';
+      $('streamColorMode').textContent = `Stream: ${colorMode} · RGB`;
+      $('streamColorMode').className = 'badge good';
       console.log('[PostureAI] actual Pi Camera stream format:', message.cameraFormat, {
+        displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
       });
     } else if (message.type === 'error') {

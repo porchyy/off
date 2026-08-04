@@ -123,6 +123,7 @@ async def camera_webrtc(websocket: WebSocket) -> None:
                     print(
                         "PostureAI actual Pi Camera stream format: "
                         f"{payload.get('cameraFormat', 'unknown')} "
+                        f"[{payload.get('displayColorMode', 'unknown')}] "
                         f"(normalized output: {payload.get('outputColorSpace', 'unknown')})",
                         flush=True,
                     )

@@ -68,9 +68,13 @@ class PiWebRtcSender:
                     async for raw in socket:
                         message = json.loads(raw)
                         if message.get("type") == "offer":
+                            display_mode = {"RGB888": "RGB3", "BGR888": "BGR3"}.get(
+                                self.camera_format, self.camera_format
+                            )
                             await socket.send(json.dumps({
                                 "type": "stream_info",
                                 "cameraFormat": self.camera_format,
+                                "displayColorMode": display_mode,
                                 "outputColorSpace": self.color_space,
                             }))
                             await self._answer_offer(socket, message)
