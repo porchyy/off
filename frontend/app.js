@@ -434,7 +434,7 @@ function connectPiCamera() {
       await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
     } else if (message.type === 'stream_info') {
       const colorMode = message.displayColorMode || message.cameraFormat || 'unknown';
-      $('streamColorMode').textContent = `Stream: ${colorMode} · RGB`;
+      $('streamColorMode').textContent = `รูปแบบภาพ: ${colorMode} · RGB`;
       $('streamColorMode').className = 'badge good';
       console.log('[PostureAI] actual Pi Camera stream format:', message.cameraFormat, {
         displayColorMode: colorMode,
@@ -670,7 +670,7 @@ function updateModelStatusBadge() {
       badge.className = 'badge good';
     }
     if (activeAiBadge) {
-      activeAiBadge.textContent = '🧠 AI ส่วนตัว (Active)';
+      activeAiBadge.textContent = 'โมเดลส่วนตัวกำลังใช้งาน';
       activeAiBadge.className = 'badge good';
     }
   } else {
@@ -732,7 +732,7 @@ $('trainModelBtn')?.addEventListener('click', async () => {
     });
 
     if (text) text.textContent = 'เทรนโมเดลสำเร็จ!';
-    toast('🎉 เทรนโมเดล AI ส่วนตัวสำเร็จแล้ว!');
+    toast('เทรนโมเดล AI ส่วนตัวสำเร็จแล้ว');
     updateTrainerUI();
 
     const toggle = $('toggleCustomModel');
@@ -742,7 +742,7 @@ $('trainModelBtn')?.addEventListener('click', async () => {
 
     // Auto-save trained AI model to local browser storage (IndexedDB)
     await PoseModel.saveModelToLocal();
-    toast('💾 บันทึกโมเดล AI ส่วนตัวลงในเบราว์เซอร์เรียบร้อยแล้ว');
+    toast('บันทึกโมเดล AI ส่วนตัวลงในเบราว์เซอร์เรียบร้อยแล้ว');
   } catch (err) {
     console.error(err);
     toast(err.message || 'เกิดข้อผิดพลาดในการเทรนโมเดล');
@@ -755,7 +755,7 @@ $('trainModelBtn')?.addEventListener('click', async () => {
 $('saveModelBtn')?.addEventListener('click', async () => {
   try {
     await PoseModel.saveModel('custom-posture-model');
-    toast('💾 ดาวน์โหลดไฟล์โมเดลสำเร็จ');
+    toast('ดาวน์โหลดไฟล์โมเดลสำเร็จ');
   } catch (err) {
     toast(err.message || 'บันทึกโมเดลไม่สำเร็จ');
   }
@@ -775,7 +775,7 @@ $('modelFileInput')?.addEventListener('change', async (e) => {
     if (toggle) toggle.checked = true;
     useCustomModel = true;
     updateModelStatusBadge();
-    toast('📂 โหลดโมเดลที่เลือกเรียบร้อย');
+    toast('โหลดโมเดลที่เลือกเรียบร้อย');
   } catch (err) {
     console.error(err);
     toast('โหลดโมเดลไม่สำเร็จ กรุณาเลือกไฟล์ model.json และ model.weights.bin พร้อมกัน');

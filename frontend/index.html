@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c1024">
+  <meta name="theme-color" content="#f4f7fb">
   <meta name="description" content="PostureAI - ระบบติดตามท่านั่งด้วย AI แบบส่วนตัว ทำงานบนอุปกรณ์ของคุณ">
   <title>PostureAI | ระบบติดตามท่านั่ง</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,9 +58,9 @@
     <section id="monitor" class="section-block active">
       <!-- Hero Section inside Monitor -->
       <div class="intro">
-        <p class="eyebrow">🛡️ PRIVATE · ON-DEVICE AI</p>
-        <h1>ดูแลท่านั่งของคุณ<br><em>แบบเรียลไทม์</em></h1>
-        <p class="intro-desc">AI วิเคราะห์จุดบนร่างกายในเบราว์เซอร์ วิดีโอไม่ถูกอัปโหลดหรือบันทึก<br>เวอร์ชันนี้เก็บเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือนไว้ในเครื่องของผู้ใช้</p>
+        <p class="eyebrow">ระบบติดตามท่านั่งในเครือข่ายภายใน</p>
+        <h1>ติดตามท่านั่ง<br><em>อย่างเป็นระบบ</em></h1>
+        <p class="intro-desc">ประมวลผลภาพจาก Pi Camera ภายในระบบ และบันทึกเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือน</p>
       </div>
       <div class="section-header">
         <div class="section-icon monitor-accent">
@@ -78,7 +78,7 @@
             <div class="card-head">
               <h3>Pi Camera และการวิเคราะห์</h3>
               <div class="badge-group ml-auto">
-                <span id="streamColorMode" class="badge neutral">Stream: รอข้อมูลสี</span>
+                <span id="streamColorMode" class="badge neutral">รูปแบบภาพ: รอข้อมูล</span>
                 <span id="activeAiBadge" class="badge neutral">สูตรคำนวณมาตรฐาน</span>
               <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
             </div>
@@ -125,10 +125,10 @@
           <!-- Detail Metrics -->
           <article class="card details">
             <h3>ตัวชี้วัดเชิงลึก</h3>
-            <div class="detail-row"><span>🔄 คอเอียง</span><b id="neck">--</b></div>
-            <div class="detail-row"><span>⚖️ ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div>
-            <div class="detail-row"><span>📐 การโน้มลำตัว</span><b id="torso">--</b></div>
-            <p class="disclaimer">⚕️ เป็นข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
+            <div class="detail-row"><span>คอเอียง</span><b id="neck">--</b></div>
+            <div class="detail-row"><span>ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div>
+            <div class="detail-row"><span>การโน้มลำตัว</span><b id="torso">--</b></div>
+            <p class="disclaimer">ข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
           </article>
         </aside>
       </div>
@@ -166,22 +166,22 @@
           
           <div class="tag-actions">
             <button id="tagGood" class="tag-btn tag-good" type="button">
-              <span>🟢 ท่านี้ดี</span>
+              <span>ท่าดี</span>
               <b id="countGood" class="tag-badge">0</b>
             </button>
             <button id="tagCaution" class="tag-btn tag-caution" type="button">
-              <span>🟡 ท่านี้ระวัง</span>
+              <span>ควรระวัง</span>
               <b id="countCaution" class="tag-badge">0</b>
             </button>
             <button id="tagRisk" class="tag-btn tag-risk" type="button">
-              <span>🔴 ท่านี้แย่</span>
+              <span>ควรปรับ</span>
               <b id="countRisk" class="tag-badge">0</b>
             </button>
           </div>
 
           <div class="dataset-info">
             <span>ตัวอย่างทั้งหมด: <b id="countTotal">0</b> / 45</span>
-            <button id="clearSamples" class="text-btn danger-text small" type="button">🗑️ ล้างตัวอย่างที่เก็บไว้</button>
+            <button id="clearSamples" class="text-btn danger-text small" type="button">ล้างตัวอย่างที่เก็บไว้</button>
           </div>
         </article>
 
@@ -235,9 +235,9 @@
           <h2 class="section-heading">สรุปของวันนี้</h2>
         </div>
         <div class="actions ml-auto">
-          <button id="exportCsv" class="outline small" type="button">📄 Export CSV</button>
-          <button id="exportJson" class="outline small" type="button">📋 Export JSON</button>
-          <button id="refresh" class="outline small" type="button">🔄 รีเฟรช</button>
+          <button id="exportCsv" class="outline small" type="button">ส่งออก CSV</button>
+          <button id="exportJson" class="outline small" type="button">ส่งออก JSON</button>
+          <button id="refresh" class="outline small" type="button">รีเฟรชข้อมูล</button>
         </div>
       </div>
 
@@ -261,8 +261,8 @@
       <article class="card chart-card">
         <div class="chart-header">
           <div class="chart-tabs">
-            <button id="btnDailyChart" class="chart-tab active" type="button">📊 คะแนนเฉลี่ยรายวัน</button>
-            <button id="btnWeeklyChart" class="chart-tab" type="button">🔔 แจ้งเตือนรายสัปดาห์</button>
+            <button id="btnDailyChart" class="chart-tab active" type="button">คะแนนเฉลี่ยรายวัน</button>
+            <button id="btnWeeklyChart" class="chart-tab" type="button">แจ้งเตือนรายสัปดาห์</button>
           </div>
         </div>
         <div class="chart-container">
@@ -273,7 +273,7 @@
 
       <!-- Recent Events -->
       <article class="card">
-        <h3>📋 เหตุการณ์ล่าสุด</h3>
+        <h3>เหตุการณ์ล่าสุด</h3>
         <ol id="events" class="events"><li>ยังไม่มีข้อมูล เริ่มการวิเคราะห์เพื่อบันทึกผล</li></ol>
       </article>
     </section>
@@ -295,27 +295,27 @@
 
       <div class="settings-grid">
         <label class="card setting">
-          <span class="setting-label">⚠️ คะแนนต่ำกว่าเท่าไรถือว่าเสี่ยง</span>
+          <span class="setting-label">เกณฑ์คะแนนความเสี่ยง</span>
           <input id="riskThreshold" type="number" min="1" max="99" step="1">
         </label>
         <label class="card setting">
-          <span class="setting-label">⏱️ นั่งผิดท่าต่อเนื่องกี่วินาทีถึงขึ้นแดง</span>
+          <span class="setting-label">ระยะเวลาท่านั่งเสี่ยงต่อเนื่อง (วินาที)</span>
           <input id="riskSeconds" type="number" min="5" max="600" step="5">
         </label>
         <label id="dataDirField" class="card setting" hidden>
-          <span class="setting-label">📁 ตำแหน่งฐานข้อมูล <em>(เฉพาะตอนรันกับ Node server)</em></span>
+          <span class="setting-label">ตำแหน่งฐานข้อมูล <em>(เฉพาะเมื่อรันกับ Node server)</em></span>
           <input id="dataDir" type="text" autocomplete="off">
         </label>
         <label class="card setting toggle">
-          <span class="setting-label">🔊 เสียงแจ้งเตือน (Beep)</span>
+          <span class="setting-label">เสียงแจ้งเตือน</span>
           <input id="soundEnabled" type="checkbox">
         </label>
         <label class="card setting toggle">
-          <span class="setting-label">🗣️ เสียงพูดเตือนภาษาไทย ("กรุณายืดหลังตรงครับ")</span>
+          <span class="setting-label">เสียงพูดเตือนภาษาไทย</span>
           <input id="voiceEnabled" type="checkbox">
         </label>
         <label class="card setting toggle">
-          <span class="setting-label">🔔 Desktop notification</span>
+          <span class="setting-label">การแจ้งเตือนบนอุปกรณ์</span>
           <input id="desktopEnabled" type="checkbox">
         </label>
       </div>
@@ -353,21 +353,21 @@
       <div class="card privacy-card">
         <div class="privacy-grid">
           <div class="privacy-item">
-            <div class="privacy-icon">🛡️</div>
+            <div class="privacy-icon" aria-hidden="true"></div>
             <div>
               <strong>ประมวลผลในเครื่อง</strong>
               <p>กล้องและโมเดล AI ทำงานในอุปกรณ์ของคุณ วิดีโอไม่ถูกส่งไปยัง server ใดทั้งสิ้น</p>
             </div>
           </div>
           <div class="privacy-item">
-            <div class="privacy-icon">📊</div>
+            <div class="privacy-icon" aria-hidden="true"></div>
             <div>
               <strong>เก็บเฉพาะตัวเลข</strong>
               <p>ระบบบันทึกเฉพาะคะแนน posture, มุมโดยประมาณ และเวลาไว้ในเครื่องนี้เท่านั้น</p>
             </div>
           </div>
           <div class="privacy-item">
-            <div class="privacy-icon">🗑️</div>
+            <div class="privacy-icon" aria-hidden="true"></div>
             <div>
               <strong>ลบหรือ export ได้ตลอด</strong>
               <p>คุณสามารถลบหรือ export ข้อมูลทั้งหมดได้จากหน้าเว็บนี้ตลอดเวลา</p>
@@ -381,7 +381,7 @@
 
   <!-- ── Risk Popup ── -->
   <div id="riskPopup" class="risk-popup" role="alert" aria-live="assertive" hidden>
-    <div class="risk-popup-icon">⚠️</div>
+    <div class="risk-popup-icon" aria-hidden="true"></div>
     <div class="risk-popup-content">
       <strong>เสี่ยงจากท่านั่ง</strong>
       <span>ลุกพักหรือปรับเก้าอี้/จอภาพสักครู่</span>
