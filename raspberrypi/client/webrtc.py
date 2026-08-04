@@ -108,8 +108,8 @@ class PiWebRtcSender:
                     image, _ = frames.get()
                     if image is None:
                         await asyncio.sleep(0.05)
-                # Frames from CameraProducer are normalized to RGB. Keep this
-                # fallback for alternate BGR camera implementations.
+                # Frames from CameraProducer are RGB. Keep this fallback for
+                # alternate BGR camera implementations.
                 if color_space == "bgr":
                     image = image[:, :, ::-1].copy()
                 output = VideoFrame.from_ndarray(image, format="rgb24")

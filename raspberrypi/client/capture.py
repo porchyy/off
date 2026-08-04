@@ -35,8 +35,8 @@ class CameraProducer:
     def __init__(self, camera: "Camera", fps: float) -> None:
         self.camera = camera
         self.fps = max(1.0, fps)
-        # The Pi Camera supplies BGR; publish one normalized RGB frame to all
-        # consumers so AI and WebRTC cannot disagree about channel order.
+        # Publish one normalized RGB frame to all consumers so AI and WebRTC
+        # cannot disagree about channel order.
         self.color_space = "rgb" if camera.color_space == "bgr" else camera.color_space
         self.frames = LatestFrameBuffer()
         self.failures = 0
@@ -105,13 +105,13 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
 
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(
-        # Capture a defined BGR frame. Consumers convert it explicitly at
-        # their boundary instead of relying on camera-format assumptions.
-        main={"size": (width, height), "format": "BGR888"}
+        # Request RGB directly from the Pi ISP so the shared live frame can
+        # be sent to AI and WebRTC without channel-order conversion.
+        main={"size": (width, height), "format": "RGB888"}
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
-    return Camera(camera, "picamera2", flip, color_space="bgr")
+    return Camera(camera, "picamera2", flip, color_space="rgb")
 
 
 def _camera_indices(index: Any) -> list[int]:
