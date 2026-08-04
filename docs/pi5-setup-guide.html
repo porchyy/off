@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>คู่มือติดตั้ง PostureAI บน Raspberry Pi 5</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    body { font-family: Arial, "Noto Sans Thai", "Th Sarabun New", sans-serif; color: #172033; font-size: 12pt; line-height: 1.55; }
+    h1 { color: #075985; font-size: 24pt; margin: 0 0 5px; }
+    h2 { color: #075985; font-size: 16pt; border-bottom: 1px solid #bae6fd; margin-top: 25px; padding-bottom: 4px; }
+    .lead { color: #475569; margin-top: 0; }
+    .box { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 10px 14px; margin: 14px 0; }
+    .warn { background: #fff7ed; border-left-color: #ea580c; }
+    code { font-family: Menlo, Consolas, monospace; font-size: 9.5pt; }
+    pre { background: #0f172a; color: #e2e8f0; border-radius: 4px; padding: 11px; white-space: pre-wrap; font-size: 9.5pt; line-height: 1.45; }
+    li { margin: 4px 0; }
+    .check li { list-style: "☐  "; padding-left: 4px; }
+    .small { font-size: 10pt; color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>ติดตั้ง PostureAI บน Raspberry Pi 5</h1>
+  <p class="lead">สำหรับ Raspberry Pi 5 (8 GB) + Raspberry Pi Camera Module: ล้างเครื่อง ลง Raspberry Pi OS และเปิดระบบตรวจท่านั่ง</p>
+
+  <div class="box warn"><strong>คำเตือน:</strong> การเขียน Raspberry Pi OS ลง microSD จะลบข้อมูลทั้งหมดบนการ์ดใบนั้น ตรวจชื่อไดรฟ์ให้ถูกก่อนกด Write</div>
+
+  <h2>ของที่ต้องมี</h2>
+  <ul class="check">
+    <li>Raspberry Pi 5 รุ่น RAM 8 GB, microSD card (แนะนำ 32 GB ขึ้นไป) และไฟเลี้ยง</li>
+    <li>คอมพิวเตอร์สำหรับเขียน microSD และอินเทอร์เน็ต</li>
+    <li>Raspberry Pi Camera Module และสายแพ CSI ที่ต่อแน่นเรียบร้อย</li>
+    <li>เครือข่าย Wi-Fi หรือสาย LAN</li>
+  </ul>
+
+  <h2>สิ่งที่ต้องดาวน์โหลด</h2>
+  <ol>
+    <li><strong>Raspberry Pi Imager</strong> ลงบนคอมพิวเตอร์: <code>https://www.raspberrypi.com/software/</code></li>
+    <li>ไม่ต้องดาวน์โหลด Docker, Python, MediaPipe หรือไฟล์โมเดลเอง — สคริปต์ของโปรเจกต์จะติดตั้งให้หลังเปิด Pi แล้ว</li>
+  </ol>
+
+  <h2>1. สำรองข้อมูล (ถ้าต้องการ)</h2>
+  <p>หากต้องเก็บฐานข้อมูลจากเครื่องเดิม ให้รันบนคอมพิวเตอร์ (แทน <code>&lt;IP-Pi&gt;</code> ด้วย IP จริง):</p>
+  <pre>scp porchy@&lt;IP-Pi&gt;:/home/porchy/off/database/postureai.sqlite .</pre>
+  <p class="small">ถ้าไม่มีข้อมูลสำคัญ ข้ามขั้นตอนนี้ได้</p>
+
+  <h2>2. เขียนระบบปฏิบัติการใหม่</h2>
+  <ol>
+    <li>ปิด Pi แล้วถอด microSD มาเสียบคอมพิวเตอร์</li>
+    <li>เปิด Raspberry Pi Imager</li>
+    <li>เลือก <strong>Device</strong>: Raspberry Pi 5</li>
+    <li>เลือก <strong>OS</strong>: Raspberry Pi OS (other) → <strong>Raspberry Pi OS (Legacy, 64-bit)</strong> — ตัวนี้คือ Bookworm และมี Desktop</li>
+    <li>เลือก <strong>Storage</strong>: microSD ของ Pi</li>
+    <li>กดไอคอนรูปเฟือง หรือ Edit Settings แล้วตั้งค่า:
+      <ul>
+        <li>Hostname: <code>postureai</code></li>
+        <li>Username: <code>porchy</code></li>
+        <li>Password: ตั้งรหัสผ่านที่จำได้</li>
+        <li>Configure wireless LAN: ชื่อ Wi-Fi และรหัสผ่าน</li>
+        <li>Enable SSH: ใช้ password authentication</li>
+        <li>Timezone: <code>Asia/Bangkok</code></li>
+      </ul>
+    </li>
+    <li>กด Write และยืนยันการลบข้อมูล</li>
+  </ol>
+
+  <h2>3. เปิด Pi และเชื่อมต่อ</h2>
+  <ol>
+    <li>นำ microSD กลับไปใส่ Pi แล้วเปิดเครื่อง</li>
+    <li>รอ 1–2 นาทีให้ Pi ต่อ Wi-Fi</li>
+    <li>เปิด Terminal บนคอมพิวเตอร์ แล้วเชื่อมต่อ:</li>
+  </ol>
+  <pre>ssh porchy@postureai.local</pre>
+  <p>หากหาเครื่องไม่เจอ ให้ดู IP จากหน้า router แล้วใช้ <code>ssh porchy@&lt;IP-Pi&gt;</code></p>
+
+  <h2>4. ติดตั้งโปรเจกต์</h2>
+  <p>หลัง SSH เข้า Pi สำเร็จ ให้รันทีละบรรทัด:</p>
+  <pre>sudo apt update
+sudo apt full-upgrade -y
+sudo apt install -y git
+git clone https://github.com/porchyy/off.git
+cd off
+chmod +x raspberrypi/setup-pi5.sh
+./raspberrypi/setup-pi5.sh</pre>
+  <div class="box">คำสั่งสุดท้ายใช้เวลาหลายนาที เพราะติดตั้ง Docker, ไลบรารีกล้อง, MediaPipe, ไฟล์โมเดล และสร้างบริการให้เริ่มเองหลัง reboot</div>
+
+  <h2>5. เปิดใช้งาน</h2>
+  <p>ดู IP ของ Pi:</p>
+  <pre>hostname -I</pre>
+  <p>เปิดจากมือถือหรือคอมพิวเตอร์ที่อยู่ Wi-Fi เดียวกัน:</p>
+  <pre>http://&lt;IP-Pi&gt;:3000</pre>
+
+  <h2>ตรวจสอบหากมีปัญหา</h2>
+  <pre>sudo systemctl status postureai-stack postureai-client
+sudo journalctl -u postureai-client -f</pre>
+  <p>ทดสอบกล้องและ MediaPipe:</p>
+  <pre>cd ~/off/raspberrypi
+.venv/bin/python posture_client.py --config config.yaml --check</pre>
+
+  <h2>สรุปสำคัญ</h2>
+  <ul>
+    <li>ชุดเป้าหมายของโปรเจกต์นี้คือ <strong>Raspberry Pi 5 (8 GB) + Raspberry Pi Camera Module</strong></li>
+    <li>เลือก <strong>Raspberry Pi OS (Legacy, 64-bit)</strong> ซึ่งเป็น Bookworm พร้อม Desktop ไม่ใช่ Debian 13 ทั่วไป</li>
+    <li>ดาวน์โหลดเองแค่ Raspberry Pi Imager</li>
+    <li>ตั้ง Wi-Fi และ SSH ใน Imager ก่อนเขียน microSD จะสะดวกที่สุด</li>
+    <li>ห้ามรัน <code>./raspberrypi/setup-pi5.sh</code> ด้วย <code>sudo</code></li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# Local SQLite files (kept out of git; the docker volume mounts the folder at runtime)
+postureai.sqlite
+postureai.sqlite-shm
+postureai.sqlite-wal
