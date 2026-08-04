@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from client import detect
 
 
-def test_detection_converts_picamera_bgr_to_rgb_before_detection(monkeypatch):
+def test_detection_preserves_picamera_rgb_before_detection(monkeypatch):
     received = []
 
     class FakeDetector:
@@ -19,7 +19,7 @@ def test_detection_converts_picamera_bgr_to_rgb_before_detection(monkeypatch):
             return {"score": 90.0, "neck": 1.0, "shoulders": 2.0, "torso": 3.0}
 
     class FakeCamera:
-        color_space = "bgr"
+        color_space = "rgb"
         flip = 0
 
         def read(self):
@@ -31,20 +31,13 @@ def test_detection_converts_picamera_bgr_to_rgb_before_detection(monkeypatch):
         def send_sample(self, metrics):
             self.samples.append(metrics)
 
-    class FakeCv2:
-        COLOR_BGR2RGB = 1
-
-        @staticmethod
-        def cvtColor(frame, _conversion):
-            return f"rgb:{frame}"
-
-    monkeypatch.setitem(sys.modules, "cv2", FakeCv2)
+    monkeypatch.setitem(sys.modules, "cv2", object())
     monkeypatch.setattr(detect, "get_detector", lambda: FakeDetector())
     uploader = FakeUploader()
 
     detect.run_detection_cycle(FakeCamera(), {}, uploader)
 
-    assert received == [("rgb:picamera-frame", "rgb")]
+    assert received == [("picamera-frame", "rgb")]
     assert uploader.samples[0]["score"] == 90.0
 
 

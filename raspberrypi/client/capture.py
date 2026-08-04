@@ -59,10 +59,6 @@ class CameraProducer:
                 if self.camera.flip:
                     import cv2  # type: ignore
                     frame = cv2.flip(frame, self.camera.flip)
-                # Both MediaPipe and PyAV receive RGB data from this buffer.
-                if self.camera.color_space == "bgr":
-                    import cv2  # type: ignore
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 self.frames.put(frame)
                 self.failures = 0
                 self.last_error = None
@@ -103,14 +99,13 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
 
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(
-        # Picamera2's BGR output is converted once in CameraProducer before
-        # feeding both MediaPipe and WebRTC's RGB video frames. This avoids
-        # the blue/red channel swap seen with direct RGB888 previews.
-        main={"size": (width, height), "format": "BGR888"}
+        # Preserve the Pi Camera's native RGB888 output end-to-end. Neither
+        # WebRTC nor MediaPipe changes the live frame's color channels.
+        main={"size": (width, height), "format": "RGB888"}
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
-    return Camera(camera, "picamera2", flip, color_space="bgr")
+    return Camera(camera, "picamera2", flip, color_space="rgb")
 
 
 def _camera_indices(index: Any) -> list[int]:
