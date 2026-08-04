@@ -103,13 +103,14 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
 
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(
-        main={"size": (width, height), "format": "RGB888"}
+        # Picamera2's BGR output is converted once in CameraProducer before
+        # feeding both MediaPipe and WebRTC's RGB video frames. This avoids
+        # the blue/red channel swap seen with direct RGB888 previews.
+        main={"size": (width, height), "format": "BGR888"}
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
-    # Picamera2 returns RGB888 here.  Keep that information so the detector
-    # does not incorrectly treat it as OpenCV's usual BGR frame.
-    return Camera(camera, "picamera2", flip, color_space="rgb")
+    return Camera(camera, "picamera2", flip, color_space="bgr")
 
 
 def _camera_indices(index: Any) -> list[int]:
