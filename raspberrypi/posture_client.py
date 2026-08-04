@@ -210,13 +210,13 @@ def main(argv: list[str] | None = None) -> int:
         producer = CameraProducer(camera, config["video"]["fps"])
         producer.start()
         if config["video"]["enabled"]:
-            webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"])
+            webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"], camera.color_space)
             webrtc.start()
         while True:
             try:
                 frame, _ = producer.frames.get()
                 if frame is not None:
-                    process_live_frame(frame, config, uploader, alert_controller)
+                    process_live_frame(frame, config, uploader, alert_controller, camera.color_space)
                 consecutive_failures = producer.failures
                 if consecutive_failures >= 3:
                     raise RuntimeError(f"camera capture failed repeatedly: {producer.last_error}")
@@ -238,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
                     producer.start()
                     if webrtc:
                         webrtc.stop()
-                        webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"])
+                        webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"], camera.color_space)
                         webrtc.start()
                     consecutive_failures = 0
 

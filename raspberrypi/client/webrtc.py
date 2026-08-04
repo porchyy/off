@@ -22,10 +22,11 @@ def signaling_url(backend_url: str) -> str:
 class PiWebRtcSender:
     """Owns a single browser peer and sends frames without disk persistence."""
 
-    def __init__(self, frames: Any, backend_url: str, fps: float) -> None:
+    def __init__(self, frames: Any, backend_url: str, fps: float, color_space: str = "rgb") -> None:
         self.frames = frames
         self.url = signaling_url(backend_url)
         self.fps = max(1.0, fps)
+        self.color_space = color_space
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="postureai-webrtc", daemon=True)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -87,6 +88,7 @@ class PiWebRtcSender:
 
         frames = self.frames
         fps = self.fps
+        color_space = self.color_space
 
         class LatestFrameTrack(VideoStreamTrack):
             kind = "video"
@@ -106,6 +108,10 @@ class PiWebRtcSender:
                     image, _ = frames.get()
                     if image is None:
                         await asyncio.sleep(0.05)
+                # Browsers/WebRTC expect RGB pixel order. Pi Camera supplies
+                # BGR here, so swap red and blue only for the outgoing video.
+                if color_space == "bgr":
+                    image = image[:, :, ::-1].copy()
                 output = VideoFrame.from_ndarray(image, format="rgb24")
                 output.pts = int(self._last_at * 90_000)
                 output.time_base = Fraction(1, 90_000)

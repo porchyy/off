@@ -99,13 +99,13 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
 
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(
-        # Preserve the Pi Camera's native RGB888 output end-to-end. Neither
-        # WebRTC nor MediaPipe changes the live frame's color channels.
-        main={"size": (width, height), "format": "RGB888"}
+        # Capture a defined BGR frame. Consumers convert it explicitly at
+        # their boundary instead of relying on camera-format assumptions.
+        main={"size": (width, height), "format": "BGR888"}
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
-    return Camera(camera, "picamera2", flip, color_space="rgb")
+    return Camera(camera, "picamera2", flip, color_space="bgr")
 
 
 def _camera_indices(index: Any) -> list[int]:

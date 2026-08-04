@@ -112,8 +112,14 @@ def close_detector() -> None:
     _last_analysis_at = 0.0
 
 
-def process_live_frame(frame: Any, config: dict, uploader: Any, alert_controller: Any | None = None) -> None:
-    """Run throttled posture inference on one in-memory RGB camera frame."""
+def process_live_frame(
+    frame: Any,
+    config: dict,
+    uploader: Any,
+    alert_controller: Any | None = None,
+    color_space: str = "rgb",
+) -> None:
+    """Run throttled posture inference on one in-memory live camera frame."""
     global _last_analysis_at
     detection = config.get("detection", {})
     analysis_interval = max(0.0, float(detection.get("interval", 0)))
@@ -124,7 +130,7 @@ def process_live_frame(frame: Any, config: dict, uploader: Any, alert_controller
 
     model_path = detection.get("model")
     detector = get_detector(model_path) if model_path else get_detector()
-    metrics = detector.calculate_metrics(frame, "rgb")
+    metrics = detector.calculate_metrics(frame, color_space)
 
     if metrics:
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
