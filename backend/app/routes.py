@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
@@ -94,7 +95,6 @@ async def camera_webrtc(websocket: WebSocket) -> None:
     is never stored by the backend.
     """
     role = websocket.query_params.get("role", "")
-    color_space = websocket.query_params.get("colorSpace", "unknown")
     if role not in {"pi", "viewer"}:
         await websocket.close(code=1008, reason="role must be pi or viewer")
         return
@@ -111,11 +111,25 @@ async def camera_webrtc(websocket: WebSocket) -> None:
         await websocket.close(code=1013, reason=reason)
         return
     try:
-        if role == "pi":
-            print(f"PostureAI WebRTC Pi stream color mode: {color_space}", flush=True)
         await websocket.send_json({"type": "ready", "role": role})
         while True:
             message = await websocket.receive_text()
+            if role == "pi":
+                try:
+                    payload = json.loads(message)
+                except ValueError:
+                    payload = {}
+                if payload.get("type") == "stream_info":
+                    print(
+                        "PostureAI actual Pi Camera stream format: "
+                        f"{payload.get('cameraFormat', 'unknown')} "
+                        f"(normalized output: {payload.get('outputColorSpace', 'unknown')})",
+                        flush=True,
+                    )
+                    peer = await camera_signaling.peer(role)
+                    if peer is not None:
+                        await peer.send_text(message)
+                    continue
             peer = await camera_signaling.peer(role)
             if peer is None:
                 await websocket.send_json({"type": "error", "code": "peer_unavailable", "message": "camera peer disconnected"})

@@ -80,11 +80,19 @@ class CameraProducer:
 class Camera:
     """Small common interface for OpenCV and Picamera2 cameras."""
 
-    def __init__(self, device: Any, backend: str, flip: int = 0, color_space: str = "bgr") -> None:
+    def __init__(
+        self,
+        device: Any,
+        backend: str,
+        flip: int = 0,
+        color_space: str = "bgr",
+        stream_format: str = "unknown",
+    ) -> None:
         self.device = device
         self.backend = backend
         self.flip = flip
         self.color_space = color_space
+        self.stream_format = stream_format
 
     def read(self) -> tuple[bool, Any]:
         if self.backend == "picamera2":
@@ -111,7 +119,9 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
-    return Camera(camera, "picamera2", flip, color_space="rgb")
+    active_format = str(camera.camera_configuration()["main"]["format"])
+    logger.info("Pi Camera active stream format: %s", active_format)
+    return Camera(camera, "picamera2", flip, color_space="rgb", stream_format=active_format)
 
 
 def _camera_indices(index: Any) -> list[int]:
@@ -139,7 +149,7 @@ def _open_opencv(index: int, width: int, height: int, flip: int) -> Camera:
     if not cap.isOpened():
         cap.release()
         raise RuntimeError(f"OpenCV could not open /dev/video{index}")
-    return Camera(cap, "opencv", flip, color_space="bgr")
+    return Camera(cap, "opencv", flip, color_space="bgr", stream_format="BGR (OpenCV)")
 
 
 def open_camera(config: dict) -> Camera:

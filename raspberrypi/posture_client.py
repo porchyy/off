@@ -210,7 +210,9 @@ def main(argv: list[str] | None = None) -> int:
         producer = CameraProducer(camera, config["video"]["fps"])
         producer.start()
         if config["video"]["enabled"]:
-            webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"], producer.color_space)
+            webrtc = PiWebRtcSender(
+                producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format
+            )
             webrtc.start()
         while True:
             try:
@@ -238,7 +240,9 @@ def main(argv: list[str] | None = None) -> int:
                     producer.start()
                     if webrtc:
                         webrtc.stop()
-                        webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"], producer.color_space)
+                        webrtc = PiWebRtcSender(
+                            producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format
+                        )
                         webrtc.start()
                     consecutive_failures = 0
 

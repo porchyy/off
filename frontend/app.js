@@ -432,6 +432,10 @@ function connectPiCamera() {
       piSignal.send(JSON.stringify({ type: 'offer', sdp: piPeer.localDescription.sdp }));
     } else if (message.type === 'answer') {
       await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
+    } else if (message.type === 'stream_info') {
+      console.log('[PostureAI] actual Pi Camera stream format:', message.cameraFormat, {
+        normalizedOutput: message.outputColorSpace
+      });
     } else if (message.type === 'error') {
       toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
       if (message.code === 'unavailable') {

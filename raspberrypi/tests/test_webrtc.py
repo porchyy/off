@@ -10,8 +10,8 @@ from client.webrtc import signaling_url
 
 
 def test_signaling_url_uses_websocket_scheme_and_keeps_backend_host():
-    assert signaling_url("http://localhost:8000") == "ws://localhost:8000/api/camera/webrtc?role=pi&colorSpace=rgb"
-    assert signaling_url("https://pi.local", "bgr") == "wss://pi.local/api/camera/webrtc?role=pi&colorSpace=bgr"
+    assert signaling_url("http://localhost:8000") == "ws://localhost:8000/api/camera/webrtc?role=pi"
+    assert signaling_url("https://pi.local") == "wss://pi.local/api/camera/webrtc?role=pi"
 
 
 def test_latest_frame_buffer_keeps_only_the_latest_frame():

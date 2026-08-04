@@ -13,20 +13,28 @@ from urllib.parse import urlparse, urlunparse
 logger = logging.getLogger(__name__)
 
 
-def signaling_url(backend_url: str, color_space: str = "rgb") -> str:
+def signaling_url(backend_url: str) -> str:
     parsed = urlparse(backend_url)
     scheme = "wss" if parsed.scheme == "https" else "ws"
-    return urlunparse((scheme, parsed.netloc, "/api/camera/webrtc", "", f"role=pi&colorSpace={color_space}", ""))
+    return urlunparse((scheme, parsed.netloc, "/api/camera/webrtc", "", "role=pi", ""))
 
 
 class PiWebRtcSender:
     """Owns a single browser peer and sends frames without disk persistence."""
 
-    def __init__(self, frames: Any, backend_url: str, fps: float, color_space: str = "rgb") -> None:
+    def __init__(
+        self,
+        frames: Any,
+        backend_url: str,
+        fps: float,
+        color_space: str = "rgb",
+        camera_format: str = "unknown",
+    ) -> None:
         self.frames = frames
-        self.url = signaling_url(backend_url, color_space)
+        self.url = signaling_url(backend_url)
         self.fps = max(1.0, fps)
         self.color_space = color_space
+        self.camera_format = camera_format
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="postureai-webrtc", daemon=True)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -60,6 +68,11 @@ class PiWebRtcSender:
                     async for raw in socket:
                         message = json.loads(raw)
                         if message.get("type") == "offer":
+                            await socket.send(json.dumps({
+                                "type": "stream_info",
+                                "cameraFormat": self.camera_format,
+                                "outputColorSpace": self.color_space,
+                            }))
                             await self._answer_offer(socket, message)
                         elif message.get("type") == "stop":
                             await self._close_peer()
