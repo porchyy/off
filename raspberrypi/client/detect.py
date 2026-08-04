@@ -112,31 +112,9 @@ def close_detector() -> None:
     _last_analysis_at = 0.0
 
 
-def run_detection_cycle(camera: Any, config: dict, uploader: Any, alert_controller: Any | None = None) -> None:
-    """Send a frequent preview while keeping pose inference at a safe cadence."""
+def process_live_frame(frame: Any, config: dict, uploader: Any, alert_controller: Any | None = None) -> None:
+    """Run throttled posture inference on one in-memory RGB camera frame."""
     global _last_analysis_at
-    import cv2  # type: ignore
-
-    ok, frame = camera.read()
-    if not ok or frame is None:
-        logger.warning("failed to read frame from camera")
-        return
-
-    flip = getattr(camera, "flip", 0)
-    if flip:
-        frame = cv2.flip(frame, flip)
-
-    stream = config.get("stream", {})
-    if stream.get("enabled", False):
-        preview = frame
-        if getattr(camera, "color_space", "bgr") == "rgb":
-            preview = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        encoded, jpeg = cv2.imencode(
-            ".jpg", preview, [int(cv2.IMWRITE_JPEG_QUALITY), int(stream.get("quality", 80))]
-        )
-        if encoded:
-            uploader.send_frame(jpeg.tobytes())
-
     detection = config.get("detection", {})
     analysis_interval = max(0.0, float(detection.get("interval", 0)))
     now = time.monotonic()
@@ -146,7 +124,7 @@ def run_detection_cycle(camera: Any, config: dict, uploader: Any, alert_controll
 
     model_path = detection.get("model")
     detector = get_detector(model_path) if model_path else get_detector()
-    metrics = detector.calculate_metrics(frame, getattr(camera, "color_space", "bgr"))
+    metrics = detector.calculate_metrics(frame, "rgb")
 
     if metrics:
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
@@ -157,3 +135,18 @@ def run_detection_cycle(camera: Any, config: dict, uploader: Any, alert_controll
             alert_controller.update(metrics)
     else:
         logger.debug("no pose landmarks detected in frame")
+
+
+def run_detection_cycle(camera: Any, config: dict, uploader: Any, alert_controller: Any | None = None) -> None:
+    """Backward-compatible single-frame path used by focused tests and --once."""
+    import cv2  # type: ignore
+
+    ok, frame = camera.read()
+    if not ok or frame is None:
+        logger.warning("failed to read frame from camera")
+        return
+    if getattr(camera, "flip", 0):
+        frame = cv2.flip(frame, camera.flip)
+    if getattr(camera, "color_space", "bgr") == "bgr":
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    process_live_frame(frame, config, uploader, alert_controller)

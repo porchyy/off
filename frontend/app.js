@@ -29,7 +29,10 @@ let detectionSignal = 'neutral';
 let settings = { ...defaultSettings };
 let latestMetrics = null;
 let useCustomModel = false;
-let piCameraTimer;
+let piPeer;
+let piSignal;
+let piReconnectTimer;
+let piManualStop = false;
 
 const toast = msg => {
   const el = $('toast');
@@ -341,35 +344,102 @@ function end() {
   state('หยุดแล้ว');
 }
 
-function refreshPiCamera() {
-  const image = $('piCamera');
-  if (!image) return;
-  image.src = '/api/camera/frame?t=' + Date.now();
-}
-
 function beginPiCamera() {
-  clearInterval(piCameraTimer);
-  refreshPiCamera();
-  piCameraTimer = setInterval(refreshPiCamera, 200);
+  piManualStop = false;
+  clearTimeout(piReconnectTimer);
+  connectPiCamera();
   $('cameraHelp').hidden = true;
-  $('cameraSignal').className = 'camera-signal good';
-  $('cameraSignal').textContent = 'กำลังรับภาพจาก Pi Camera';
-  state('กำลังติดตาม', 'good');
+  $('cameraSignal').className = 'camera-signal neutral';
+  $('cameraSignal').textContent = 'กำลังเชื่อมต่อสตรีม Pi Camera';
+  state('กำลังเชื่อมต่อ', 'neutral');
   start.disabled = true;
   stop.disabled = false;
 }
 
 function endPiCamera() {
-  clearInterval(piCameraTimer);
-  piCameraTimer = undefined;
-  const image = $('piCamera');
-  if (image) image.removeAttribute('src');
+  piManualStop = true;
+  clearTimeout(piReconnectTimer);
+  piSignal?.send(JSON.stringify({ type: 'stop' }));
+  piSignal?.close();
+  piSignal = undefined;
+  piPeer?.close();
+  piPeer = undefined;
+  const video = $('piCamera');
+  if (video) video.srcObject = null;
   $('cameraHelp').hidden = false;
   $('cameraSignal').className = 'camera-signal neutral';
   $('cameraSignal').textContent = 'หยุดแสดงภาพ';
   state('หยุดแล้ว');
   start.disabled = false;
   stop.disabled = true;
+}
+
+function webrtcUrl() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${location.host}/api/camera/webrtc?role=viewer`;
+}
+
+function waitForIceComplete(peer) {
+  if (peer.iceGatheringState === 'complete') return Promise.resolve();
+  return new Promise(resolve => {
+    const timeout = setTimeout(resolve, 5000);
+    peer.addEventListener('icegatheringstatechange', function done() {
+      if (peer.iceGatheringState === 'complete') {
+        clearTimeout(timeout);
+        peer.removeEventListener('icegatheringstatechange', done);
+        resolve();
+      }
+    });
+  });
+}
+
+function reconnectPiCamera() {
+  if (piManualStop) return;
+  clearTimeout(piReconnectTimer);
+  piReconnectTimer = setTimeout(connectPiCamera, 2000);
+  $('cameraSignal').className = 'camera-signal neutral';
+  $('cameraSignal').textContent = 'สตรีมขาด กำลังเชื่อมต่อใหม่';
+  state('กำลังเชื่อมต่อใหม่', 'neutral');
+}
+
+function connectPiCamera() {
+  if (piManualStop || piSignal?.readyState === WebSocket.OPEN) return;
+  piPeer?.close();
+  piPeer = new RTCPeerConnection({ iceServers: [] });
+  piPeer.addTransceiver('video', { direction: 'recvonly' });
+  piPeer.addEventListener('track', event => {
+    const preview = $('piCamera');
+    preview.srcObject = event.streams[0];
+    $('cameraSignal').className = 'camera-signal good';
+    $('cameraSignal').textContent = 'กำลังรับสตรีมสดจาก Pi Camera';
+    state('กำลังติดตาม', 'good');
+  });
+  piPeer.addEventListener('connectionstatechange', () => {
+    if (['failed', 'disconnected', 'closed'].includes(piPeer?.connectionState)) reconnectPiCamera();
+  });
+
+  piSignal = new WebSocket(webrtcUrl());
+  piSignal.addEventListener('message', async event => {
+    const message = JSON.parse(event.data);
+    if (message.type === 'ready') {
+      const offer = await piPeer.createOffer();
+      await piPeer.setLocalDescription(offer);
+      await waitForIceComplete(piPeer);
+      piSignal.send(JSON.stringify({ type: 'offer', sdp: piPeer.localDescription.sdp }));
+    } else if (message.type === 'answer') {
+      await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
+    } else if (message.type === 'error') {
+      toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
+      if (message.code === 'unavailable') {
+        piManualStop = true;
+        $('cameraSignal').className = 'camera-signal risk';
+        $('cameraSignal').textContent = message.message;
+        state('กล้องถูกใช้งานอยู่', 'risk');
+      }
+    }
+  });
+  piSignal.addEventListener('close', reconnectPiCamera);
+  piSignal.addEventListener('error', () => piSignal.close());
 }
 
 async function loadSummary() {
@@ -542,18 +612,6 @@ function escapeHtml(value) {
 
 start?.addEventListener('click', beginPiCamera);
 stop?.addEventListener('click', endPiCamera);
-$('piCamera')?.addEventListener('load', () => {
-  $('cameraHelp').hidden = true;
-  $('cameraSignal').className = 'camera-signal good';
-  $('cameraSignal').textContent = 'กำลังรับภาพจาก Pi Camera';
-});
-$('piCamera')?.addEventListener('error', () => {
-  $('cameraHelp').hidden = false;
-  $('cameraHelp').textContent = 'กำลังรอ Pi Camera ส่งภาพ — ตรวจสอบว่า postureai-client ทำงานอยู่';
-  $('cameraSignal').className = 'camera-signal neutral';
-  $('cameraSignal').textContent = 'รอภาพจาก Pi Camera';
-  state('รอ Pi Camera');
-});
 $('refresh')?.addEventListener('click', loadDashboard);
 $('saveSettings')?.addEventListener('click', saveSettings);
 $('exportCsv')?.addEventListener('click', () => downloadExport('csv'));

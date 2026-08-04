@@ -26,6 +26,18 @@ class FakeSound:
         return True
 
 
+class FakeIndicator:
+    def __init__(self) -> None:
+        self.on_count = 0
+        self.off_count = 0
+
+    def on(self):
+        self.on_count += 1
+
+    def off(self):
+        self.off_count += 1
+
+
 def test_alert_waits_for_risk_duration_and_respects_cooldown():
     now = [100.0]
     uploader = FakeUploader()
@@ -68,3 +80,23 @@ def test_good_posture_resets_low_score_timer():
     assert controller.update({"score": 50}) is False
     now[0] = 11.0
     assert controller.update({"score": 50}) is True
+
+
+def test_led_turns_on_for_persistent_risk_and_off_when_posture_recovers():
+    now = [0.0]
+    indicator = FakeIndicator()
+    controller = AlertController(
+        {"risk": {"threshold": 60, "seconds": 5}},
+        FakeUploader(),
+        FakeSound(),
+        indicator,
+        clock=lambda: now[0],
+    )
+
+    controller.update({"score": 50})
+    assert indicator.on_count == 0
+    now[0] = 5.0
+    assert controller.update({"score": 50}) is True
+    assert indicator.on_count == 1
+    controller.update({"score": 75})
+    assert indicator.off_count == 1

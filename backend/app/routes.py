@@ -5,13 +5,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .camera_store import camera_frames
+from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
 from .export import rows_to_csv
 from .models import Alert, Base, Sample, Setting
@@ -79,9 +80,48 @@ def get_camera_frame() -> Response:
 
 
 @router.get("/api/camera/status")
-def camera_status() -> dict[str, str | bool | None]:
+async def camera_status() -> dict[str, str | bool | None]:
     _, updated_at = camera_frames.get()
-    return {"available": updated_at is not None, "updatedAt": updated_at}
+    signaling = await camera_signaling.status()
+    return {"available": updated_at is not None or signaling["clientConnected"], "updatedAt": updated_at, **signaling}
+
+
+@router.websocket("/api/camera/webrtc")
+async def camera_webrtc(websocket: WebSocket) -> None:
+    """Relay SDP between the Pi client and one dashboard browser.
+
+    This is signaling only. WebRTC media travels directly across the LAN and
+    is never stored by the backend.
+    """
+    role = websocket.query_params.get("role", "")
+    if role not in {"pi", "viewer"}:
+        await websocket.close(code=1008, reason="role must be pi or viewer")
+        return
+    await websocket.accept()
+    if not await camera_signaling.register(role, websocket):
+        state = await camera_signaling.status()
+        if role == "viewer" and state["viewerConnected"]:
+            reason = "camera is already being viewed by another dashboard"
+        elif role == "viewer":
+            reason = "camera client is unavailable"
+        else:
+            reason = "camera client already connected"
+        await websocket.send_json({"type": "error", "code": "unavailable", "message": reason})
+        await websocket.close(code=1013, reason=reason)
+        return
+    try:
+        await websocket.send_json({"type": "ready", "role": role})
+        while True:
+            message = await websocket.receive_text()
+            peer = await camera_signaling.peer(role)
+            if peer is None:
+                await websocket.send_json({"type": "error", "code": "peer_unavailable", "message": "camera peer disconnected"})
+                continue
+            await peer.send_text(message)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await camera_signaling.unregister(role, websocket)
 
 
 def _clamp_int(value: int | None, lo: int, hi: int, fallback: int) -> int:

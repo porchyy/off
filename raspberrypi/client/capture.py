@@ -3,11 +3,76 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+class LatestFrameBuffer:
+    """Thread-safe in-memory handoff from the camera to AI and WebRTC."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._frame: Any | None = None
+        self._updated_at = 0.0
+
+    def put(self, frame: Any) -> None:
+        with self._lock:
+            self._frame = frame
+            self._updated_at = time.monotonic()
+
+    def get(self) -> tuple[Any | None, float]:
+        with self._lock:
+            return self._frame, self._updated_at
+
+
+class CameraProducer:
+    """Continuously capture one Pi Camera stream for every local consumer."""
+
+    def __init__(self, camera: "Camera", fps: float) -> None:
+        self.camera = camera
+        self.fps = max(1.0, fps)
+        self.frames = LatestFrameBuffer()
+        self.failures = 0
+        self.last_error: Exception | None = None
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="postureai-camera", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=3)
+
+    def _run(self) -> None:
+        interval = 1.0 / self.fps
+        while not self._stop.is_set():
+            started = time.monotonic()
+            try:
+                ok, frame = self.camera.read()
+                if not ok or frame is None:
+                    raise RuntimeError("camera returned no frame")
+                if self.camera.flip:
+                    import cv2  # type: ignore
+                    frame = cv2.flip(frame, self.camera.flip)
+                # Both MediaPipe and PyAV receive RGB data from this buffer.
+                if self.camera.color_space == "bgr":
+                    import cv2  # type: ignore
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                self.frames.put(frame)
+                self.failures = 0
+                self.last_error = None
+            except Exception as exc:
+                self.failures += 1
+                self.last_error = exc
+                logger.warning("live camera capture failed (%s): %s", self.failures, exc)
+            remaining = interval - (time.monotonic() - started)
+            if remaining > 0:
+                self._stop.wait(remaining)
 
 
 class Camera:

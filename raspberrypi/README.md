@@ -8,7 +8,7 @@ Lightweight Python client ที่รันบน Raspberry Pi เพื่อ�
 - `posture_client.py` — main loop: เปิดกล้อง, ประมวลผล pose, ส่ง
   `POST /api/samples` ไป backend
 - `requirements.txt` — OpenCV, MediaPipe (Python), requests
-- `config.example.yaml` — backend URL, camera index, send interval, risk
+- `config.example.yaml` — backend URL, camera/video settings, AI rate, risk
   thresholds
 
 ## ติดตั้งแบบพร้อมใช้งานบน Pi 5
@@ -73,6 +73,26 @@ python posture_client.py --config config.yaml --test-sound
 หากมีไฟล์เสียงของตัวเอง ให้ใช้ไฟล์ WAV และกำหนด path ที่ `sound.file`;
 เมื่อเว้นว่าง ระบบจะสร้างเสียง beep สองจังหวะให้เอง
 
+## ไฟ LED สีแดงแจ้งเตือน
+
+โมดูลในรูปเป็น LED module ไม่ใช่เซนเซอร์เสียง ใช้เป็นไฟเตือนเมื่อท่านั่งเสี่ยง
+ต่อไฟเลี้ยงของโมดูลตามสกรีนบนบอร์ด และต่อขาสัญญาณ `IN` กับ **BCM GPIO17**
+(physical pin 11) ของ Pi; ใช้ระดับสัญญาณ 3.3V เท่านั้น ห้ามป้อนไฟ 5V เข้าขา GPIO ของ Pi
+หากบอร์ดมีขา `GND` ให้ต่อกับ GND ของ Pi ด้วย
+
+เมื่อต่อสายแล้ว ตั้งค่าใน `config.yaml`:
+
+```yaml
+indicator:
+  enabled: true
+  pin: 17
+  active_high: true
+```
+
+ทดสอบก่อนใช้งานจริงด้วย `python posture_client.py --config config.yaml --test-led`.
+ระบบจะเปิด LED เมื่อคะแนนต่ำกว่าค่า `risk.threshold` ต่อเนื่องครบ `risk.seconds`
+และจะปิดทันทีเมื่อคะแนนกลับมาปกติ. หากไฟทำงานกลับด้าน ให้ตั้ง `active_high: false`.
+
 ## คำสั่งตรวจสอบแบบ manual
 
 ```bash
@@ -87,17 +107,20 @@ python posture_client.py --config config.yaml
 
 ## โหมดทำงาน
 
-1. **Local detection**: ทุก N วินาทีจับ frame → MediaPipe Pose Landmarker Full → คำนวณ score
-   (คล้าย logic ใน `frontend/app.js`) → POST ไป backend
-2. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
+1. **Live camera pipeline**: Pi Camera จับภาพต่อเนื่องหนึ่งชุดที่ 640×480 / 10 FPS
+   ในหน่วยความจำเท่านั้น แล้วส่งเป็น WebRTC ไปยัง dashboard ใน LAN (ไม่มีการบันทึกภาพลงดิสก์)
+2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.2 วินาที
+   (5 FPS) → POST เฉพาะคะแนนไป backend
+3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
    ต่อเนื่องเกิน `risk.seconds` จะเล่นเสียงและ POST `/api/alerts` โดยเว้นช่วง
    การแจ้งซ้ำตาม `risk.cooldown`
-3. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
+4. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
    `buffer.sqlite` แล้วยิงใหม่เมื่อกลับมา online
 
 ## หมายเหตุ
 
 - `detection.mode` รองรับ `mediapipe` เท่านั้น และประมวลผลภาพบน Pi
+- WebRTC รองรับ dashboard หนึ่งเครื่องใน LAN พร้อมกัน; หากสตรีมขาด หน้าเว็บจะเชื่อมต่อใหม่อัตโนมัติ
 - ถ้า MediaPipe เปิดไม่ได้ ระบบจะรายงาน error และไม่สร้างคะแนนจำลอง
 
 ## ดูภาพจาก Pi Camera บนอุปกรณ์อื่น

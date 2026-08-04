@@ -7,7 +7,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 alsa-utils curl
+sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 alsa-utils python3-gpiozero curl
 
 # Picamera2 is supplied by Raspberry Pi OS, so expose system packages to the venv.
 python3 -m venv --system-site-packages .venv

@@ -21,19 +21,18 @@ camera:
 
 detection:
   # ความถี่การวิเคราะห์และบันทึกคะแนน (วินาที)
-  interval: 1
+  interval: 0.2
   # โหมดที่รองรับในรุ่นนี้: mediapipe (ประมวลผลบน Pi เท่านั้น)
   mode: mediapipe
   # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น
   model: ../frontend/public/models/pose_landmarker_full.task
 
-stream:
-  # ส่งเฉพาะภาพล่าสุดไปยัง backend ในเครื่อง เพื่อให้เปิดดูจาก dashboard ได้
-  # ภาพไม่ถูกบันทึกลงดิสก์
+video:
+  # WebRTC preview อยู่ใน LAN โดยภาพไม่ถูกบันทึกลงดิสก์
   enabled: true
-  # ความถี่ภาพ preview จาก Pi (0.2 = ประมาณ 5 FPS)
-  interval: 0.2
-  quality: 80
+  width: 640
+  height: 480
+  fps: 10
 
 risk:
   threshold: 60
@@ -48,6 +47,14 @@ sound:
   volume: 0.75
   # เว้นว่างเพื่อใช้เสียง beep ในตัว หรือระบุไฟล์ WAV เช่น ./alert.wav
   file:
+
+# โมดูล LED สีแดงในรูป: เริ่มต้นปิดไว้จนกว่าจะต่อสายเสร็จ
+indicator:
+  enabled: false
+  # BCM GPIO number (ไม่ใช่เลข physical pin): ค่า default คือ GPIO17 / physical pin 11
+  pin: 17
+  # false หากโมดูลของคุณติดเมื่อสัญญาณ LOW
+  active_high: true
 
 buffer:
   # path ของ SQLite ที่ใช้ buffer ตอน backend offline

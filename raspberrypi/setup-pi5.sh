@@ -27,14 +27,14 @@ echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
     docker.io docker-compose-v2 python3-venv python3-picamera2 python3-opencv \
-    libgl1 alsa-utils curl
+    libgl1 alsa-utils python3-gpiozero curl
 
 DOCKER_BIN="$(command -v docker || true)"
 [ -n "$DOCKER_BIN" ] || fail "docker was not installed successfully"
 sudo "$DOCKER_BIN" compose version >/dev/null || fail "Docker Compose v2 is unavailable after installation"
 
 echo "[2/6] Granting camera/audio access to $INSTALL_USER..."
-sudo usermod -aG docker,video,audio "$INSTALL_USER"
+sudo usermod -aG docker,video,audio,gpio "$INSTALL_USER"
 
 echo "[3/6] Creating the Pi sensor environment..."
 cd "$SCRIPT_DIR"
@@ -103,7 +103,7 @@ Requires=postureai-stack.service
 [Service]
 Type=simple
 User=$INSTALL_USER
-SupplementaryGroups=video audio
+SupplementaryGroups=video audio gpio
 WorkingDirectory=$SCRIPT_DIR
 Environment=PYTHONUNBUFFERED=1
 ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/posture_client.py --config $SCRIPT_DIR/config.yaml

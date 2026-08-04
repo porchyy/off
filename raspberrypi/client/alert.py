@@ -94,6 +94,7 @@ class AlertController:
         config: dict[str, Any],
         uploader: Any,
         sound_player: SoundPlayer,
+        indicator: Any | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         risk = config.get("risk", {})
@@ -102,6 +103,7 @@ class AlertController:
         self.cooldown = max(0.0, float(risk.get("cooldown", 30)))
         self.uploader = uploader
         self.sound_player = sound_player
+        self.indicator = indicator
         self.clock = clock
         self.low_since: float | None = None
         self.last_alert: float | None = None
@@ -111,12 +113,16 @@ class AlertController:
         score = float(metrics["score"])
         if score >= self.threshold:
             self.low_since = None
+            if self.indicator is not None:
+                self.indicator.off()
             return False
 
         if self.low_since is None:
             self.low_since = now
         if now - self.low_since < self.risk_seconds:
             return False
+        if self.indicator is not None:
+            self.indicator.on()
         if self.last_alert is not None and now - self.last_alert < self.cooldown:
             return False
 

@@ -34,7 +34,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "risk", "sound", "buffer", "stream"):
+    for section in ("backend", "camera", "detection", "risk", "sound", "indicator", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -64,16 +64,29 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     if mode != "mediapipe":
         raise ValueError("detection.mode currently supports only mediapipe")
     detection["mode"] = mode
-    detection["interval"] = max(0.1, float(detection.get("interval", 5)))
+    detection["interval"] = max(0.1, float(detection.get("interval", 0.2)))
     model_path = Path(str(detection.get("model", "../frontend/public/models/pose_landmarker_full.task")))
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
     detection["model"] = str(model_path)
 
-    stream = config["stream"]
-    stream["enabled"] = bool(stream.get("enabled", True))
-    stream["interval"] = max(0.1, float(stream.get("interval", 0.2)))
-    stream["quality"] = max(30, min(95, int(stream.get("quality", 80))))
+    video = config["video"]
+    video["enabled"] = bool(video.get("enabled", True))
+    video["width"] = int(video.get("width", camera["width"]))
+    video["height"] = int(video.get("height", camera["height"]))
+    if video["width"] <= 0 or video["height"] <= 0:
+        raise ValueError("video.width and video.height must be positive")
+    video["fps"] = max(1.0, min(30.0, float(video.get("fps", 10))))
+    # Capture only once: the camera dimensions drive both AI and WebRTC.
+    camera["width"] = video["width"]
+    camera["height"] = video["height"]
+
+    indicator = config["indicator"]
+    indicator["enabled"] = bool(indicator.get("enabled", False))
+    indicator["pin"] = int(indicator.get("pin", 17))
+    if not 0 <= indicator["pin"] <= 27:
+        raise ValueError("indicator.pin must be a BCM GPIO number from 0 to 27")
+    indicator["active_high"] = bool(indicator.get("active_high", True))
 
     buffer_path = Path(str(config["buffer"].get("path", "buffer.sqlite")))
     if not buffer_path.is_absolute():
@@ -87,6 +100,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, default=Path("config.yaml"))
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")
+    parser.add_argument("--test-led", action="store_true", help="Turn on the configured red LED briefly and exit")
     parser.add_argument("--test-camera", action="store_true", help="Capture one frame without backend or pose detection")
     parser.add_argument("--check", action="store_true", help="Check MediaPipe, camera, and backend connectivity, then exit")
     parser.add_argument("--verbose", "-v", action="store_true")
@@ -113,11 +127,20 @@ def main(argv: list[str] | None = None) -> int:
 
     # Lazy imports so --help / config validation ไม่ต้องมี lib ติดตั้งครบ
     from client.alert import AlertController, SoundPlayer
+    from client.indicator import GpioLed
 
     sound_player = SoundPlayer(config.get("sound", {}))
+    indicator = GpioLed(config.get("indicator", {}))
     if args.test_sound:
         logger.info("testing alert sound...")
         return 0 if sound_player.play() else 1
+    if args.test_led:
+        logger.info("testing red LED indicator...")
+        if not indicator.on():
+            return 1
+        time.sleep(2)
+        indicator.off()
+        return 0
 
     from client.capture import open_camera
 
@@ -164,8 +187,10 @@ def main(argv: list[str] | None = None) -> int:
             if camera:
                 camera.release()
 
-    from client.detect import close_detector, run_detection_cycle
+    from client.capture import CameraProducer
+    from client.detect import close_detector, process_live_frame
     from client.uploader import Uploader
+    from client.webrtc import PiWebRtcSender
 
     backend_url = config["backend"]["url"]
     uploader = Uploader(
@@ -173,40 +198,68 @@ def main(argv: list[str] | None = None) -> int:
         timeout=config["backend"].get("timeout", 5),
         buffer_path=config["buffer"]["path"],
     )
-    alert_controller = AlertController(config, uploader, sound_player)
+    alert_controller = AlertController(config, uploader, sound_player, indicator)
 
     consecutive_failures = 0
     camera = None
+    producer = None
+    webrtc = None
+    once_deadline = time.monotonic() + 5 if args.once else None
     try:
         camera = open_camera(config["camera"])
+        producer = CameraProducer(camera, config["video"]["fps"])
+        producer.start()
+        if config["video"]["enabled"]:
+            webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"])
+            webrtc.start()
         while True:
             try:
-                run_detection_cycle(camera, config, uploader, alert_controller)
-                consecutive_failures = 0
+                frame, _ = producer.frames.get()
+                if frame is not None:
+                    process_live_frame(frame, config, uploader, alert_controller)
+                consecutive_failures = producer.failures
+                if consecutive_failures >= 3:
+                    raise RuntimeError(f"camera capture failed repeatedly: {producer.last_error}")
             except Exception as exc:
                 consecutive_failures += 1
                 logger.error("detection cycle error (failure %s): %s", consecutive_failures, exc)
                 if consecutive_failures >= 3:
                     logger.warning("re-opening camera after %s consecutive failures...", consecutive_failures)
                     try:
+                        if producer:
+                            producer.stop()
                         if camera:
                             camera.release()
                     except Exception:
                         pass
                     time.sleep(2)
                     camera = open_camera(config["camera"])
+                    producer = CameraProducer(camera, config["video"]["fps"])
+                    producer.start()
+                    if webrtc:
+                        webrtc.stop()
+                        webrtc = PiWebRtcSender(producer.frames, backend_url, config["video"]["fps"])
+                        webrtc.start()
                     consecutive_failures = 0
 
-            if args.once:
+            if args.once and frame is not None:
                 break
-            time.sleep(config.get("stream", {}).get("interval", 0.2))
+            if once_deadline is not None and time.monotonic() >= once_deadline:
+                logger.error("camera did not provide a live frame within 5 seconds")
+                return 1
+            time.sleep(0.02)
     finally:
+        if webrtc:
+            webrtc.stop()
+        if producer:
+            producer.stop()
         if camera:
             try:
                 camera.release()
             except Exception:
                 pass
         close_detector()
+        indicator.close()
     return 0
 
 
