@@ -35,6 +35,9 @@ class CameraProducer:
     def __init__(self, camera: "Camera", fps: float) -> None:
         self.camera = camera
         self.fps = max(1.0, fps)
+        # The Pi Camera supplies BGR; publish one normalized RGB frame to all
+        # consumers so AI and WebRTC cannot disagree about channel order.
+        self.color_space = "rgb" if camera.color_space == "bgr" else camera.color_space
         self.frames = LatestFrameBuffer()
         self.failures = 0
         self.last_error: Exception | None = None
@@ -59,6 +62,9 @@ class CameraProducer:
                 if self.camera.flip:
                     import cv2  # type: ignore
                     frame = cv2.flip(frame, self.camera.flip)
+                if self.camera.color_space == "bgr":
+                    import cv2  # type: ignore
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 self.frames.put(frame)
                 self.failures = 0
                 self.last_error = None
