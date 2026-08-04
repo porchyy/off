@@ -13,10 +13,10 @@ from urllib.parse import urlparse, urlunparse
 logger = logging.getLogger(__name__)
 
 
-def signaling_url(backend_url: str) -> str:
+def signaling_url(backend_url: str, color_space: str = "rgb") -> str:
     parsed = urlparse(backend_url)
     scheme = "wss" if parsed.scheme == "https" else "ws"
-    return urlunparse((scheme, parsed.netloc, "/api/camera/webrtc", "", "role=pi", ""))
+    return urlunparse((scheme, parsed.netloc, "/api/camera/webrtc", "", f"role=pi&colorSpace={color_space}", ""))
 
 
 class PiWebRtcSender:
@@ -24,7 +24,7 @@ class PiWebRtcSender:
 
     def __init__(self, frames: Any, backend_url: str, fps: float, color_space: str = "rgb") -> None:
         self.frames = frames
-        self.url = signaling_url(backend_url)
+        self.url = signaling_url(backend_url, color_space)
         self.fps = max(1.0, fps)
         self.color_space = color_space
         self._stop = threading.Event()

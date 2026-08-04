@@ -94,6 +94,7 @@ async def camera_webrtc(websocket: WebSocket) -> None:
     is never stored by the backend.
     """
     role = websocket.query_params.get("role", "")
+    color_space = websocket.query_params.get("colorSpace", "unknown")
     if role not in {"pi", "viewer"}:
         await websocket.close(code=1008, reason="role must be pi or viewer")
         return
@@ -110,6 +111,8 @@ async def camera_webrtc(websocket: WebSocket) -> None:
         await websocket.close(code=1013, reason=reason)
         return
     try:
+        if role == "pi":
+            print(f"PostureAI WebRTC Pi stream color mode: {color_space}", flush=True)
         await websocket.send_json({"type": "ready", "role": role})
         while True:
             message = await websocket.receive_text()

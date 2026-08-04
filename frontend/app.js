@@ -410,6 +410,10 @@ function connectPiCamera() {
   piPeer.addEventListener('track', event => {
     const preview = $('piCamera');
     preview.srcObject = event.streams[0];
+    console.log('[PostureAI] WebRTC stream color mode: RGB', {
+      track: event.track.getSettings?.(),
+      streamId: event.streams[0]?.id
+    });
     $('cameraSignal').className = 'camera-signal good';
     $('cameraSignal').textContent = 'กำลังรับสตรีมสดจาก Pi Camera';
     state('กำลังติดตาม', 'good');
