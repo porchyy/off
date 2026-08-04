@@ -1,15 +1,16 @@
-from picamera2 import Picamera2
+import cv2
 
-picam2 = Picamera2()
+# บังคับเรียกใช้กล้องผ่านระบบ V4L2 Backend ของ Linux
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
-# Create configuration and strictly define the format as RGB565 (RGBP)
-config = picam2.create_still_configuration(main={"size": (1920, 1080), "format": "RGB565"})
-picam2.configure(config)
+# บังคับโครงสร้างการจัดเรียงพิกเซลเป็น FOURCC ของ RGBP (ย่อมาจาก RGB565 Packed)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'RGB3'))
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 2304)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1296)
 
-picam2.start()
-
-# Capture the image array directly in RGB565 format
-rgbp_frame = picam2.capture_array()
-print("Captured frame shape:", rgbp_frame.shape)
-
-picam2.stop()
+ret, frame = cap.read()
+if ret:
+    print("โครงสร้างไบนารีอาร์เรย์ที่ดึงได้สำเร็จ:", frame.shape)
+    # บัฟเฟอร์ข้อมูลในเฟรมนี้จะเป็นคู่บิต แดง-เขียว-น้ำเงิน (16 บิต) ทันที
+    
+cap.release()
