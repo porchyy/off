@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 import json
 import logging
 import threading
@@ -39,6 +40,11 @@ class PiWebRtcSender:
         self._thread = threading.Thread(target=self._run, name="postureai-webrtc", daemon=True)
         self._loop: asyncio.AbstractEventLoop | None = None
         self._peer: Any | None = None
+        self._pose_lock = threading.Lock()
+        self._latest_pose: dict[str, Any] | None = None
+        self._pose_revision = 0
+        self._latest_roboflow: dict[str, Any] | None = None
+        self._roboflow_revision = 0
 
     def start(self) -> None:
         self._thread.start()
@@ -48,6 +54,22 @@ class PiWebRtcSender:
         if self._loop is not None:
             self._loop.call_soon_threadsafe(lambda: None)
         self._thread.join(timeout=5)
+
+    def publish_pose(self, metrics: dict[str, Any], landmarks: list[dict[str, Any]]) -> None:
+        """Store the newest compact AI result for the dashboard overlay."""
+        with self._pose_lock:
+            self._pose_revision += 1
+            self._latest_pose = {
+                "type": "pose_update",
+                "metrics": dict(metrics),
+                "landmarks": list(landmarks),
+            }
+
+    def publish_roboflow_result(self, result: dict[str, Any]) -> None:
+        """Store the newest hosted posture classification for the dashboard."""
+        with self._pose_lock:
+            self._roboflow_revision += 1
+            self._latest_roboflow = {"type": "roboflow_update", "result": dict(result)}
 
     def _run(self) -> None:
         try:
@@ -65,27 +87,64 @@ class PiWebRtcSender:
                 async with websockets.connect(self.url, open_timeout=5, ping_interval=20) as socket:
                     retry_seconds = 1
                     logger.info("WebRTC signaling connected")
-                    async for raw in socket:
-                        message = json.loads(raw)
-                        if message.get("type") == "offer":
-                            display_mode = {"RGB888": "RGB3", "BGR888": "BGR3"}.get(
-                                self.camera_format, self.camera_format
-                            )
-                            await socket.send(json.dumps({
-                                "type": "stream_info",
-                                "cameraFormat": self.camera_format,
-                                "displayColorMode": display_mode,
-                                "outputColorSpace": self.color_space,
-                            }))
-                            await self._answer_offer(socket, message)
-                        elif message.get("type") == "stop":
-                            await self._close_peer()
+                    viewer_ready = asyncio.Event()
+                    send_lock = asyncio.Lock()
+                    pose_task = asyncio.create_task(self._send_pose_updates(socket, viewer_ready, send_lock))
+                    try:
+                        async for raw in socket:
+                            message = json.loads(raw)
+                            if message.get("type") == "offer":
+                                # CameraProducer publishes RGB camera frames to
+                                # the sender, which builds the WebRTC frame as rgb24.
+                                display_mode = "RGB3" if self.color_space == "rgb" else "BGR3"
+                                async with send_lock:
+                                    await socket.send(json.dumps({
+                                        "type": "stream_info",
+                                        "cameraFormat": self.camera_format,
+                                        "displayColorMode": display_mode,
+                                        "outputColorSpace": self.color_space,
+                                    }))
+                                await self._answer_offer(socket, message)
+                                viewer_ready.set()
+                            elif message.get("type") == "stop":
+                                viewer_ready.clear()
+                                await self._close_peer()
+                            elif message.get("type") == "error" and message.get("code") == "peer_unavailable":
+                                viewer_ready.clear()
+                    finally:
+                        pose_task.cancel()
+                        with suppress(asyncio.CancelledError):
+                            await pose_task
             except Exception as exc:
                 if not self._stop.is_set():
                     logger.warning("WebRTC signaling unavailable: %s; retrying", exc)
                     await asyncio.sleep(retry_seconds)
                     retry_seconds = min(retry_seconds * 2, 10)
         await self._close_peer()
+
+    async def _send_pose_updates(
+        self, socket: Any, viewer_ready: asyncio.Event, send_lock: asyncio.Lock
+    ) -> None:
+        """Forward only the most recent landmarks, never a queue of stale poses."""
+        delivered_revision = 0
+        delivered_roboflow_revision = 0
+        while not self._stop.is_set():
+            await viewer_ready.wait()
+            with self._pose_lock:
+                revision = self._pose_revision
+                payload = self._latest_pose
+            if payload is not None and revision > delivered_revision:
+                async with send_lock:
+                    await socket.send(json.dumps(payload, separators=(",", ":")))
+                delivered_revision = revision
+            with self._pose_lock:
+                roboflow_revision = self._roboflow_revision
+                roboflow_payload = self._latest_roboflow
+            if roboflow_payload is not None and roboflow_revision > delivered_roboflow_revision:
+                async with send_lock:
+                    await socket.send(json.dumps(roboflow_payload, separators=(",", ":")))
+                delivered_roboflow_revision = roboflow_revision
+            await asyncio.sleep(0.03)
 
     async def _answer_offer(self, socket: Any, message: dict[str, Any]) -> None:
         from aiortc import RTCSessionDescription  # type: ignore

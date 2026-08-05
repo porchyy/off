@@ -15,24 +15,43 @@ camera:
   retries: 3
   # ความกว้าง/สูงของ frame ที่ใช้ประมวลผล
   width: 640
-  height: 480
+  height: 360
   # flip: 0=none, 1=horizontal, -1=both
   flip: 0
 
 detection:
-  # ความถี่การวิเคราะห์และบันทึกคะแนน (วินาที)
-  interval: 0.2
+  # false = ไม่เรียก MediaPipe (ใช้ Roboflow เพียงตัวเดียว)
+  enabled: true
+  # ความถี่การวิเคราะห์และบันทึกคะแนน (วินาที, 0.1 = 10 FPS)
+  interval: 0.1
+  # ทำให้เส้น skeleton นิ่งขึ้นโดยไม่หน่วงคะแนน/การแจ้งเตือน
+  # 0.65 = ตามการเคลื่อนไหวเร็วและยังลดอาการสั่นได้
+  overlay_smoothing_alpha: 0.65
+  # เก็บจุดล่าสุดชั่วคราวเมื่อ AI มองไม่เห็น เพื่อไม่ให้เส้นกระพริบ
+  overlay_hold_seconds: 0.2
+  # ไม่วาดจุดที่ AI มั่นใจต่ำกว่าค่านี้
+  overlay_min_visibility: 0.35
   # โหมดที่รองรับในรุ่นนี้: mediapipe (ประมวลผลบน Pi เท่านั้น)
   mode: mediapipe
   # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น
   model: ../frontend/public/models/pose_landmarker_full.task
 
+# AI เสริมจาก Roboflow: ใช้ผล Good/Slouch/Leaning บนหน้าเว็บ
+# API key ต้องอยู่ใน environment ของ systemd เท่านั้น ไม่ใส่ในไฟล์นี้
+roboflow:
+  enabled: false
+  model_id: sitting-posture-detection-3933f/2
+  interval: 1.0
+  confidence: 0.6
+  timeout: 8
+  api_key_env: ROBOFLOW_API_KEY
+
 video:
   # WebRTC preview อยู่ใน LAN โดยภาพไม่ถูกบันทึกลงดิสก์
   enabled: true
   width: 640
-  height: 480
-  fps: 10
+  height: 360
+  fps: 12
 
 risk:
   threshold: 60

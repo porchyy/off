@@ -20,6 +20,8 @@ let stream;
 let running = false;
 let frame;
 let lastVideoTime = -1;
+let analysisVideo = video;
+let saveAnalysisResults = true;
 let lastSave = 0;
 let lastAlert = 0;
 let lastVoiceAlert = 0;
@@ -33,6 +35,9 @@ let piPeer;
 let piSignal;
 let piReconnectTimer;
 let piManualStop = false;
+let piLandmarks = [];
+let piMetrics = null;
+let piRoboflowResult = null;
 
 const toast = msg => {
   const el = $('toast');
@@ -90,6 +95,22 @@ function update(m) {
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
   state(s >= 80 ? 'กำลังติดตาม' : s >= settings.riskThreshold ? 'ควรระวัง' : 'ควรปรับท่า', cls);
   updateRisk(m);
+}
+
+function updateRoboflowResult(result) {
+  const el = $('roboflowResult');
+  const label = String(result?.label || '');
+  const confidence = Number(result?.confidence);
+  if (!label || !Number.isFinite(confidence)) return;
+  const labels = {
+    good_posture: 'AI เสริม: ท่านั่งดี',
+    slouch: 'AI เสริม: หลังงอ',
+    leaning_forward: 'AI เสริม: โน้มตัวไปข้างหน้า',
+    leaning_backward: 'AI เสริม: เอนตัวไปข้างหลัง'
+  };
+  piRoboflowResult = result;
+  el.hidden = false;
+  el.textContent = `${labels[label] || `AI เสริม: ${label}`} (${Math.round(confidence * 100)}%)`;
 }
 
 async function save(m) {
@@ -252,10 +273,10 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
 }
 
 function loop() {
-  if (!running) return;
-  if (video.currentTime !== lastVideoTime) {
-    lastVideoTime = video.currentTime;
-    const result = landmarker.detectForVideo(video, performance.now());
+  if (!running || !landmarker || !analysisVideo) return;
+  if (analysisVideo.currentTime !== lastVideoTime) {
+    lastVideoTime = analysisVideo.currentTime;
+    const result = landmarker.detectForVideo(analysisVideo, performance.now());
     const calculated = result.landmarks?.[0] && scorePose(result.landmarks[0]);
     if (calculated) {
       latestMetrics = calculated;
@@ -267,19 +288,15 @@ function loop() {
         }
       }
       update(m);
-      save(m);
+      if (saveAnalysisResults) save(m);
     }
     drawSleekSkeleton(ctx, result.landmarks?.[0], detectionSignal, latestMetrics);
   }
   frame = requestAnimationFrame(loop);
 }
 
-async function begin() {
-  if (!window.isSecureContext) {
-    toast('กรุณาเปิดผ่าน HTTPS หรือ http://localhost:3000');
-    return;
-  }
-  start.disabled = true;
+async function loadPoseLandmarker() {
+  if (landmarker) return;
   try {
     const { FilesetResolver, PoseLandmarker } = await loadVisionTasks();
     const vision = await FilesetResolver.forVisionTasks('./wasm');
@@ -305,17 +322,41 @@ async function begin() {
         minTrackingConfidence: 0.5
       });
     }
+  } catch (error) {
+    landmarker?.close();
+    landmarker = null;
+    throw error;
+  }
+}
+
+function startPoseTracking(source, { saveResults = false } = {}) {
+  analysisVideo = source;
+  saveAnalysisResults = saveResults;
+  lastVideoTime = -1;
+  canvas.width = source.videoWidth;
+  canvas.height = source.videoHeight;
+  canvas.hidden = false;
+  running = true;
+  cancelAnimationFrame(frame);
+  loop();
+}
+
+async function begin() {
+  if (!window.isSecureContext) {
+    toast('กรุณาเปิดผ่าน HTTPS หรือ http://localhost:3000');
+    return;
+  }
+  start.disabled = true;
+  try {
+    await loadPoseLandmarker();
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     video.srcObject = stream;
     await video.play();
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    running = true;
+    startPoseTracking(video, { saveResults: true });
     $('cameraHelp').hidden = true;
     start.disabled = true;
     stop.disabled = false;
     state('กำลังติดตาม', 'good');
-    loop();
   } catch (e) {
     console.error(e);
     state('เริ่มไม่ได้', 'risk');
@@ -333,6 +374,7 @@ function end() {
   landmarker?.close();
   landmarker = null;
   video.srcObject = null;
+  analysisVideo = video;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   detectionSignal = 'neutral';
   $('cameraSignal').className = 'camera-signal neutral';
@@ -364,8 +406,20 @@ function endPiCamera() {
   piSignal = undefined;
   piPeer?.close();
   piPeer = undefined;
-  const video = $('piCamera');
-  if (video) video.srcObject = null;
+  const piVideo = $('piCamera');
+  running = false;
+  cancelAnimationFrame(frame);
+  landmarker?.close();
+  landmarker = null;
+  analysisVideo = video;
+  lastVideoTime = -1;
+  if (piVideo) piVideo.srcObject = null;
+  piLandmarks = [];
+  piMetrics = null;
+  piRoboflowResult = null;
+  $('roboflowResult').hidden = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.hidden = true;
   $('cameraHelp').hidden = false;
   $('cameraSignal').className = 'camera-signal neutral';
   $('cameraSignal').textContent = 'หยุดแสดงภาพ';
@@ -402,6 +456,30 @@ function reconnectPiCamera() {
   state('กำลังเชื่อมต่อใหม่', 'neutral');
 }
 
+function piOverlayLandmarks(points) {
+  const landmarks = Array(33).fill(null);
+  if (!Array.isArray(points)) return landmarks;
+  for (const point of points) {
+    const index = Number(point?.index);
+    if (!Number.isInteger(index) || index < 0 || index >= landmarks.length) continue;
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) continue;
+    landmarks[index] = {
+      x: point.x,
+      y: point.y,
+      visibility: Number.isFinite(point.visibility) ? point.visibility : 1
+    };
+  }
+  return landmarks;
+}
+
+function drawPiOverlay() {
+  // The Pi already burns the current MediaPipe skeleton into its WebRTC
+  // frame. Drawing the same landmarks in the browser creates a second,
+  // misaligned cyan skeleton, so keep the dashboard canvas off for Pi video.
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.hidden = true;
+}
+
 function connectPiCamera() {
   if (piManualStop || piSignal?.readyState === WebSocket.OPEN) return;
   piPeer?.close();
@@ -410,6 +488,9 @@ function connectPiCamera() {
   piPeer.addEventListener('track', event => {
     const preview = $('piCamera');
     preview.srcObject = event.streams[0];
+    preview.onloadedmetadata = () => {
+      drawPiOverlay();
+    };
     console.log('[PostureAI] WebRTC stream color mode: RGB', {
       track: event.track.getSettings?.(),
       streamId: event.streams[0]?.id
@@ -440,6 +521,17 @@ function connectPiCamera() {
         displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
       });
+    } else if (message.type === 'pose_update') {
+      piLandmarks = piOverlayLandmarks(message.landmarks);
+      const metrics = message.metrics;
+      if (['score', 'neck', 'shoulders', 'torso'].every(key => Number.isFinite(metrics?.[key]))) {
+        piMetrics = metrics;
+        latestMetrics = metrics;
+        update(metrics);
+      }
+      if (!running || analysisVideo !== $('piCamera')) drawPiOverlay();
+    } else if (message.type === 'roboflow_update') {
+      updateRoboflowResult(message.result);
     } else if (message.type === 'error') {
       toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
       if (message.code === 'unavailable') {

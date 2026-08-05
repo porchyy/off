@@ -455,7 +455,7 @@ body {
    ═══════════════════════════════════════════ */
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.75fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -466,7 +466,7 @@ body {
   position: relative;
   margin: 16px 0;
   background: linear-gradient(135deg, #050813, #0a0e1a);
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--r-lg);
   border: 2px solid var(--border-subtle);
@@ -630,6 +630,7 @@ button:disabled {
    ═══════════════════════════════════════════ */
 .metrics {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
   align-content: start;
 }
@@ -670,6 +671,16 @@ button:disabled {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.roboflow-result {
+  justify-self: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--status-caution-bg);
+  color: var(--status-caution);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* Detail Metrics */
@@ -1038,6 +1049,10 @@ button:disabled {
   .chart-grid,
   .settings-grid,
   .privacy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics {
     grid-template-columns: 1fr;
   }
 

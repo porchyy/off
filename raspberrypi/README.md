@@ -107,16 +107,54 @@ python posture_client.py --config config.yaml
 
 ## โหมดทำงาน
 
-1. **Live camera pipeline**: Pi Camera จับภาพต่อเนื่องหนึ่งชุดที่ 640×480 / 10 FPS
+1. **Live camera pipeline**: Pi Camera จับภาพต่อเนื่องหนึ่งชุดที่ 640×360 / 12 FPS
    ในหน่วยความจำเท่านั้น แล้วส่งเป็น WebRTC ไปยัง dashboard ใน LAN (ไม่มีการบันทึกภาพลงดิสก์)
-   Picamera2 ใช้ชื่อ `RGB888`; หน้าเว็บแสดงชื่อ V4L2 ที่เทียบเท่ากันคือ `RGB3` (24-bit RGB).
-2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.2 วินาที
-   (5 FPS) → POST เฉพาะคะแนนไป backend
+   Pi client ขอภาพใน byte order `RGB` จาก Picamera2 แล้วส่งต่อเป็น `RGB3`
+   (24-bit RGB) เข้า MediaPipe และหน้าเว็บตั้งแต่ต้นทาง จึงไม่สลับสีแดง/น้ำเงิน.
+2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.1 วินาที
+   (10 FPS) → POST เฉพาะคะแนนไป backend และส่งเฉพาะพิกัด landmark สำคัญไปวาด
+   เส้นทับบน dashboard (ไม่ส่งหรือบันทึกภาพเพิ่ม)
 3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
    ต่อเนื่องเกิน `risk.seconds` จะเล่นเสียงและ POST `/api/alerts` โดยเว้นช่วง
    การแจ้งซ้ำตาม `risk.cooldown`
 4. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
    `buffer.sqlite` แล้วยิงใหม่เมื่อกลับมา online
+
+## AI เสริมจาก Roboflow (ทางเลือก)
+
+ระบบหลักยังคงใช้ **MediaPipe Pose Landmarker Full บน Pi** เพื่อวาด skeleton,
+คำนวณคะแนน และแจ้งเตือนโดยไม่ต้องใช้อินเทอร์เน็ต. หากต้องการให้หน้าเว็บแสดง
+ผลจำแนกท่านั่งจากโมเดล Roboflow เพิ่มเติม ให้เปิด `roboflow.enabled: true` ใน
+`config.yaml` และเก็บ API key ไว้นอก repository:
+
+```bash
+sudo install -d -m 700 /etc/postureai
+sudo nano /etc/postureai/roboflow.env
+```
+
+ใส่เพียงบรรทัดนี้ในไฟล์ (แทนที่ด้วย key ของตนเอง):
+
+```text
+ROBOFLOW_API_KEY=your-key-here
+```
+
+จากนั้นจำกัดสิทธิ์และเพิ่ม environment ให้ service:
+
+```bash
+sudo chmod 600 /etc/postureai/roboflow.env
+sudo systemctl edit postureai-client
+```
+
+ใส่:
+
+```ini
+[Service]
+EnvironmentFile=/etc/postureai/roboflow.env
+```
+
+แล้วสั่ง `sudo systemctl daemon-reload` และ `sudo systemctl restart postureai-client`.
+ผล Roboflow เป็นการส่งภาพตัวอย่างออกไปประมวลผลที่ cloud ทุก 1 วินาที จึงต้องให้
+Pi ออกอินเทอร์เน็ตได้ และไม่ควรเปิดใช้หากนโยบายความเป็นส่วนตัวไม่อนุญาต.
 
 ## หมายเหตุ
 

@@ -6,7 +6,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,8 @@ class CameraProducer:
         self.frames = LatestFrameBuffer()
         self.failures = 0
         self.last_error: Exception | None = None
+        self._overlay_lock = threading.Lock()
+        self._overlay_renderer: Callable[[Any], None] | None = None
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="postureai-camera", daemon=True)
 
@@ -50,6 +52,11 @@ class CameraProducer:
     def stop(self) -> None:
         self._stop.set()
         self._thread.join(timeout=3)
+
+    def set_overlay_renderer(self, renderer: Callable[[Any], None] | None) -> None:
+        """Set the lightweight overlay applied to every outgoing camera frame."""
+        with self._overlay_lock:
+            self._overlay_renderer = renderer
 
     def _run(self) -> None:
         interval = 1.0 / self.fps
@@ -65,6 +72,10 @@ class CameraProducer:
                 if self.camera.color_space == "bgr":
                     import cv2  # type: ignore
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                with self._overlay_lock:
+                    overlay_renderer = self._overlay_renderer
+                if overlay_renderer is not None:
+                    overlay_renderer(frame)
                 self.frames.put(frame)
                 self.failures = 0
                 self.last_error = None
@@ -113,9 +124,10 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
 
     camera = Picamera2()
     camera.configure(camera.create_preview_configuration(
-        # Request RGB directly from the Pi ISP so the shared live frame can
-        # be sent to AI and WebRTC without channel-order conversion.
-        main={"size": (width, height), "format": "RGB888"}
+        # libcamera's format label is endian-oriented: BGR888 gives
+        # capture_array pixels in the byte order [R, G, B]. Request it so
+        # every consumer receives native RGB from the camera pipeline.
+        main={"size": (width, height), "format": "BGR888"}
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.

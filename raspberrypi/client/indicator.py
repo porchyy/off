@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,22 @@ class GpioLed:
         except Exception as exc:
             logger.error("could not turn off red LED: %s", exc)
             return False
+
+    def blink(self, times: int = 2, on_seconds: float = 0.25, off_seconds: float = 0.25) -> bool:
+        """Flash the LED a bounded number of times, then leave it off."""
+        flashes = max(1, int(times))
+        on_duration = max(0.0, float(on_seconds))
+        off_duration = max(0.0, float(off_seconds))
+
+        for index in range(flashes):
+            if not self.on():
+                self.off()
+                return False
+            time.sleep(on_duration)
+            self.off()
+            if index < flashes - 1:
+                time.sleep(off_duration)
+        return True
 
     def close(self) -> None:
         """Leave the physical alert off when the client exits or restarts."""

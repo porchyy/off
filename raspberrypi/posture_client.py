@@ -34,7 +34,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "risk", "sound", "indicator", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -51,7 +51,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     camera["backend"] = str(camera.get("backend", "auto")).lower()
     if camera["backend"] not in {"auto", "picamera2", "opencv"}:
         raise ValueError("camera.backend must be auto, picamera2, or opencv")
-    for key, default in (("width", 640), ("height", 480), ("retries", 3)):
+    for key, default in (("width", 640), ("height", 360), ("retries", 3)):
         camera[key] = int(camera.get(key, default))
         if camera[key] <= 0:
             raise ValueError(f"camera.{key} must be positive")
@@ -60,15 +60,37 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
         raise ValueError("camera.flip must be -1, 0, or 1")
 
     detection = config["detection"]
+    detection["enabled"] = bool(detection.get("enabled", True))
     mode = str(detection.get("mode", "mediapipe")).lower()
     if mode != "mediapipe":
         raise ValueError("detection.mode currently supports only mediapipe")
     detection["mode"] = mode
-    detection["interval"] = max(0.1, float(detection.get("interval", 0.2)))
+    detection["interval"] = max(0.1, float(detection.get("interval", 0.1)))
+    detection["overlay_smoothing_alpha"] = min(
+        0.95, max(0.05, float(detection.get("overlay_smoothing_alpha", 0.65)))
+    )
+    detection["overlay_hold_seconds"] = min(
+        5.0, max(0.0, float(detection.get("overlay_hold_seconds", 0.2)))
+    )
+    detection["overlay_min_visibility"] = min(
+        1.0, max(0.0, float(detection.get("overlay_min_visibility", 0.35)))
+    )
     model_path = Path(str(detection.get("model", "../frontend/public/models/pose_landmarker_full.task")))
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
     detection["model"] = str(model_path)
+
+    roboflow = config["roboflow"]
+    roboflow["enabled"] = bool(roboflow.get("enabled", False))
+    roboflow["model_id"] = str(roboflow.get("model_id", "sitting-posture-detection-3933f/2")).strip()
+    if not roboflow["model_id"]:
+        raise ValueError("roboflow.model_id must not be empty")
+    roboflow["interval"] = max(0.5, float(roboflow.get("interval", 1.0)))
+    roboflow["confidence"] = min(1.0, max(0.0, float(roboflow.get("confidence", 0.6))))
+    roboflow["timeout"] = max(1.0, float(roboflow.get("timeout", 8.0)))
+    roboflow["api_key_env"] = str(roboflow.get("api_key_env", "ROBOFLOW_API_KEY")).strip()
+    if not roboflow["api_key_env"]:
+        raise ValueError("roboflow.api_key_env must not be empty")
 
     video = config["video"]
     video["enabled"] = bool(video.get("enabled", True))
@@ -76,7 +98,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     video["height"] = int(video.get("height", camera["height"]))
     if video["width"] <= 0 or video["height"] <= 0:
         raise ValueError("video.width and video.height must be positive")
-    video["fps"] = max(1.0, min(30.0, float(video.get("fps", 10))))
+    video["fps"] = max(1.0, min(30.0, float(video.get("fps", 12))))
     # Capture only once: the camera dimensions drive both AI and WebRTC.
     camera["width"] = video["width"]
     camera["height"] = video["height"]
@@ -100,7 +122,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, default=Path("config.yaml"))
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")
-    parser.add_argument("--test-led", action="store_true", help="Turn on the configured red LED briefly and exit")
+    parser.add_argument("--test-led", action="store_true", help="Blink the configured red LED twice and exit")
     parser.add_argument("--test-camera", action="store_true", help="Capture one frame without backend or pose detection")
     parser.add_argument("--check", action="store_true", help="Check MediaPipe, camera, and backend connectivity, then exit")
     parser.add_argument("--verbose", "-v", action="store_true")
@@ -135,22 +157,20 @@ def main(argv: list[str] | None = None) -> int:
         logger.info("testing alert sound...")
         return 0 if sound_player.play() else 1
     if args.test_led:
-        logger.info("testing red LED indicator...")
-        if not indicator.on():
-            return 1
-        time.sleep(2)
-        indicator.off()
-        return 0
+        logger.info("testing red LED indicator: blinking twice...")
+        return 0 if indicator.blink(times=2) else 1
 
     from client.capture import open_camera
 
     if args.check:
         camera = None
         try:
-            from client.detect import close_detector, get_detector
             import requests
 
-            get_detector(config["detection"]["model"])
+            if config["detection"]["enabled"]:
+                from client.detect import close_detector, get_detector
+
+                get_detector(config["detection"]["model"])
             camera = open_camera(config["camera"])
             ok, frame = camera.read()
             if not ok or frame is None:
@@ -160,7 +180,8 @@ def main(argv: list[str] | None = None) -> int:
             if not response.ok:
                 logger.error("backend health check returned %s", response.status_code)
                 return 1
-            logger.info("self-check OK: MediaPipe, %s camera, and backend are ready", camera.backend)
+            detector_name = "MediaPipe, " if config["detection"]["enabled"] else ""
+            logger.info("self-check OK: %s%s camera, and backend are ready", detector_name, camera.backend)
             return 0
         except Exception as exc:
             logger.error("self-check failed: %s", exc)
@@ -171,7 +192,8 @@ def main(argv: list[str] | None = None) -> int:
                     camera.release()
                 except Exception as exc:
                     logger.warning("could not release camera after self-check: %s", exc)
-            close_detector()
+            if config["detection"]["enabled"]:
+                close_detector()
 
     if args.test_camera:
         camera = None
@@ -188,9 +210,17 @@ def main(argv: list[str] | None = None) -> int:
                 camera.release()
 
     from client.capture import CameraProducer
-    from client.detect import close_detector, process_live_frame
+    from client.roboflow import RoboflowPostureClient
     from client.uploader import Uploader
     from client.webrtc import PiWebRtcSender
+
+    detection_enabled = config["detection"]["enabled"]
+    if detection_enabled:
+        from client.detect import close_detector, draw_pose_overlay, process_live_frame
+    else:
+        # Keep the MediaPipe code installed for easy rollback, but do not load
+        # its model or call its inference path in Roboflow-only mode.
+        close_detector = lambda: None
 
     backend_url = config["backend"]["url"]
     uploader = Uploader(
@@ -199,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         buffer_path=config["buffer"]["path"],
     )
     alert_controller = AlertController(config, uploader, sound_player, indicator)
+    roboflow = RoboflowPostureClient(config["roboflow"])
 
     consecutive_failures = 0
     camera = None
@@ -208,6 +239,22 @@ def main(argv: list[str] | None = None) -> int:
     try:
         camera = open_camera(config["camera"])
         producer = CameraProducer(camera, config["video"]["fps"])
+
+        if detection_enabled:
+            def update_stream_overlay(landmarks: list[dict[str, Any]], metrics: dict[str, Any] | None) -> None:
+                if not landmarks:
+                    producer.set_overlay_renderer(None)
+                    return
+                landmark_snapshot = [dict(point) for point in landmarks]
+                metrics_snapshot = dict(metrics) if metrics else None
+                min_visibility = config["detection"]["overlay_min_visibility"]
+                producer.set_overlay_renderer(
+                    lambda image: draw_pose_overlay(image, landmark_snapshot, metrics_snapshot, min_visibility)
+                )
+        else:
+            update_stream_overlay = None
+            logger.info("MediaPipe is disabled; running Roboflow posture classification only")
+
         producer.start()
         if config["video"]["enabled"]:
             webrtc = PiWebRtcSender(
@@ -218,7 +265,19 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 frame, _ = producer.frames.get()
                 if frame is not None:
-                    process_live_frame(frame, config, uploader, alert_controller, producer.color_space)
+                    if detection_enabled:
+                        process_live_frame(
+                            frame,
+                            config,
+                            uploader,
+                            alert_controller,
+                            producer.color_space,
+                            webrtc.publish_pose if webrtc else None,
+                            update_stream_overlay,
+                        )
+                    classification = roboflow.infer_if_due(frame, producer.color_space)
+                    if classification is not None and webrtc is not None:
+                        webrtc.publish_roboflow_result(classification)
                 consecutive_failures = producer.failures
                 if consecutive_failures >= 3:
                     raise RuntimeError(f"camera capture failed repeatedly: {producer.last_error}")
