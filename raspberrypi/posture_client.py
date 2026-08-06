@@ -87,6 +87,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     roboflow["interval"] = max(0.5, float(roboflow.get("interval", 1.0)))
     roboflow["confidence"] = min(1.0, max(0.0, float(roboflow.get("confidence", 0.6))))
     roboflow["timeout"] = max(1.0, float(roboflow.get("timeout", 8.0)))
+    roboflow["input_width"] = max(160, min(1280, int(roboflow.get("input_width", 640))))
     roboflow["api_key_env"] = str(roboflow.get("api_key_env", "ROBOFLOW_API_KEY")).strip()
     if not roboflow["api_key_env"]:
         raise ValueError("roboflow.api_key_env must not be empty")
@@ -209,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
                 camera.release()
 
     from client.capture import CameraProducer
-    from client.roboflow import RoboflowPostureClient
+    from client.roboflow import RoboflowInferenceWorker
     from client.uploader import Uploader
     from client.webrtc import PiWebRtcSender
 
@@ -228,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         buffer_path=config["buffer"]["path"],
     )
     alert_controller = AlertController(config, uploader, sound_player, indicator)
-    roboflow = RoboflowPostureClient(config["roboflow"])
+    roboflow = RoboflowInferenceWorker(config["roboflow"])
 
     consecutive_failures = 0
     camera = None
@@ -288,7 +289,8 @@ def main(argv: list[str] | None = None) -> int:
                             webrtc.publish_pose if webrtc else None,
                             update_stream_overlay,
                         )
-                    classification = roboflow.infer_if_due(frame, producer.color_space)
+                    roboflow.submit_if_due(frame, producer.color_space)
+                    classification = roboflow.take_result()
                     if classification is not None and webrtc is not None:
                         webrtc.publish_roboflow_result(classification)
                 consecutive_failures = producer.failures
@@ -334,6 +336,7 @@ def main(argv: list[str] | None = None) -> int:
                 camera.release()
             except Exception:
                 pass
+        roboflow.stop()
         close_detector()
         indicator.close()
     return 0

@@ -46,6 +46,8 @@ roboflow:
   interval: 1.0
   confidence: 0.6
   timeout: 8
+  # Resize only the cloud request; this never reduces dashboard video quality.
+  input_width: 640
   api_key_env: ROBOFLOW_API_KEY
 
 video:

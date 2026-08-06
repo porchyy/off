@@ -46,6 +46,7 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
         "interval": 1.0,
         "confidence": 0.6,
         "timeout": 8.0,
+        "input_width": 640,
         "api_key_env": "ROBOFLOW_API_KEY",
     }
 
