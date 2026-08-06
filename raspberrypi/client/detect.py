@@ -31,7 +31,10 @@ METRIC_KEYS = ("score", "neck", "shoulders", "torso")
 # skeleton, rather than all 33 MediaPipe landmarks.
 OVERLAY_LANDMARK_INDICES = (0, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24)
 OVERLAY_CONNECTIONS = (
-    (0, 11), (0, 12), (11, 12),
+    # Head/neck should join ears to their own shoulders.  Joining the nose
+    # directly to both shoulders made a misleading large triangle on the
+    # dashboard even when MediaPipe had found the correct landmarks.
+    (0, 7), (0, 8), (7, 11), (8, 12), (11, 12),
     (11, 13), (13, 15), (12, 14), (14, 16),
     (11, 23), (12, 24), (23, 24),
 )

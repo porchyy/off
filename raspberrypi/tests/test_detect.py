@@ -10,6 +10,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from client import detect
 
 
+def test_overlay_uses_anatomical_head_to_shoulder_connections():
+    assert (7, 11) in detect.OVERLAY_CONNECTIONS
+    assert (8, 12) in detect.OVERLAY_CONNECTIONS
+    assert (0, 11) not in detect.OVERLAY_CONNECTIONS
+    assert (0, 12) not in detect.OVERLAY_CONNECTIONS
+
+
 def test_live_detection_passes_camera_color_metadata_to_detector(monkeypatch):
     received = []
 
