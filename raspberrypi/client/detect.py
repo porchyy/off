@@ -26,6 +26,7 @@ DEFAULT_OVERLAY_MIN_VISIBILITY = 0.35
 # numbers readable without making the posture state feel delayed.
 DEFAULT_METRIC_SMOOTHING_ALPHA = 0.35
 METRIC_KEYS = ("score", "neck", "shoulders", "torso")
+POSTURE_MEASUREMENT_KEYS = ("neck", "shoulders", "torso")
 
 # Keep the live overlay small: these are the points rendered by the dashboard
 # skeleton, rather than all 33 MediaPipe landmarks.
@@ -142,8 +143,75 @@ class PoseMetricSmoother:
         return {key: round(self._metrics[key], 1) for key in METRIC_KEYS}
 
 
+class PostureBaselineCalibrator:
+    """Collect a requested good posture and score deviations from it."""
+
+    def __init__(self) -> None:
+        import threading
+
+        self._lock = threading.Lock()
+        self._state = "uncalibrated"
+        self._started_at = 0.0
+        self._duration = 5.0
+        self._samples: list[dict[str, float]] = []
+        self._baseline: dict[str, float] | None = None
+
+    def reset(self) -> None:
+        with self._lock:
+            self._state = "uncalibrated"
+            self._samples.clear()
+            self._baseline = None
+
+    def start(self, duration_seconds: float, now: float | None = None) -> None:
+        with self._lock:
+            self._state = "collecting"
+            self._started_at = time.monotonic() if now is None else now
+            self._duration = min(15.0, max(2.0, float(duration_seconds)))
+            self._samples.clear()
+            self._baseline = None
+        logger.info("posture baseline calibration started; hold a good sitting posture for %.1fs", self._duration)
+
+    def apply(self, metrics: dict[str, Any], now: float) -> tuple[dict[str, float], dict[str, Any]]:
+        raw = {key: float(metrics[key]) for key in POSTURE_MEASUREMENT_KEYS}
+        with self._lock:
+            if self._state == "collecting":
+                self._samples.append(raw)
+                progress = min(1.0, (now - self._started_at) / self._duration)
+                if progress >= 1.0 and self._samples:
+                    self._baseline = {
+                        key: sorted(sample[key] for sample in self._samples)[len(self._samples) // 2]
+                        for key in POSTURE_MEASUREMENT_KEYS
+                    }
+                    self._state = "ready"
+                    logger.info("posture baseline calibration complete from %s samples", len(self._samples))
+                else:
+                    return ({key: float(metrics[key]) for key in METRIC_KEYS}, {
+                        "state": "collecting", "progress": round(progress, 2), "seconds": self._duration,
+                    })
+
+            if self._state != "ready" or self._baseline is None:
+                return ({key: float(metrics[key]) for key in METRIC_KEYS}, {"state": "uncalibrated"})
+
+            adjusted = {key: max(0.0, raw[key] - self._baseline[key]) for key in POSTURE_MEASUREMENT_KEYS}
+            return ({"score": _posture_score(**adjusted), **adjusted}, {"state": "ready", "progress": 1.0})
+
+
 _overlay_smoother = PoseOverlaySmoother()
 _metric_smoother = PoseMetricSmoother()
+_baseline_calibrator = PostureBaselineCalibrator()
+
+
+def _posture_score(neck: float, shoulders: float, torso: float) -> float:
+    neck_penalty = max(0.0, neck - 10.0) * 2.5
+    shoulder_penalty = max(0.0, shoulders - 5.0) * 2.0
+    torso_penalty = max(0.0, torso - 8.0) * 1.8
+    return max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
+
+
+def start_baseline_calibration(duration_seconds: float = 5.0) -> None:
+    """Begin a user-requested good-posture baseline collection."""
+    _metric_smoother.reset()
+    _baseline_calibrator.start(duration_seconds)
 
 
 def _overlay_settings(detection: dict[str, Any]) -> tuple[float, float, float, float]:
@@ -299,11 +367,7 @@ class MediaPipePoseDetector:
             shoulders = abs(ls.y - rs.y) * 100.0
             torso = abs(math.atan2(mid_sh_x - mid_hip_x, max(0.001, mid_hip_y - mid_sh_y)) * 180.0 / math.pi)
 
-        neck_penalty = max(0.0, neck - 10.0) * 2.5
-        shoulder_penalty = max(0.0, shoulders - 5.0) * 2.0
-        torso_penalty = max(0.0, torso - 8.0) * 1.8
-
-        score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
+        score = _posture_score(neck, shoulders, torso)
 
         return {
             "score": round(score, 1),
@@ -344,6 +408,7 @@ def close_detector() -> None:
     _pose_visible = False
     _overlay_smoother.reset()
     _metric_smoother.reset()
+    _baseline_calibrator.reset()
 
 
 def process_live_frame(
@@ -391,17 +456,25 @@ def process_live_frame(
             if pose_callback is not None:
                 pose_callback({}, landmarks)
             return
-        metrics = _metric_smoother.update(result, metric_alpha)
+        calibrated_metrics, calibration = _baseline_calibrator.apply(result, now)
+        metrics = _metric_smoother.update(calibrated_metrics, metric_alpha)
+        metrics["calibration"] = calibration
         if frame_overlay_callback is not None:
             frame_overlay_callback(landmarks, metrics)
         else:
             draw_pose_overlay(frame, landmarks, metrics, min_visibility=min_visibility)
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
-        uploader.send_sample(metrics)
+        # Do not write alerts/history from temporary values while the user is
+        # deliberately holding a known-good calibration posture.
+        is_calibrating = calibration["state"] == "collecting"
+        if not is_calibrating:
+            uploader.send_sample(metrics)
 
         if alert_controller is not None:
-            alert_controller.update(metrics)
+            # Calibration is an intentional good-posture reference, never an
+            # alert condition. Clear any previous LED/risk state while it runs.
+            alert_controller.update({"score": 100.0} if is_calibrating else metrics)
         if pose_callback is not None:
             pose_callback(metrics, landmarks)
     else:
