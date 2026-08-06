@@ -82,23 +82,23 @@ def test_good_posture_resets_low_score_timer():
     assert controller.update({"score": 50}) is True
 
 
-def test_led_turns_on_for_persistent_risk_and_off_when_posture_recovers():
+def test_led_turns_on_immediately_below_its_threshold_and_off_when_score_recovers():
     now = [0.0]
     indicator = FakeIndicator()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 5}},
+        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50}},
         FakeUploader(),
         FakeSound(),
         indicator,
         clock=lambda: now[0],
     )
 
-    controller.update({"score": 50})
-    assert indicator.on_count == 0
-    now[0] = 5.0
-    assert controller.update({"score": 50}) is True
+    controller.update({"score": 49})
     assert indicator.on_count == 1
-    controller.update({"score": 75})
+    assert controller.update({"score": 49}) is False
+    now[0] = 5.0
+    assert controller.update({"score": 49}) is True
+    controller.update({"score": 50})
     assert indicator.off_count == 1
 
 

@@ -109,6 +109,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     if not 0 <= indicator["pin"] <= 27:
         raise ValueError("indicator.pin must be a BCM GPIO number from 0 to 27")
     indicator["active_high"] = bool(indicator.get("active_high", True))
+    indicator["threshold"] = min(100.0, max(0.0, float(indicator.get("threshold", 50))))
 
     buffer_path = Path(str(config["buffer"].get("path", "buffer.sqlite")))
     if not buffer_path.is_absolute():

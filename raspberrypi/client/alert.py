@@ -87,7 +87,7 @@ class SoundPlayer:
 
 
 class AlertController:
-    """Trigger one alert after a low score persists, with a repeat cooldown."""
+    """Trigger delayed alerts and an immediate, independently-thresholded LED."""
 
     def __init__(
         self,
@@ -101,12 +101,15 @@ class AlertController:
         self.threshold = float(risk.get("threshold", 60))
         self.risk_seconds = max(0.0, float(risk.get("seconds", 45)))
         self.cooldown = max(0.0, float(risk.get("cooldown", 30)))
+        indicator_config = config.get("indicator", {})
+        self.indicator_threshold = min(100.0, max(0.0, float(indicator_config.get("threshold", 50))))
         self.uploader = uploader
         self.sound_player = sound_player
         self.indicator = indicator
         self.clock = clock
         self.low_since: float | None = None
         self.last_alert: float | None = None
+        self._indicator_is_on = False
 
     def apply_runtime_settings(self, settings: dict[str, Any]) -> bool:
         """Apply the dashboard-owned settings without restarting the Pi service."""
@@ -133,18 +136,25 @@ class AlertController:
     def update(self, metrics: dict[str, float]) -> bool:
         now = self.clock()
         score = float(metrics["score"])
+
+        # The LED is a live posture cue: it is intentionally independent from
+        # the dashboard-owned alert delay and changes state immediately.
+        should_light_indicator = score < self.indicator_threshold
+        if self.indicator is not None and should_light_indicator != self._indicator_is_on:
+            if should_light_indicator:
+                self.indicator.on()
+            else:
+                self.indicator.off()
+            self._indicator_is_on = should_light_indicator
+
         if score >= self.threshold:
             self.low_since = None
-            if self.indicator is not None:
-                self.indicator.off()
             return False
 
         if self.low_since is None:
             self.low_since = now
         if now - self.low_since < self.risk_seconds:
             return False
-        if self.indicator is not None:
-            self.indicator.on()
         if self.last_alert is not None and now - self.last_alert < self.cooldown:
             return False
 

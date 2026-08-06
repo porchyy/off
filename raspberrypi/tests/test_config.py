@@ -25,7 +25,7 @@ def test_config_rejects_unimplemented_remote_detection_mode(tmp_path):
 def test_config_validates_led_pin_as_bcm_gpio(tmp_path):
     config = validate_config({"indicator": {"enabled": True, "pin": 17}}, tmp_path / "config.yaml")
 
-    assert config["indicator"] == {"enabled": True, "pin": 17, "active_high": True}
+    assert config["indicator"] == {"enabled": True, "pin": 17, "active_high": True, "threshold": 50.0}
 
     with pytest.raises(ValueError, match="indicator.pin"):
         validate_config({"indicator": {"pin": 40}}, tmp_path / "config.yaml")

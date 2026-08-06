@@ -78,6 +78,8 @@ indicator:
   pin: 17
   # false หากโมดูลของคุณติดเมื่อสัญญาณ LOW
   active_high: true
+  # ติดทันทีเมื่อคะแนนต่ำกว่าค่านี้ และดับทันทีเมื่อคะแนนกลับมาถึงเกณฑ์
+  threshold: 50
 
 buffer:
   # path ของ SQLite ที่ใช้ buffer ตอน backend offline

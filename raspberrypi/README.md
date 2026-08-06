@@ -93,11 +93,12 @@ indicator:
   enabled: true
   pin: 17
   active_high: true
+  threshold: 50
 ```
 
 ทดสอบก่อนใช้งานจริงด้วย `python posture_client.py --config config.yaml --test-led`.
-ระบบจะเปิด LED เมื่อคะแนนต่ำกว่าค่า `risk.threshold` ต่อเนื่องครบ `risk.seconds`
-และจะปิดทันทีเมื่อคะแนนกลับมาปกติ. หากไฟทำงานกลับด้าน ให้ตั้ง `active_high: false`.
+LED จะติดทันทีเมื่อคะแนนต่ำกว่า `indicator.threshold` และจะปิดทันทีเมื่อคะแนนกลับมาถึงเกณฑ์
+โดยไม่ต้องรอเวลาการแจ้งเตือนเสียง. หากไฟทำงานกลับด้าน ให้ตั้ง `active_high: false`.
 
 ## คำสั่งตรวจสอบแบบ manual
 
