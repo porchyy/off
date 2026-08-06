@@ -8,7 +8,7 @@ import json
 import logging
 import threading
 from fractions import Fraction
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
@@ -30,14 +30,12 @@ class PiWebRtcSender:
         fps: float,
         color_space: str = "rgb",
         camera_format: str = "unknown",
-        on_calibration_start: Callable[[], None] | None = None,
     ) -> None:
         self.frames = frames
         self.url = signaling_url(backend_url)
         self.fps = max(1.0, fps)
         self.color_space = color_space
         self.camera_format = camera_format
-        self.on_calibration_start = on_calibration_start
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, name="postureai-webrtc", daemon=True)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -111,12 +109,6 @@ class PiWebRtcSender:
                             elif message.get("type") == "stop":
                                 viewer_ready.clear()
                                 await self._close_peer()
-                            elif message.get("type") == "calibration_start":
-                                if self.on_calibration_start is None:
-                                    logger.warning("dashboard requested calibration while MediaPipe is disabled")
-                                else:
-                                    self.on_calibration_start()
-                                    await socket.send(json.dumps({"type": "calibration_status", "state": "started"}))
                             elif message.get("type") == "error" and message.get("code") == "peer_unavailable":
                                 viewer_ready.clear()
                     finally:

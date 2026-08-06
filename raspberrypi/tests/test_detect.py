@@ -140,21 +140,6 @@ def test_metric_smoother_resets_between_people_or_lost_poses():
     assert smoother.update({"score": 40, "neck": 35, "shoulders": 20, "torso": 30}, 0.35)["score"] == 40.0
 
 
-def test_baseline_calibration_scores_deviation_instead_of_camera_offset():
-    calibrator = detect.PostureBaselineCalibrator()
-    calibrator.start(2, now=0)
-    good = {"score": 10, "neck": 27, "shoulders": 24, "torso": 22}
-
-    _, state = calibrator.apply(good, now=0.5)
-    assert state["state"] == "collecting"
-    calibrated, state = calibrator.apply(good, now=2.0)
-    assert state["state"] == "ready"
-    assert calibrated["score"] == 100.0
-
-    worse, _ = calibrator.apply({"score": 0, "neck": 45, "shoulders": 24, "torso": 22}, now=2.1)
-    assert worse["score"] < 100.0
-
-
 def test_detector_initialization_fails_loudly_instead_of_using_fake_metrics(monkeypatch):
     class BrokenDetector:
         def __init__(self):

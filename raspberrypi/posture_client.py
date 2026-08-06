@@ -77,9 +77,6 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     detection["metric_smoothing_alpha"] = min(
         0.95, max(0.05, float(detection.get("metric_smoothing_alpha", 0.35)))
     )
-    detection["calibration_seconds"] = min(
-        15.0, max(2.0, float(detection.get("calibration_seconds", 5.0)))
-    )
     model_path = Path(str(detection.get("model", "../frontend/public/models/pose_landmarker_full.task")))
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
@@ -223,15 +220,11 @@ def main(argv: list[str] | None = None) -> int:
 
     detection_enabled = config["detection"]["enabled"]
     if detection_enabled:
-        from client.detect import close_detector, draw_pose_overlay, process_live_frame, start_baseline_calibration
-
-        def begin_baseline_calibration() -> None:
-            start_baseline_calibration(config["detection"]["calibration_seconds"])
+        from client.detect import close_detector, draw_pose_overlay, process_live_frame
     else:
         # Keep the MediaPipe code installed for easy rollback, but do not load
         # its model or call its inference path in Roboflow-only mode.
         close_detector = lambda: None
-        begin_baseline_calibration = None
 
     backend_url = config["backend"]["url"]
     uploader = Uploader(
@@ -270,8 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         producer.start()
         if config["video"]["enabled"]:
             webrtc = PiWebRtcSender(
-                producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format,
-                on_calibration_start=begin_baseline_calibration,
+                producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format
             )
             webrtc.start()
         while True:
@@ -327,8 +319,7 @@ def main(argv: list[str] | None = None) -> int:
                     if webrtc:
                         webrtc.stop()
                         webrtc = PiWebRtcSender(
-                            producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format,
-                            on_calibration_start=begin_baseline_calibration,
+                            producer.frames, backend_url, config["video"]["fps"], producer.color_space, camera.stream_format
                         )
                         webrtc.start()
                     consecutive_failures = 0
