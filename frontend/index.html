@@ -332,6 +332,10 @@
       </div>
 
       <div class="actions settings-actions">
+        <label class="card setting" id="adminTokenField">
+          <span class="setting-label">รหัสผ่านผู้ดูแล (ใช้เฉพาะการบันทึก/ลบ)</span>
+          <input id="adminToken" type="password" autocomplete="current-password">
+        </label>
         <button id="saveSettings" class="primary" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           บันทึกตั้งค่า
@@ -346,6 +350,7 @@
         </button>
       </div>
       <p id="settingsNote" class="settings-note">เวอร์ชันนี้เก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ปิดแท็บหรือล้างข้อมูลเว็บไซต์จะทำให้ประวัติหาย</p>
+      <p id="piSyncState" class="settings-note" aria-live="polite"></p>
     </section>
 
     <!-- ══════════════════════════════════════════

@@ -100,3 +100,18 @@ def test_led_turns_on_for_persistent_risk_and_off_when_posture_recovers():
     assert indicator.on_count == 1
     controller.update({"score": 75})
     assert indicator.off_count == 1
+
+
+def test_dashboard_settings_apply_without_restarting_client():
+    sound = FakeSound()
+    sound.enabled = True
+    controller = AlertController(
+        {"risk": {"threshold": 60, "seconds": 45}},
+        FakeUploader(),
+        sound,
+    )
+
+    assert controller.apply_runtime_settings({"riskThreshold": 72, "riskSeconds": 20, "soundEnabled": False}) is True
+    assert controller.threshold == 72
+    assert controller.risk_seconds == 20
+    assert sound.enabled is False

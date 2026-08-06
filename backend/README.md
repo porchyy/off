@@ -47,11 +47,18 @@ Environment variables (loaded via `pydantic-settings`, supports `.env`):
 | `POSTUREAI_CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Comma-separated list, or `*` |
 | `POSTUREAI_HOST` | `0.0.0.0` | Bind address |
 | `POSTUREAI_PORT` | `8000` | HTTP port |
+| `POSTUREAI_REQUIRE_ADMIN_TOKEN` | `false` | Require an admin token for settings/data mutations |
+| `POSTUREAI_ADMIN_TOKEN` | empty | Secret sent as `X-PostureAI-Admin-Token` by the dashboard |
+| `POSTUREAI_RETENTION_DAYS` | `30` | Remove samples and alerts older than this at startup and then daily |
 
 The `dataDir` field returned by `/api/settings` always reflects the resolved
 absolute path the server is actually using. Changes via `PUT /api/settings`
 only persist the new path in the database — restart the server (or update the
 env var) to actually move the SQLite file.
+
+When `POSTUREAI_REQUIRE_ADMIN_TOKEN=true`, `PUT /api/settings`, `DELETE /api/data`,
+and `POST /api/data/prune` require the `X-PostureAI-Admin-Token` header. Keep the
+token in a local `.env` file with mode `600`; never commit it.
 
 ## Schema
 

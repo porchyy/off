@@ -4,8 +4,8 @@ Dockerfile และ compose files สำหรับ deploy
 
 - `docker-compose.yml` ที่ root ของ repo จะอ้างอิงไฟล์ในนี้ (ดู
   `docker-compose.yml` ที่ root)
-- ปัจจุบันมีแค่ backend image; frontend build artifacts ถูก serve
-  จาก FastAPI เอง (ดู `backend/app/main.py`)
+- มี backend image และ frontend image; frontend build artifacts ถูก serve
+  จาก Nginx และ Nginx proxy `/api` ไปยัง backend
 
 ## Images
 
@@ -18,3 +18,6 @@ Dockerfile และ compose files สำหรับ deploy
 
 - `../database:/app/database` — SQLite persistence (shared between
   backend service และ host)
+
+`web` เปิดพอร์ต `3000` สำหรับ LAN แต่ `backend` bind พอร์ต `8000` กับ loopback
+ของ Pi เท่านั้น เพื่อให้ API ถูกเรียกผ่าน Nginx ตาม origin เดียวกัน

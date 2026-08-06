@@ -27,11 +27,22 @@ echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
     docker.io docker-compose-v2 python3-venv python3-picamera2 python3-opencv \
-    libgl1 alsa-utils python3-gpiozero curl
+    libgl1 alsa-utils python3-gpiozero curl openssl
 
 DOCKER_BIN="$(command -v docker || true)"
 [ -n "$DOCKER_BIN" ] || fail "docker was not installed successfully"
 sudo "$DOCKER_BIN" compose version >/dev/null || fail "Docker Compose v2 is unavailable after installation"
+
+# The compose file enables administrator protection. Keep the secret out of
+# git, but let Docker Compose load it automatically from the project root.
+ENV_FILE="$PROJECT_DIR/.env"
+if ! grep -q '^POSTUREAI_ADMIN_TOKEN=.' "$ENV_FILE" 2>/dev/null; then
+    echo "Creating a local administrator token..."
+    umask 077
+    TOKEN="$(openssl rand -hex 32)"
+    printf 'POSTUREAI_ADMIN_TOKEN=%s\n' "$TOKEN" >> "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+fi
 
 echo "[2/6] Granting camera/audio access to $INSTALL_USER..."
 sudo usermod -aG docker,video,audio,gpio "$INSTALL_USER"
@@ -123,3 +134,5 @@ echo
 echo "PostureAI is ready. Open: http://$PI_IP:3000"
 echo "Status: sudo systemctl status postureai-stack postureai-client"
 echo "Logs:   sudo journalctl -u postureai-client -f"
+echo "Containers: sudo docker compose ps"
+echo "Web/API health: curl http://127.0.0.1:8000/api/health"

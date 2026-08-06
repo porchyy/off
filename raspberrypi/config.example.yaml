@@ -6,6 +6,8 @@ backend:
   url: http://localhost:8000
   # timeout (วินาที) สำหรับ HTTP call
   timeout: 5
+  # Pi จะอ่านค่าตรวจจับจาก Dashboard ใหม่ตามช่วงเวลานี้; ใช้ config นี้เป็น fallback เมื่อ backend ล่ม
+  settings_sync_seconds: 30
 
 camera:
   # Pi 5 default: Pi Camera through Picamera2. Set auto to also fall back to USB.

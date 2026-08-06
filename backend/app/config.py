@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     )
     host: str = Field(default="0.0.0.0", alias="POSTUREAI_HOST")
     port: int = Field(default=8000, alias="POSTUREAI_PORT")
+    admin_token: str = Field(default="", alias="POSTUREAI_ADMIN_TOKEN")
+    require_admin_token: bool = Field(default=False, alias="POSTUREAI_REQUIRE_ADMIN_TOKEN")
+    retention_days: int = Field(default=30, ge=1, le=365, alias="POSTUREAI_RETENTION_DAYS")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
-import json
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -13,8 +13,16 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .routes import router
+from .routes import prune_expired_data, router
 from .settings_store import ensure_defaults
+
+
+async def _retention_loop() -> None:
+    """Run daily cleanup while keeping SQLite maintenance inside the backend."""
+    while True:
+        await asyncio.sleep(24 * 60 * 60)
+        with SessionLocal() as db:
+            prune_expired_data(db, settings.retention_days)
 
 
 @asynccontextmanager
@@ -22,7 +30,16 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_defaults(db)
-    yield
+        prune_expired_data(db, settings.retention_days)
+    retention_task = asyncio.create_task(_retention_loop())
+    try:
+        yield
+    finally:
+        retention_task.cancel()
+        try:
+            await retention_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="PostureAI Backend", version="1.0.0", lifespan=lifespan)

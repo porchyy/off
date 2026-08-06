@@ -24,7 +24,9 @@ chmod +x raspberrypi/setup-pi5.sh
 ```
 
 สคริปต์จะตรวจ MediaPipe, กล้อง และ backend ก่อนจบงาน แล้วแสดง URL สำหรับเปิด
-จากอุปกรณ์ในเครือข่ายเดียวกัน เช่น `http://192.168.x.x:3000`
+จากอุปกรณ์ในเครือข่ายเดียวกัน เช่น `http://192.168.x.x:3000` พร้อมสร้างรหัสผู้ดูแล
+แบบสุ่มไว้ที่ `<project>/.env` (permission `600`) สำหรับใช้เมื่อบันทึกการตั้งค่าหรือลบข้อมูล
+บน dashboard; ดูค่าเมื่อต้องใช้ด้วย `grep POSTUREAI_ADMIN_TOKEN ../.env` จากโฟลเดอร์ `raspberrypi/`
 
 ตรวจสถานะหรือ log:
 
@@ -32,6 +34,10 @@ chmod +x raspberrypi/setup-pi5.sh
 sudo systemctl status postureai-stack postureai-client
 sudo journalctl -u postureai-client -f
 ```
+
+ค่าเกณฑ์ความเสี่ยงและเสียงที่บันทึกจาก dashboard จะถูก client ดึงมาใช้ภายใน 30 วินาที
+หาก backend หลุด client จะใช้ค่าล่าสุด/ค่าจาก `config.yaml` ต่อไป และ dashboard จะแสดง
+สถานะการ sync ของ Pi ในหน้า Settings
 
 หากต้องการติดตั้งเฉพาะกล้อง/เซนเซอร์ (ไม่ติดตั้ง Docker หรือหน้าเว็บ):
 

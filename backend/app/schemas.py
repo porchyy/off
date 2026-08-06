@@ -27,6 +27,7 @@ class SettingsModel(ApiModel):
     risk_seconds: int = Field(ge=5, le=600, serialization_alias="riskSeconds")
     data_dir: str = Field(serialization_alias="dataDir")
     sound_enabled: bool = Field(serialization_alias="soundEnabled")
+    voice_enabled: bool = Field(serialization_alias="voiceEnabled")
     desktop_enabled: bool = Field(serialization_alias="desktopEnabled")
     pending_data_dir: str | None = Field(default=None, serialization_alias="pendingDataDir")
 
@@ -36,6 +37,7 @@ class SettingsUpdate(ApiModel):
     risk_seconds: int | None = Field(default=None, ge=5, le=600, alias="riskSeconds")
     data_dir: str | None = Field(default=None, alias="dataDir")
     sound_enabled: bool | None = Field(default=None, alias="soundEnabled")
+    voice_enabled: bool | None = Field(default=None, alias="voiceEnabled")
     desktop_enabled: bool | None = Field(default=None, alias="desktopEnabled")
 
 
@@ -96,3 +98,13 @@ class ExportResponse(BaseModel):
 class OkResponse(BaseModel):
     ok: bool = True
 
+
+class ClientStatusIn(BaseModel):
+    online: bool = True
+    last_sync_at: str | None = Field(default=None, alias="lastSyncAt")
+    message: str | None = Field(default=None, max_length=160)
+
+
+class ClientStatusResponse(ClientStatusIn):
+    updated_at: str = Field(serialization_alias="updatedAt")
+    retention_days: int = Field(serialization_alias="retentionDays")

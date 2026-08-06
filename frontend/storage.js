@@ -1,5 +1,6 @@
 const SAMPLE_LIMIT = 500;
 const ALERT_LIMIT = 500;
+const ADMIN_TOKEN_KEY = 'postureai_admin_token';
 const KEYS = {
   samples: 'postureai_samples',
   alerts: 'postureai_alerts',
@@ -56,6 +57,11 @@ async function requestText(url) {
   return response.text();
 }
 
+function adminHeaders() {
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+  return token ? { 'x-postureai-admin-token': token } : {};
+}
+
 class BackendStorage {
   mode = 'backend';
   isDemo = false;
@@ -71,9 +77,13 @@ class BackendStorage {
   async saveSettings(settings) {
     return requestJson('/api/settings', {
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...adminHeaders() },
       body: JSON.stringify(settings)
     });
+  }
+
+  setAdminToken(token) {
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
   }
 
   async addSample(sample) {
@@ -100,13 +110,17 @@ class BackendStorage {
     return requestJson('/api/stats');
   }
 
+  async clientStatus() {
+    return requestJson('/api/client/status');
+  }
+
   async export(format) {
     if (format === 'json') return JSON.stringify(await requestJson('/api/export?format=json'), null, 2);
     return requestText('/api/export?format=csv');
   }
 
   async clear() {
-    return requestJson('/api/data', { method: 'DELETE' });
+    return requestJson('/api/data', { method: 'DELETE', headers: adminHeaders() });
   }
 }
 
@@ -186,6 +200,12 @@ class LocalStorageStorage {
       .map(label => ({ label, alerts: alertsByDay.get(label) || 0 }));
 
     return { daily, weeklyAlerts };
+  }
+
+  setAdminToken() {}
+
+  async clientStatus() {
+    return { online: false, message: 'โหมดตัวอย่างไม่เชื่อมต่อ Raspberry Pi', retentionDays: null };
   }
 
   async export(format) {

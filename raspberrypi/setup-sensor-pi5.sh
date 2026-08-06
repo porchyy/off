@@ -6,6 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$SCRIPT_DIR"
 
+if [ "$(uname -m)" != "aarch64" ]; then
+    echo "ERROR: This installer requires 64-bit Raspberry Pi OS (aarch64)." >&2
+    exit 1
+fi
+
 sudo apt-get update
 sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 alsa-utils python3-gpiozero curl
 

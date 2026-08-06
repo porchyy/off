@@ -54,6 +54,30 @@ class Uploader:
             logger.warning("could not upload camera frame: %s", exc)
         return False
 
+    def fetch_settings(self) -> dict[str, Any] | None:
+        """Read dashboard settings without buffering when the backend is offline."""
+        try:
+            response = requests.get(f"{self._base}/api/settings", timeout=self._timeout)
+            if response.ok:
+                payload = response.json()
+                return payload if isinstance(payload, dict) else None
+            logger.warning("backend returned %s for settings sync", response.status_code)
+        except requests.RequestException as exc:
+            logger.warning("could not sync settings from backend: %s", exc)
+        return None
+
+    def send_client_status(self, *, online: bool, last_sync_at: str | None, message: str | None = None) -> bool:
+        try:
+            response = requests.put(
+                f"{self._base}/api/client/status",
+                json={"online": online, "lastSyncAt": last_sync_at, "message": message},
+                timeout=self._timeout,
+            )
+            return response.ok
+        except requests.RequestException as exc:
+            logger.debug("could not publish Pi client status: %s", exc)
+            return False
+
     def _post(self, path: str, payload: dict[str, Any]) -> bool:
         try:
             response = requests.post(f"{self._base}{path}", json=payload, timeout=self._timeout)

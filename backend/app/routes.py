@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hmac
 import json
+import logging
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
@@ -20,6 +22,8 @@ from .models import Alert, Base, Sample, Setting
 from .schemas import (
     AlertIn,
     AlertOut,
+    ClientStatusIn,
+    ClientStatusResponse,
     ExportResponse,
     HealthResponse,
     OkResponse,
@@ -30,10 +34,22 @@ from .schemas import (
     SummaryResponse,
 )
 from .settings_store import DEFAULTS, ensure_defaults, get_all
+from .runtime_state import client_runtime_state
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 MAX_CAMERA_FRAME_BYTES = 3 * 1024 * 1024
+
+
+def require_admin_token(x_postureai_admin_token: str | None = Header(default=None)) -> None:
+    """Protect mutations without requiring a login to view the LAN dashboard."""
+    if not settings.require_admin_token:
+        return
+    if not settings.admin_token:
+        raise HTTPException(status_code=503, detail="admin token is not configured")
+    if not x_postureai_admin_token or not hmac.compare_digest(x_postureai_admin_token, settings.admin_token):
+        raise HTTPException(status_code=401, detail="administrator token is required")
 
 
 @router.get("/api/health", response_model=HealthResponse)
@@ -50,6 +66,24 @@ def health(db: Session = Depends(get_db)) -> HealthResponse:
         data_dir=str(settings.data_dir.resolve()),
         time=datetime.now(timezone.utc).isoformat(),
     )
+
+
+@router.get("/api/client/status", response_model=ClientStatusResponse)
+def client_status() -> ClientStatusResponse:
+    online = client_runtime_state.is_online()
+    return ClientStatusResponse(
+        online=online,
+        last_sync_at=client_runtime_state.last_sync_at,
+        message=client_runtime_state.message if online else "Pi client heartbeat is stale or unavailable",
+        updated_at=client_runtime_state.updated_at,
+        retention_days=settings.retention_days,
+    )
+
+
+@router.put("/api/client/status", status_code=204)
+def update_client_status(payload: ClientStatusIn) -> Response:
+    client_runtime_state.update(payload.online, payload.last_sync_at, payload.message)
+    return Response(status_code=204)
 
 
 @router.put("/api/camera/frame", status_code=204)
@@ -156,12 +190,17 @@ def read_settings(db: Session = Depends(get_db)) -> SettingsModel:
         risk_seconds=raw["riskSeconds"],
         data_dir=raw["dataDir"],
         sound_enabled=raw["soundEnabled"],
+        voice_enabled=raw["voiceEnabled"],
         desktop_enabled=raw["desktopEnabled"],
     )
 
 
 @router.put("/api/settings", response_model=SettingsModel)
-def write_settings(payload: SettingsUpdate, db: Session = Depends(get_db)) -> SettingsModel:
+def write_settings(
+    payload: SettingsUpdate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin_token),
+) -> SettingsModel:
     current = get_all(db)
     new_dir = payload.data_dir.strip() if payload.data_dir else current["dataDir"]
     if not new_dir:
@@ -171,6 +210,7 @@ def write_settings(payload: SettingsUpdate, db: Session = Depends(get_db)) -> Se
         "riskSeconds": _clamp_int(payload.risk_seconds, 5, 600, current["riskSeconds"]),
         "dataDir": new_dir,
         "soundEnabled": bool(payload.sound_enabled) if payload.sound_enabled is not None else current["soundEnabled"],
+        "voiceEnabled": bool(payload.voice_enabled) if payload.voice_enabled is not None else current["voiceEnabled"],
         "desktopEnabled": bool(payload.desktop_enabled) if payload.desktop_enabled is not None else current["desktopEnabled"],
     }
     for key, value in next_values.items():
@@ -186,13 +226,13 @@ def write_settings(payload: SettingsUpdate, db: Session = Depends(get_db)) -> Se
         risk_seconds=next_values["riskSeconds"],
         data_dir=str(settings.data_dir.resolve()),
         sound_enabled=next_values["soundEnabled"],
+        voice_enabled=next_values["voiceEnabled"],
         desktop_enabled=next_values["desktopEnabled"],
         pending_data_dir=next_values["dataDir"] if pending else None,
     )
 
 
 def json_dumps(value: Any) -> str:
-    import json
     return json.dumps(value)
 
 
@@ -287,17 +327,31 @@ def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = 
 
 
 @router.delete("/api/data", response_model=OkResponse)
-def clear_data(db: Session = Depends(get_db)) -> OkResponse:
+def clear_data(db: Session = Depends(get_db), _: None = Depends(require_admin_token)) -> OkResponse:
     db.execute(delete(Sample))
     db.execute(delete(Alert))
     db.commit()
     return OkResponse()
 
 
-@router.post("/api/data/prune", response_model=OkResponse)
-def prune_old_data(days: int = Query(default=90, ge=1, le=365), db: Session = Depends(get_db)) -> OkResponse:
+def prune_expired_data(db: Session, days: int) -> None:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    db.execute(delete(Sample).where(Sample.created_at < cutoff))
-    db.execute(delete(Alert).where(Alert.created_at < cutoff))
+    deleted_samples = db.execute(delete(Sample).where(Sample.created_at < cutoff)).rowcount
+    deleted_alerts = db.execute(delete(Alert).where(Alert.created_at < cutoff)).rowcount
     db.commit()
+    logger.info(
+        "retention cleanup completed: days=%s samples=%s alerts=%s",
+        days,
+        deleted_samples or 0,
+        deleted_alerts or 0,
+    )
+
+
+@router.post("/api/data/prune", response_model=OkResponse)
+def prune_old_data(
+    days: int = Query(default=30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin_token),
+) -> OkResponse:
+    prune_expired_data(db, days)
     return OkResponse()

@@ -108,6 +108,28 @@ class AlertController:
         self.low_since: float | None = None
         self.last_alert: float | None = None
 
+    def apply_runtime_settings(self, settings: dict[str, Any]) -> bool:
+        """Apply the dashboard-owned settings without restarting the Pi service."""
+        threshold = settings.get("riskThreshold")
+        seconds = settings.get("riskSeconds")
+        sound_enabled = settings.get("soundEnabled")
+        changed = False
+        if isinstance(threshold, (int, float)):
+            next_threshold = min(99.0, max(1.0, float(threshold)))
+            changed = changed or next_threshold != self.threshold
+            self.threshold = next_threshold
+        if isinstance(seconds, (int, float)):
+            next_seconds = min(600.0, max(5.0, float(seconds)))
+            changed = changed or next_seconds != self.risk_seconds
+            self.risk_seconds = next_seconds
+        if isinstance(sound_enabled, bool):
+            changed = changed or sound_enabled != self.sound_player.enabled
+            self.sound_player.enabled = sound_enabled
+        if changed:
+            self.low_since = None
+            logger.info("applied dashboard settings: threshold=%s seconds=%s sound=%s", self.threshold, self.risk_seconds, self.sound_player.enabled)
+        return changed
+
     def update(self, metrics: dict[str, float]) -> bool:
         now = self.clock()
         score = float(metrics["score"])

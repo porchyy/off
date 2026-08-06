@@ -56,6 +56,7 @@ function applyStorageMode() {
   const demo = storage.isDemo;
   $('demoBanner').hidden = !demo;
   $('dataDirField').hidden = demo;
+  $('adminTokenField').hidden = demo;
   $('historyEyebrow').textContent = demo ? 'DEMO · LOCALSTORAGE' : 'LOCAL SQLITE DATABASE';
   $('settingsNote').textContent = demo
     ? 'โหมดตัวอย่างจะเก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ถ้าล้างข้อมูลเว็บหรือเปลี่ยนเบราว์เซอร์ ประวัติจะหาย'
@@ -566,7 +567,39 @@ async function loadSettings() {
   if (!storage.isDemo) $('dataDir').value = settings.dataDir || '';
 }
 
+function unlockAdminActions() {
+  if (storage.isDemo) return true;
+  const field = $('adminToken');
+  const token = field?.value.trim();
+  if (!token) {
+    toast('กรอกรหัสผ่านผู้ดูแลก่อนบันทึกหรือลบข้อมูล');
+    field?.focus();
+    return false;
+  }
+  storage.setAdminToken(token);
+  return true;
+}
+
+async function loadPiStatus() {
+  const target = $('piSyncState');
+  if (!target) return;
+  if (storage.isDemo) {
+    target.textContent = 'โหมดตัวอย่าง: ไม่มี Raspberry Pi เชื่อมต่อ';
+    return;
+  }
+  try {
+    const status = await storage.clientStatus();
+    const sync = status.lastSyncAt ? new Date(status.lastSyncAt).toLocaleTimeString('th-TH') : 'ยังไม่เคย sync';
+    target.textContent = status.online
+      ? `Pi ออนไลน์ · sync ตั้งค่าล่าสุด ${sync} · เก็บข้อมูล ${status.retentionDays} วัน`
+      : `Pi ยังไม่รายงานตัว · ${status.message || 'กำลังรอ sensor client'}`;
+  } catch {
+    target.textContent = 'ไม่สามารถอ่านสถานะ Raspberry Pi ได้';
+  }
+}
+
 async function saveSettings() {
+  if (!unlockAdminActions()) return;
   const payload = {
     riskThreshold: Number($('riskThreshold').value),
     riskSeconds: Number($('riskSeconds').value),
@@ -575,8 +608,13 @@ async function saveSettings() {
     voiceEnabled: $('voiceEnabled') ? $('voiceEnabled').checked : true,
     desktopEnabled: $('desktopEnabled').checked
   };
-  settings = { ...settings, ...await storage.saveSettings(payload) };
-  toast(storage.isDemo ? 'บันทึกตั้งค่าแล้วในเบราว์เซอร์' : 'บันทึกตั้งค่าแล้ว');
+  try {
+    settings = { ...settings, ...await storage.saveSettings(payload) };
+    toast(storage.isDemo ? 'บันทึกตั้งค่าแล้วในเบราว์เซอร์' : 'บันทึกตั้งค่าแล้ว; Pi จะ sync ภายใน 30 วินาที');
+    await loadPiStatus();
+  } catch (error) {
+    toast(error.message.includes('401') ? 'รหัสผ่านผู้ดูแลไม่ถูกต้อง' : 'บันทึกตั้งค่าไม่สำเร็จ');
+  }
 }
 
 async function checkHealth() {
@@ -600,6 +638,7 @@ async function loadDashboard() {
   } catch {
     toast('โหลดข้อมูลไม่สำเร็จ');
   }
+  await loadPiStatus();
 }
 
 function drawBarChart(target, rows, field, maxValue, color) {
@@ -723,11 +762,16 @@ $('exportJson')?.addEventListener('click', () => downloadExport('json'));
 $('testAlert')?.addEventListener('click', () => notifyRisk(true));
 $('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
 $('clearData')?.addEventListener('click', async () => {
+  if (!unlockAdminActions()) return;
   const ok = confirm(storage.isDemo ? 'ลบประวัติและแจ้งเตือนทั้งหมดจากเบราว์เซอร์นี้?' : 'ลบประวัติและแจ้งเตือนทั้งหมดจากฐานข้อมูลในเครื่อง?');
   if (!ok) return;
-  await storage.clear();
-  await loadDashboard();
-  toast('ลบข้อมูลแล้ว');
+  try {
+    await storage.clear();
+    await loadDashboard();
+    toast('ลบข้อมูลแล้ว');
+  } catch (error) {
+    toast(error.message.includes('401') ? 'รหัสผ่านผู้ดูแลไม่ถูกต้อง' : 'ลบข้อมูลไม่สำเร็จ');
+  }
 });
 
 /* ── Custom AI Trainer Handlers ── */

@@ -1,13 +1,10 @@
 """PostureAI Raspberry Pi client.
 
-Skeleton — main loop ที่:
+Main loop ที่:
   1. เปิดกล้อง
   2. จับ pose ด้วย MediaPipe
   3. คำนวณคะแนน + ส่ง sample ไป backend
   4. แจ้ง alert ถ้าคะแนนตกต่อเนื่องเกิน threshold
-
-TODO: port logic จาก frontend/app.js (MediaPipe Pose ใน browser) มาเป็น
-Python เวอร์ชัน
 """
 
 from __future__ import annotations
@@ -16,6 +13,7 @@ import argparse
 import logging
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +44,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
         raise ValueError("backend.url must start with http:// or https://")
     config["backend"]["url"] = backend_url.rstrip("/")
     config["backend"]["timeout"] = max(1.0, float(config["backend"].get("timeout", 5)))
+    config["backend"]["settings_sync_seconds"] = max(5.0, float(config["backend"].get("settings_sync_seconds", 30)))
 
     camera = config["camera"]
     camera["backend"] = str(camera.get("backend", "auto")).lower()
@@ -236,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     producer = None
     webrtc = None
     once_deadline = time.monotonic() + 5 if args.once else None
+    last_settings_sync = 0.0
     try:
         camera = open_camera(config["camera"])
         producer = CameraProducer(camera, config["video"]["fps"])
@@ -263,6 +263,19 @@ def main(argv: list[str] | None = None) -> int:
             webrtc.start()
         while True:
             try:
+                now = time.monotonic()
+                if now - last_settings_sync >= config["backend"]["settings_sync_seconds"]:
+                    remote_settings = uploader.fetch_settings()
+                    if remote_settings is None:
+                        uploader.send_client_status(online=False, last_sync_at=None, message="backend settings unavailable; using last known values")
+                    else:
+                        alert_controller.apply_runtime_settings(remote_settings)
+                        uploader.send_client_status(
+                            online=True,
+                            last_sync_at=datetime.now(timezone.utc).isoformat(),
+                            message="dashboard settings synchronized",
+                        )
+                    last_settings_sync = now
                 frame, _ = producer.frames.get()
                 if frame is not None:
                     if detection_enabled:

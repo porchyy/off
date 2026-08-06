@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
+from app.config import settings
 from app.main import app
 from app.settings_store import ensure_defaults
 
@@ -90,6 +91,7 @@ def test_get_settings():
     assert data["riskThreshold"] == 60
     assert data["riskSeconds"] == 45
     assert data["soundEnabled"] is True
+    assert data["voiceEnabled"] is True
     assert data["desktopEnabled"] is False
 
 
@@ -98,6 +100,7 @@ def test_update_settings():
         "riskThreshold": 75,
         "riskSeconds": 30,
         "soundEnabled": False,
+        "voiceEnabled": False,
         "desktopEnabled": True,
     }
     response = client.put("/api/settings", json=payload)
@@ -106,6 +109,7 @@ def test_update_settings():
     assert data["riskThreshold"] == 75
     assert data["riskSeconds"] == 30
     assert data["soundEnabled"] is False
+    assert data["voiceEnabled"] is False
     assert data["desktopEnabled"] is True
 
     # Verify persistent update
@@ -129,15 +133,9 @@ def test_update_settings_accepts_internal_field_names():
     assert data["desktopEnabled"] is True
 
 
-def test_update_settings_clamping():
-    # Out of range threshold (max 99, min 1)
-    payload = {"risk_threshold": 150, "risk_seconds": 1}
-    # Pydantic validation error or clamping test
-    response = client.put("/api/settings", json={"risk_threshold": 95, "risk_seconds": 10})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["riskThreshold"] == 95
-    assert data["riskSeconds"] == 10
+def test_update_settings_rejects_out_of_range_values():
+    response = client.put("/api/settings", json={"risk_threshold": 150, "risk_seconds": 1})
+    assert response.status_code == 422
 
 
 def test_add_sample_success():
@@ -247,3 +245,32 @@ def test_prune_data():
     prune_res = client.post("/api/data/prune?days=90")
     assert prune_res.status_code == 200
     assert prune_res.json() == {"ok": True}
+
+
+def test_admin_token_protects_settings_and_clear_data():
+    original_required = settings.require_admin_token
+    original_token = settings.admin_token
+    settings.require_admin_token = True
+    settings.admin_token = "test-admin-token"
+    try:
+        assert client.put("/api/settings", json={"riskThreshold": 70}).status_code == 401
+        assert client.delete("/api/data").status_code == 401
+        headers = {"x-postureai-admin-token": "test-admin-token"}
+        assert client.put("/api/settings", json={"riskThreshold": 70}, headers=headers).status_code == 200
+        assert client.delete("/api/data", headers=headers).status_code == 200
+    finally:
+        settings.require_admin_token = original_required
+        settings.admin_token = original_token
+
+
+def test_client_status_round_trip():
+    put_res = client.put(
+        "/api/client/status",
+        json={"online": True, "lastSyncAt": "2026-08-06T00:00:00+00:00", "message": "settings synchronized"},
+    )
+    assert put_res.status_code == 204
+    get_res = client.get("/api/client/status")
+    assert get_res.status_code == 200
+    assert get_res.json()["online"] is True
+    assert get_res.json()["lastSyncAt"] == "2026-08-06T00:00:00+00:00"
+    assert get_res.json()["retentionDays"] == 30
