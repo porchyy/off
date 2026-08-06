@@ -41,6 +41,7 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     assert config["detection"]["overlay_hold_seconds"] == 0.2
     assert config["detection"]["overlay_min_visibility"] == 0.35
     assert config["detection"]["metric_smoothing_alpha"] == 0.35
+    assert config["detection"]["calibration_seconds"] == 5.0
     assert config["roboflow"] == {
         "enabled": False,
         "model_id": "sitting-posture-detection-3933f/2",
@@ -67,6 +68,12 @@ def test_config_clamps_metric_smoothing_option(tmp_path):
     config = validate_config({"detection": {"metric_smoothing_alpha": -3}}, tmp_path / "config.yaml")
 
     assert config["detection"]["metric_smoothing_alpha"] == 0.05
+
+
+def test_config_clamps_calibration_seconds(tmp_path):
+    config = validate_config({"detection": {"calibration_seconds": 30}}, tmp_path / "config.yaml")
+
+    assert config["detection"]["calibration_seconds"] == 15.0
 
 
 def test_config_can_disable_mediapipe_without_disabling_roboflow(tmp_path):

@@ -94,8 +94,25 @@ function update(m) {
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
+  updateCalibrationState(m.calibration);
+  if (m.calibration?.state === 'collecting') {
+    $('status').textContent = 'กำลังคาลิเบรต';
+    $('advice').textContent = 'นั่งท่าที่ต้องการให้เป็นมาตรฐาน และอยู่นิ่ง ๆ จนกว่าการคาลิเบรตจะครบ';
+    state('กำลังคาลิเบรต', 'neutral');
+    return;
+  }
   state(s >= 80 ? 'กำลังติดตาม' : s >= settings.riskThreshold ? 'ควรระวัง' : 'ควรปรับท่า', cls);
   updateRisk(m);
+}
+
+function updateCalibrationState(calibration) {
+  const target = $('calibrationState');
+  if (!target || !calibration) return;
+  if (calibration.state === 'collecting') {
+    target.textContent = `กำลังคาลิเบรต: นั่งท่าตรงและอยู่นิ่ง ๆ (${Math.round((calibration.progress || 0) * 100)}%)`;
+  } else if (calibration.state === 'ready') {
+    target.textContent = 'คาลิเบรตแล้ว · คะแนนอ้างอิงจากท่านั่งตรงและมุมกล้องปัจจุบัน';
+  }
 }
 
 function updateRoboflowResult(result) {
@@ -508,6 +525,7 @@ function connectPiCamera() {
   piSignal.addEventListener('message', async event => {
     const message = JSON.parse(event.data);
     if (message.type === 'ready') {
+      $('calibrateBaseline').disabled = false;
       const offer = await piPeer.createOffer();
       await piPeer.setLocalDescription(offer);
       await waitForIceComplete(piPeer);
@@ -533,6 +551,8 @@ function connectPiCamera() {
       if (!running || analysisVideo !== $('piCamera')) drawPiOverlay();
     } else if (message.type === 'roboflow_update') {
       updateRoboflowResult(message.result);
+    } else if (message.type === 'calibration_status' && message.state === 'started') {
+      $('calibrationState').textContent = 'เริ่มคาลิเบรตแล้ว: นั่งท่าตรงค้างไว้ 5 วินาที';
     } else if (message.type === 'error') {
       toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
       if (message.code === 'unavailable') {
@@ -755,6 +775,15 @@ function escapeHtml(value) {
 
 start?.addEventListener('click', beginPiCamera);
 stop?.addEventListener('click', endPiCamera);
+$('calibrateBaseline')?.addEventListener('click', () => {
+  if (piSignal?.readyState !== WebSocket.OPEN) {
+    toast('ยังไม่เชื่อมต่อ Raspberry Pi');
+    return;
+  }
+  piSignal.send(JSON.stringify({ type: 'calibration_start' }));
+  $('calibrateBaseline').disabled = true;
+  setTimeout(() => { $('calibrateBaseline').disabled = false; }, 6000);
+});
 $('refresh')?.addEventListener('click', loadDashboard);
 $('saveSettings')?.addEventListener('click', saveSettings);
 $('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
