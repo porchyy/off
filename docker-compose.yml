@@ -20,13 +20,20 @@ services:
           memory: 1024M
     environment:
       POSTUREAI_DATA_DIR: /app/database
-      POSTUREAI_CORS_ORIGINS: "*"
+      # The dashboard is reverse-proxied by nginx, so browsers use the same
+      # origin and the API never needs a permissive CORS policy.
+      POSTUREAI_CORS_ORIGINS: "http://localhost:3000"
       POSTUREAI_HOST: 0.0.0.0
       POSTUREAI_PORT: 8000
+      POSTUREAI_REQUIRE_ADMIN_TOKEN: "true"
+      POSTUREAI_ADMIN_TOKEN: "${POSTUREAI_ADMIN_TOKEN:-}"
+      POSTUREAI_RETENTION_DAYS: "30"
     volumes:
       - ./database:/app/database
     ports:
-      - "8000:8000"
+      # Pi client and nginx can reach this on the compose network. Binding to
+      # loopback keeps raw API endpoints off the rest of the LAN.
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
       interval: 15s
@@ -49,4 +56,3 @@ services:
         condition: service_healthy
     ports:
       - "3000:80"
-
