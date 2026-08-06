@@ -74,6 +74,9 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     detection["overlay_min_visibility"] = min(
         1.0, max(0.0, float(detection.get("overlay_min_visibility", 0.35)))
     )
+    detection["metric_smoothing_alpha"] = min(
+        0.95, max(0.05, float(detection.get("metric_smoothing_alpha", 0.35)))
+    )
     model_path = Path(str(detection.get("model", "../frontend/public/models/pose_landmarker_full.task")))
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path

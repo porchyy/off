@@ -115,6 +115,24 @@ def test_overlay_smoother_ignores_low_confidence_landmarks():
     assert smoother.update([{"index": 11, "x": 0.2, "y": 0.4, "visibility": 0.2}], 1.0, **settings) == []
 
 
+def test_metric_smoother_rejects_a_single_score_spike():
+    smoother = detect.PoseMetricSmoother()
+
+    assert smoother.update({"score": 90, "neck": 10, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.0
+    # A one-frame bad reading is removed by the median-of-three window.
+    assert smoother.update({"score": 20, "neck": 50, "shoulders": 30, "torso": 40}, 0.35)["score"] == 90.0
+    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.0
+    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.7
+
+
+def test_metric_smoother_resets_between_people_or_lost_poses():
+    smoother = detect.PoseMetricSmoother()
+    smoother.update({"score": 90, "neck": 10, "shoulders": 5, "torso": 8}, 0.35)
+    smoother.reset()
+
+    assert smoother.update({"score": 40, "neck": 35, "shoulders": 20, "torso": 30}, 0.35)["score"] == 40.0
+
+
 def test_detector_initialization_fails_loudly_instead_of_using_fake_metrics(monkeypatch):
     class BrokenDetector:
         def __init__(self):

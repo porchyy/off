@@ -33,6 +33,9 @@ detection:
   overlay_hold_seconds: 0.2
   # ไม่วาดจุดที่ AI มั่นใจต่ำกว่าค่านี้
   overlay_min_visibility: 0.35
+  # กรองคะแนนก่อนส่ง Dashboard/LED: ลดเลขแกว่งจาก landmark ที่สั่น
+  # 0.35 = นิ่งขึ้นโดยหน่วงการเปลี่ยนท่าราวไม่กี่เฟรม; เพิ่มค่าให้ตอบสนองไวขึ้น
+  metric_smoothing_alpha: 0.35
   # โหมดที่รองรับในรุ่นนี้: mediapipe (ประมวลผลบน Pi เท่านั้น)
   mode: mediapipe
   # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น

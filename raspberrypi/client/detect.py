@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,11 @@ _pose_visible = False
 DEFAULT_OVERLAY_SMOOTHING_ALPHA = 0.65
 DEFAULT_OVERLAY_HOLD_SECONDS = 0.2
 DEFAULT_OVERLAY_MIN_VISIBILITY = 0.35
+# Score values are more sensitive than the visible skeleton to small landmark
+# jitter.  A median-of-three rejects a one-frame spike; EMA then makes the
+# numbers readable without making the posture state feel delayed.
+DEFAULT_METRIC_SMOOTHING_ALPHA = 0.35
+METRIC_KEYS = ("score", "neck", "shoulders", "torso")
 
 # Keep the live overlay small: these are the points rendered by the dashboard
 # skeleton, rather than all 33 MediaPipe landmarks.
@@ -99,15 +105,51 @@ class PoseOverlaySmoother:
         ]
 
 
+class PoseMetricSmoother:
+    """Reject transient pose spikes before publishing posture measurements.
+
+    MediaPipe landmarks are deliberately kept raw for drawing.  The dashboard,
+    history and LED instead receive a short median + exponential moving
+    average, so one uncertain frame cannot turn a stable sitting score into a
+    false alert.
+    """
+
+    def __init__(self) -> None:
+        self._samples: deque[dict[str, float]] = deque(maxlen=3)
+        self._metrics: dict[str, float] | None = None
+
+    def reset(self) -> None:
+        self._samples.clear()
+        self._metrics = None
+
+    def update(self, metrics: dict[str, Any], alpha: float) -> dict[str, Any]:
+        sample = {key: float(metrics[key]) for key in METRIC_KEYS}
+        self._samples.append(sample)
+        medians = {
+            key: sorted(item[key] for item in self._samples)[len(self._samples) // 2]
+            for key in METRIC_KEYS
+        }
+        if self._metrics is None:
+            self._metrics = medians
+        else:
+            self._metrics = {
+                key: self._metrics[key] + alpha * (medians[key] - self._metrics[key])
+                for key in METRIC_KEYS
+            }
+        return {key: round(self._metrics[key], 1) for key in METRIC_KEYS}
+
+
 _overlay_smoother = PoseOverlaySmoother()
+_metric_smoother = PoseMetricSmoother()
 
 
-def _overlay_settings(detection: dict[str, Any]) -> tuple[float, float, float]:
+def _overlay_settings(detection: dict[str, Any]) -> tuple[float, float, float, float]:
     """Read validated visual-only smoothing settings with safe defaults."""
     alpha = min(0.95, max(0.05, float(detection.get("overlay_smoothing_alpha", DEFAULT_OVERLAY_SMOOTHING_ALPHA))))
     hold_seconds = min(5.0, max(0.0, float(detection.get("overlay_hold_seconds", DEFAULT_OVERLAY_HOLD_SECONDS))))
     min_visibility = min(1.0, max(0.0, float(detection.get("overlay_min_visibility", DEFAULT_OVERLAY_MIN_VISIBILITY))))
-    return alpha, hold_seconds, min_visibility
+    metric_alpha = min(0.95, max(0.05, float(detection.get("metric_smoothing_alpha", DEFAULT_METRIC_SMOOTHING_ALPHA))))
+    return alpha, hold_seconds, min_visibility, metric_alpha
 
 
 def draw_pose_overlay(
@@ -298,6 +340,7 @@ def close_detector() -> None:
     _last_analysis_at = 0.0
     _pose_visible = False
     _overlay_smoother.reset()
+    _metric_smoother.reset()
 
 
 def process_live_frame(
@@ -321,7 +364,7 @@ def process_live_frame(
     model_path = detection.get("model")
     detector = get_detector(model_path) if model_path else get_detector()
     result = detector.calculate_metrics(frame, color_space)
-    alpha, hold_seconds, min_visibility = _overlay_settings(detection)
+    alpha, hold_seconds, min_visibility, metric_alpha = _overlay_settings(detection)
 
     if result:
         if not _pose_visible:
@@ -336,6 +379,7 @@ def process_live_frame(
             min_visibility=min_visibility,
         )
         if "score" not in result:
+            _metric_smoother.reset()
             logger.debug("pose detected but hips are not visible yet; sending overlay without a score")
             if frame_overlay_callback is not None:
                 frame_overlay_callback(landmarks, None)
@@ -344,7 +388,7 @@ def process_live_frame(
             if pose_callback is not None:
                 pose_callback({}, landmarks)
             return
-        metrics = result
+        metrics = _metric_smoother.update(result, metric_alpha)
         if frame_overlay_callback is not None:
             frame_overlay_callback(landmarks, metrics)
         else:
@@ -358,6 +402,7 @@ def process_live_frame(
         if pose_callback is not None:
             pose_callback(metrics, landmarks)
     else:
+        _metric_smoother.reset()
         if _pose_visible:
             logger.info("pose is no longer visible to the Pi camera")
             _pose_visible = False
