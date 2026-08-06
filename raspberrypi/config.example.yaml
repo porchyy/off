@@ -84,6 +84,17 @@ indicator:
   # ติดทันทีเมื่อคะแนนต่ำกว่าค่านี้ และดับทันทีเมื่อคะแนนกลับมาถึงเกณฑ์
   threshold: 50
 
+# LCD 1602 พร้อม I2C backpack (ขั้ว GND, VCC, SDA, SCL)
+# เปิดใช้หลังตรวจ address ด้วย `sudo i2cdetect -y 1`
+lcd:
+  enabled: false
+  i2c_address: 0x27
+  i2c_port: 1
+  columns: 16
+  rows: 2
+  # ลดการเขียนถี่เกินไปเพื่อให้ตัวอักษรไม่กระพริบ
+  update_seconds: 0.5
+
 buffer:
   # path ของ SQLite ที่ใช้ buffer ตอน backend offline
   path: ./buffer.sqlite

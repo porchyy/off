@@ -94,8 +94,19 @@ function update(m) {
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
+  updateLcdPreview(s);
   state(s >= 80 ? 'กำลังติดตาม' : s >= settings.riskThreshold ? 'ควรระวัง' : 'ควรปรับท่า', cls);
   updateRisk(m);
+}
+
+function updateLcdPreview(score) {
+  const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+  $('lcdLine1').textContent = `SCORE: ${String(safeScore).padStart(3, ' ')}/100`;
+  $('lcdLine2').textContent = safeScore >= 80
+    ? 'GOOD POSTURE'
+    : safeScore >= settings.riskThreshold
+      ? 'CHECK POSTURE'
+      : 'ADJUST POSTURE';
 }
 
 function updateRoboflowResult(result) {

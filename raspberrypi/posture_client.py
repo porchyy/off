@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -114,6 +114,20 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     indicator["active_high"] = bool(indicator.get("active_high", True))
     indicator["threshold"] = min(100.0, max(0.0, float(indicator.get("threshold", 50))))
 
+    lcd = config["lcd"]
+    lcd["enabled"] = bool(lcd.get("enabled", False))
+    try:
+        lcd["i2c_address"] = int(str(lcd.get("i2c_address", "0x27")), 0)
+    except ValueError as exc:
+        raise ValueError("lcd.i2c_address must be an I2C address such as 0x27") from exc
+    if not 0x03 <= lcd["i2c_address"] <= 0x77:
+        raise ValueError("lcd.i2c_address must be from 0x03 to 0x77")
+    lcd["i2c_port"] = max(0, int(lcd.get("i2c_port", 1)))
+    lcd["columns"] = min(40, max(8, int(lcd.get("columns", 16))))
+    lcd["rows"] = min(4, max(1, int(lcd.get("rows", 2))))
+    lcd["update_seconds"] = min(10.0, max(0.2, float(lcd.get("update_seconds", 0.5))))
+    lcd["risk_threshold"] = min(99.0, max(1.0, float(lcd.get("risk_threshold", config["risk"].get("threshold", 60)))))
+
     buffer_path = Path(str(config["buffer"].get("path", "buffer.sqlite")))
     if not buffer_path.is_absolute():
         buffer_path = config_path.parent / buffer_path
@@ -127,6 +141,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")
     parser.add_argument("--test-led", action="store_true", help="Blink the configured red LED twice and exit")
+    parser.add_argument("--test-lcd", action="store_true", help="Show a sample score on the configured LCD 1602 and exit")
     parser.add_argument("--test-camera", action="store_true", help="Capture one frame without backend or pose detection")
     parser.add_argument("--check", action="store_true", help="Check MediaPipe, camera, and backend connectivity, then exit")
     parser.add_argument("--verbose", "-v", action="store_true")
@@ -154,15 +169,23 @@ def main(argv: list[str] | None = None) -> int:
     # Lazy imports so --help / config validation ไม่ต้องมี lib ติดตั้งครบ
     from client.alert import AlertController, SoundPlayer
     from client.indicator import GpioLed
+    from client.lcd import CharacterLcd
 
     sound_player = SoundPlayer(config.get("sound", {}))
     indicator = GpioLed(config.get("indicator", {}))
+    lcd = CharacterLcd(config.get("lcd", {}))
     if args.test_sound:
         logger.info("testing alert sound...")
         return 0 if sound_player.play() else 1
     if args.test_led:
         logger.info("testing red LED indicator: blinking twice...")
         return 0 if indicator.blink(times=2) else 1
+    if args.test_lcd:
+        logger.info("testing LCD 1602 with a sample score for 3 seconds...")
+        shown = lcd.show_test()
+        time.sleep(3)
+        lcd.close()
+        return 0 if shown else 1
 
     from client.capture import open_camera
 
@@ -292,6 +315,7 @@ def main(argv: list[str] | None = None) -> int:
                             producer.color_space,
                             webrtc.publish_pose if webrtc else None,
                             update_stream_overlay,
+                            lcd,
                         )
                     roboflow.submit_if_due(frame, producer.color_space)
                     classification = roboflow.take_result()
@@ -343,6 +367,7 @@ def main(argv: list[str] | None = None) -> int:
         roboflow.stop()
         close_detector()
         indicator.close()
+        lcd.close()
     return 0
 
 

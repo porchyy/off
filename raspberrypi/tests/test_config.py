@@ -31,6 +31,15 @@ def test_config_validates_led_pin_as_bcm_gpio(tmp_path):
         validate_config({"indicator": {"pin": 40}}, tmp_path / "config.yaml")
 
 
+def test_config_supports_lcd_1602_i2c_defaults(tmp_path):
+    config = validate_config({"lcd": {"enabled": True, "i2c_address": "0x3f"}}, tmp_path / "config.yaml")
+
+    assert config["lcd"]["enabled"] is True
+    assert config["lcd"]["i2c_address"] == 0x3F
+    assert config["lcd"]["columns"] == 16
+    assert config["lcd"]["rows"] == 2
+
+
 def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     config = validate_config({}, tmp_path / "config.yaml")
 

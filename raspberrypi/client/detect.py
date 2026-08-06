@@ -354,6 +354,7 @@ def process_live_frame(
     color_space: str = "rgb",
     pose_callback: Any | None = None,
     frame_overlay_callback: Any | None = None,
+    lcd_display: Any | None = None,
 ) -> None:
     """Run throttled posture inference on one in-memory live camera frame."""
     global _last_analysis_at, _pose_visible
@@ -399,6 +400,9 @@ def process_live_frame(
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
         uploader.send_sample(metrics)
+
+        if lcd_display is not None:
+            lcd_display.show_metrics(metrics)
 
         if alert_controller is not None:
             alert_controller.update(metrics)
