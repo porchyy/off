@@ -95,6 +95,7 @@ class AlertController:
         uploader: Any,
         sound_player: SoundPlayer,
         indicator: Any | None = None,
+        buzzer: Any | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         risk = config.get("risk", {})
@@ -103,13 +104,17 @@ class AlertController:
         self.cooldown = max(0.0, float(risk.get("cooldown", 30)))
         indicator_config = config.get("indicator", {})
         self.indicator_threshold = min(100.0, max(0.0, float(indicator_config.get("threshold", 50))))
+        buzzer_config = config.get("buzzer", {})
+        self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
         self.uploader = uploader
         self.sound_player = sound_player
         self.indicator = indicator
+        self.buzzer = buzzer
         self.clock = clock
         self.low_since: float | None = None
         self.last_alert: float | None = None
         self._indicator_is_on = False
+        self._buzzer_is_on = False
 
     def apply_runtime_settings(self, settings: dict[str, Any]) -> bool:
         """Apply the dashboard-owned settings without restarting the Pi service."""
@@ -146,6 +151,15 @@ class AlertController:
             else:
                 self.indicator.off()
             self._indicator_is_on = should_light_indicator
+
+        # Buzzer follows its own threshold (default 50)
+        should_buzz = score < self.buzzer_threshold
+        if self.buzzer is not None and should_buzz != self._buzzer_is_on:
+            if should_buzz:
+                self.buzzer.on()
+            else:
+                self.buzzer.off()
+            self._buzzer_is_on = should_buzz
 
         if score >= self.threshold:
             self.low_since = None

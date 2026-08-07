@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -114,6 +114,14 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     indicator["active_high"] = bool(indicator.get("active_high", True))
     indicator["threshold"] = min(100.0, max(0.0, float(indicator.get("threshold", 50))))
 
+    buzzer = config["buzzer"]
+    buzzer["enabled"] = bool(buzzer.get("enabled", False))
+    buzzer["pin"] = int(buzzer.get("pin", 27))
+    if not 0 <= buzzer["pin"] <= 27:
+        raise ValueError("buzzer.pin must be a BCM GPIO number from 0 to 27")
+    buzzer["active_high"] = bool(buzzer.get("active_high", True))
+    buzzer["threshold"] = min(100.0, max(0.0, float(buzzer.get("threshold", 50))))
+
     lcd = config["lcd"]
     lcd["enabled"] = bool(lcd.get("enabled", False))
     try:
@@ -141,6 +149,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")
     parser.add_argument("--test-led", action="store_true", help="Blink the configured red LED twice and exit")
+    parser.add_argument("--test-buzzer", action="store_true", help="Beep the configured buzzer 3 times and exit")
     parser.add_argument("--test-lcd", action="store_true", help="Show a sample score on the configured LCD 1602 and exit")
     parser.add_argument("--test-camera", action="store_true", help="Capture one frame without backend or pose detection")
     parser.add_argument("--check", action="store_true", help="Check MediaPipe, camera, and backend connectivity, then exit")
@@ -168,11 +177,13 @@ def main(argv: list[str] | None = None) -> int:
 
     # Lazy imports so --help / config validation ไม่ต้องมี lib ติดตั้งครบ
     from client.alert import AlertController, SoundPlayer
+    from client.buzzer import GpioBuzzer
     from client.indicator import GpioLed
     from client.lcd import CharacterLcd
 
     sound_player = SoundPlayer(config.get("sound", {}))
     indicator = GpioLed(config.get("indicator", {}))
+    buzzer = GpioBuzzer(config.get("buzzer", {}))
     lcd = CharacterLcd(config.get("lcd", {}))
     if args.test_sound:
         logger.info("testing alert sound...")
@@ -180,6 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.test_led:
         logger.info("testing red LED indicator: blinking twice...")
         return 0 if indicator.blink(times=2) else 1
+    if args.test_buzzer:
+        logger.info("testing buzzer: beeping 3 times...")
+        result = buzzer.beep(times=3)
+        buzzer.close()
+        return 0 if result else 1
     if args.test_lcd:
         logger.info("testing LCD 1602 with a sample score for 3 seconds...")
         shown = lcd.show_test()
@@ -255,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout=config["backend"].get("timeout", 5),
         buffer_path=config["buffer"]["path"],
     )
-    alert_controller = AlertController(config, uploader, sound_player, indicator)
+    alert_controller = AlertController(config, uploader, sound_player, indicator, buzzer)
     roboflow = RoboflowInferenceWorker(config["roboflow"])
 
     consecutive_failures = 0
@@ -367,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         roboflow.stop()
         close_detector()
         indicator.close()
+        buzzer.close()
         lcd.close()
     return 0
 

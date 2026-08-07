@@ -85,26 +85,26 @@ function updateRisk(m) {
 
 function update(m) {
   const s = Math.round(m.score);
-  const cls = s >= 80 ? 'good' : s >= settings.riskThreshold ? 'caution' : 'risk';
+  const cls = s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk';
   $('score').value = s;
   $('score').textContent = s;
   $('score').style.color = `var(--status-${cls})`;
-  $('status').textContent = s >= 80 ? 'ท่านั่งดี' : s >= settings.riskThreshold ? 'เริ่มโน้มตัว' : 'ควรปรับท่า';
-  $('advice').textContent = s >= 80 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= settings.riskThreshold ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
+  $('status').textContent = s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่';
+  $('advice').textContent = s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
   updateLcdPreview(s);
-  state(s >= 80 ? 'กำลังติดตาม' : s >= settings.riskThreshold ? 'ควรระวัง' : 'ควรปรับท่า', cls);
+  state(s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่', cls);
   updateRisk(m);
 }
 
 function updateLcdPreview(score) {
   const safeScore = Math.max(0, Math.min(100, Math.round(score)));
   $('lcdLine1').textContent = `SCORE: ${String(safeScore).padStart(3, ' ')}/100`;
-  $('lcdLine2').textContent = safeScore >= 80
+  $('lcdLine2').textContent = safeScore >= 70
     ? 'GOOD POSTURE'
-    : safeScore >= settings.riskThreshold
+    : safeScore >= 40
       ? 'CHECK POSTURE'
       : 'ADJUST POSTURE';
 }

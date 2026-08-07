@@ -52,14 +52,14 @@ class CharacterLcd:
     def _fit(text: str, columns: int) -> str:
         # Common HD44780 character sets cannot render Thai reliably, so the
         # physical screen uses short ASCII labels while the web stays Thai.
-        return text.encode("ascii", "replace").decode("ascii")[:columns].ljust(columns)
+        return text.encode("ascii", "replace").decode("ascii")[:columns].center(columns)
 
     @classmethod
     def format_metrics(cls, metrics: dict[str, Any], *, columns: int, risk_threshold: float) -> tuple[str, str]:
         score = max(0, min(100, round(float(metrics["score"]))))
-        if score >= 80:
+        if score >= 70:
             status = "GOOD POSTURE"
-        elif score >= risk_threshold:
+        elif score >= 40:
             status = "CHECK POSTURE"
         else:
             status = "ADJUST POSTURE"
