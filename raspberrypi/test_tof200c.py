@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Continuously print BH1750 brightness readings in lux."""
+"""Continuously print TOF200C distance readings in centimeters."""
 
 from __future__ import annotations
 
 import argparse
 import time
 
-from sensor_readers import BH1750_ADDRESSES, Bh1750Reader, SensorReadError, parse_i2c_address
+from sensor_readers import SensorReadError, Tof200cReader, parse_i2c_address
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="ทดสอบ BH1750 ผ่าน I2C")
+    parser = argparse.ArgumentParser(description="ทดสอบ TOF200C ผ่าน I2C")
     parser.add_argument(
         "--address",
         type=parse_i2c_address,
-        action="append",
-        help="I2C address ที่ต้องการลอง (ระบุซ้ำได้; default: 0x23, 0x5C)",
+        default=0x29,
+        help="I2C address (default: 0x29)",
     )
     parser.add_argument("--bus", type=int, default=1, help="I2C bus (default: 1)")
     parser.add_argument(
@@ -25,22 +25,23 @@ def main() -> int:
     if args.interval <= 0:
         parser.error("--interval ต้องมากกว่า 0")
 
-    addresses = tuple(args.address) if args.address else BH1750_ADDRESSES
-    reader = Bh1750Reader(addresses=addresses, bus_number=args.bus)
-    print("BH1750 continuous reader — กด Ctrl+C เพื่อหยุด")
+    reader = Tof200cReader(address=args.address, bus_number=args.bus)
+    print("TOF200C continuous reader — กด Ctrl+C เพื่อหยุด")
 
     try:
         while True:
             started = time.monotonic()
             try:
-                lux = reader.read_lux()
-                print("\nBH1750")
-                print(f"Lux: {lux:.1f}")
+                distance_cm = reader.read_distance_cm()
+                print("\nTOF200C")
+                print(f"Distance: {distance_cm:.1f} cm")
             except SensorReadError:
-                print("\nBH1750: SENSOR ERROR")
+                print("\nTOF200C: SENSOR ERROR")
             time.sleep(max(0.0, args.interval - (time.monotonic() - started)))
     except KeyboardInterrupt:
-        print("\nหยุดการทดสอบ BH1750")
+        print("\nหยุดการทดสอบ TOF200C")
+    finally:
+        reader.close()
     return 0
 
 

@@ -631,6 +631,38 @@ async function checkHealth() {
   el.className = `badge ${h.dbOk ? 'good' : 'risk'}`;
 }
 
+async function loadSensorReadings() {
+  const lux = $('sensorLux');
+  const distance = $('sensorDistance');
+  const status = $('sensorDataState');
+  const updatedAt = $('sensorUpdatedAt');
+  if (!lux || !distance || !status || !updatedAt) return;
+
+  try {
+    const response = await fetch('/api/sensors/latest', { cache: 'no-store' });
+    if (!response.ok) throw new Error('sensor API returned ' + response.status);
+    const data = await response.json();
+    const updated = data.updatedAt ? new Date(data.updatedAt) : null;
+    const stale = !updated || Date.now() - updated.getTime() > 10_000;
+    const online = data.bh1750Ok && data.tof200cOk;
+    lux.textContent = data.bh1750Ok && Number.isFinite(data.lux) ? Number(data.lux).toFixed(1) : '--';
+    distance.textContent = data.tof200cOk && Number.isFinite(data.distanceCm)
+      ? Number(data.distanceCm).toFixed(1)
+      : '--';
+    status.textContent = stale ? 'กำลังรอข้อมูลใหม่' : online ? 'ออนไลน์' : 'Sensor error';
+    status.className = 'badge ' + (stale ? 'neutral' : online ? 'good' : 'risk');
+    updatedAt.textContent = updated
+      ? 'อัปเดตล่าสุด ' + updated.toLocaleTimeString('th-TH')
+      : 'รอ Raspberry Pi sensor client ส่งข้อมูล';
+  } catch {
+    lux.textContent = '--';
+    distance.textContent = '--';
+    status.textContent = 'ไม่พบข้อมูล';
+    status.className = 'badge neutral';
+    updatedAt.textContent = 'ยังเชื่อมต่อกับ sensor API ไม่ได้';
+  }
+}
+
 async function loadDashboard() {
   try {
     await loadSummary();
@@ -641,6 +673,7 @@ async function loadDashboard() {
     toast('โหลดข้อมูลไม่สำเร็จ');
   }
   await loadPiStatus();
+  await loadSensorReadings();
 }
 
 function drawBarChart(target, rows, field, maxValue, color) {
@@ -872,6 +905,7 @@ async function initApp() {
   await checkHealth();
   await loadDashboard();
   beginPiCamera();
+  setInterval(loadSensorReadings, 2_000);
 
 }
 

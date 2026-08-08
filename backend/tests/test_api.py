@@ -54,6 +54,31 @@ def test_health_check():
     assert "time" in data
 
 
+def test_latest_sensor_readings_round_trip():
+    initial = client.get("/api/sensors/latest")
+    assert initial.status_code == 200
+    assert initial.json()["updatedAt"] is None
+
+    response = client.put(
+        "/api/sensors/latest",
+        json={
+            "lux": 423.5,
+            "distanceCm": 62.4,
+            "bh1750Ok": True,
+            "tof200cOk": True,
+        },
+    )
+    assert response.status_code == 204
+
+    latest = client.get("/api/sensors/latest")
+    assert latest.status_code == 200
+    assert latest.json()["lux"] == 423.5
+    assert latest.json()["distanceCm"] == 62.4
+    assert latest.json()["bh1750Ok"] is True
+    assert latest.json()["tof200cOk"] is True
+    assert latest.json()["updatedAt"]
+
+
 def test_camera_frame_round_trip():
     jpeg = b"\xff\xd8pi-camera-preview\xff\xd9"
     put_res = client.put(

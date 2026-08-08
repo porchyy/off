@@ -108,3 +108,14 @@ class ClientStatusIn(BaseModel):
 class ClientStatusResponse(ClientStatusIn):
     updated_at: str = Field(serialization_alias="updatedAt")
     retention_days: int = Field(serialization_alias="retentionDays")
+
+
+class SensorReadingsIn(ApiModel):
+    lux: float | None = Field(default=None, ge=0)
+    distance_cm: float | None = Field(default=None, ge=0, alias="distanceCm")
+    bh1750_ok: bool = Field(alias="bh1750Ok")
+    tof200c_ok: bool = Field(alias="tof200cOk")
+
+
+class SensorReadingsResponse(SensorReadingsIn):
+    updated_at: str | None = Field(default=None, serialization_alias="updatedAt")

@@ -28,6 +28,8 @@ from .schemas import (
     HealthResponse,
     OkResponse,
     SampleIn,
+    SensorReadingsIn,
+    SensorReadingsResponse,
     SettingsModel,
     SettingsUpdate,
     StatsResponse,
@@ -35,6 +37,7 @@ from .schemas import (
 )
 from .settings_store import DEFAULTS, ensure_defaults, get_all
 from .runtime_state import client_runtime_state
+from .sensor_store import sensor_store
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -83,6 +86,22 @@ def client_status() -> ClientStatusResponse:
 @router.put("/api/client/status", status_code=204)
 def update_client_status(payload: ClientStatusIn) -> Response:
     client_runtime_state.update(payload.online, payload.last_sync_at, payload.message)
+    return Response(status_code=204)
+
+
+@router.get("/api/sensors/latest", response_model=SensorReadingsResponse)
+def get_latest_sensor_readings() -> SensorReadingsResponse:
+    return SensorReadingsResponse.model_validate(sensor_store.snapshot())
+
+
+@router.put("/api/sensors/latest", status_code=204)
+def put_latest_sensor_readings(payload: SensorReadingsIn) -> Response:
+    sensor_store.update(
+        lux=payload.lux,
+        distance_cm=payload.distance_cm,
+        bh1750_ok=payload.bh1750_ok,
+        tof200c_ok=payload.tof200c_ok,
+    )
     return Response(status_code=204)
 
 
