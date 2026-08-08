@@ -30,10 +30,6 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
           ติดตามสด
         </a>
-        <a href="#trainer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></svg>
-          เทรน AI
-        </a>
         <a href="#history">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           ประวัติ
@@ -89,7 +85,6 @@
               <h3>Pi Camera และการวิเคราะห์</h3>
               <div class="badge-group ml-auto">
                 <span id="streamColorMode" class="badge neutral">รูปแบบภาพ: รอข้อมูล</span>
-                <span id="activeAiBadge" class="badge neutral">สูตรคำนวณมาตรฐาน</span>
               <span id="cameraState" class="badge neutral">พร้อมเริ่ม</span>
             </div>
           </div>
@@ -151,94 +146,6 @@
             <p class="disclaimer">ข้อความเดียวกับจอ LCD ที่ต่อกับ Raspberry Pi</p>
           </article>
         </aside>
-      </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════
-         SECTION: โหมดเทรน AI (Custom AI Trainer)
-         ══════════════════════════════════════════ -->
-    <section id="trainer" class="section-block">
-      <div class="section-header">
-        <div class="section-icon trainer-accent">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></svg>
-        </div>
-        <div>
-          <h2 class="section-heading">เทรน AI ท่านั่งของฉันเอง</h2>
-          <p class="section-sub">เทรน Neural Network ส่วนตัวในเบราว์เซอร์ ปรับแต่งให้เหมาะกับสรีระของคุณ (100% Offline)</p>
-        </div>
-        <div class="mode-toggle-wrap ml-auto">
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggleCustomModel">
-            <span class="toggle-label">ใช้โมเดลที่เทรนเอง</span>
-          </label>
-          <span id="modelStatusBadge" class="badge neutral">ใช้สูตรคำนวณเดิม</span>
-        </div>
-      </div>
-
-      <div class="trainer-grid">
-        <!-- Step 1: Collect Training Examples -->
-        <article class="card trainer-card">
-          <div class="card-head">
-            <h3>1. เก็บตัวอย่างท่านั่ง (Dataset)</h3>
-            <span class="hint-text">ขณะกล้องกำลังทำงาน</span>
-          </div>
-          <p class="trainer-desc">นั่งในแต่ละท่าแล้วกดปุ่มเพื่อบันทึกตัวอย่างมุมร่างกายปัจจุบัน (แนะนำอย่างน้อยป้ายกำกับละ 15-20 ตัวอย่าง)</p>
-          
-          <div class="tag-actions">
-            <button id="tagGood" class="tag-btn tag-good" type="button">
-              <span>ท่าดี</span>
-              <b id="countGood" class="tag-badge">0</b>
-            </button>
-            <button id="tagCaution" class="tag-btn tag-caution" type="button">
-              <span>ควรระวัง</span>
-              <b id="countCaution" class="tag-badge">0</b>
-            </button>
-            <button id="tagRisk" class="tag-btn tag-risk" type="button">
-              <span>ควรปรับ</span>
-              <b id="countRisk" class="tag-badge">0</b>
-            </button>
-          </div>
-
-          <div class="dataset-info">
-            <span>ตัวอย่างทั้งหมด: <b id="countTotal">0</b> / 45</span>
-            <button id="clearSamples" class="text-btn danger-text small" type="button">ล้างตัวอย่างที่เก็บไว้</button>
-          </div>
-        </article>
-
-        <!-- Step 2: Train & Manage Model -->
-        <article class="card trainer-card">
-          <div class="card-head">
-            <h3>2. เทรนและจัดการโมเดล</h3>
-            <span id="modelReadyBadge" class="badge neutral">ยังไม่มีโมเดล</span>
-          </div>
-          <p class="trainer-desc">เมื่อเก็บตัวอย่างเพียงพอแล้ว กดปุ่มเทรนโมเดลเพื่อสร้าง AI ส่วนตัวของคุณ หรือบันทึก/โหลดไฟล์โมเดล</p>
-
-          <div class="trainer-actions">
-            <button id="trainModelBtn" class="primary" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              เทรนโมเดล
-            </button>
-            <button id="saveModelBtn" class="outline" type="button" disabled>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              บันทึกโมเดล
-            </button>
-            <button id="loadModelBtn" class="outline" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              โหลดโมเดลที่เทรนไว้
-            </button>
-            <input type="file" id="modelFileInput" multiple accept=".json,.bin" hidden>
-          </div>
-
-          <div id="trainProgressBox" class="progress-box" hidden>
-            <div class="progress-header">
-              <span id="trainStatusText">กำลังเทรน...</span>
-              <span id="trainPercent">0%</span>
-            </div>
-            <div class="progress-bar-wrap">
-              <div id="trainProgressBar" class="progress-bar-fill" style="width: 0%"></div>
-            </div>
-          </div>
-        </article>
       </div>
     </section>
 
@@ -424,7 +331,6 @@
     <p>PostureAI — ระบบติดตามท่านั่งแบบส่วนตัว · พัฒนาด้วย MediaPipe + JavaScript</p>
   </footer>
 
-  <script src="tf.min.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

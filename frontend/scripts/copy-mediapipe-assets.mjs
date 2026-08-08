@@ -1,4 +1,4 @@
-// Copies MediaPipe tasks-vision JS bundle + WASM engine and TensorFlow.js bundle
+// Copies the MediaPipe tasks-vision JS bundle and WASM engine
 // from node_modules into public/, so app.js can load them as local static files
 // instead of from external CDNs.
 //
@@ -41,19 +41,6 @@ if (pkgDir) {
 } else {
   console.warn('[copy-ai-assets] @mediapipe/tasks-vision not found in node_modules.');
 }
-
-// 2. Copy TensorFlow.js Bundle for Offline Custom Training
-const tfPkgDir = findPkgDir(['@tensorflow', 'tfjs', 'dist']);
-if (tfPkgDir && existsSync(join(tfPkgDir, 'tf.min.js'))) {
-  copyFileSync(join(tfPkgDir, 'tf.min.js'), join(publicDir, 'tf.min.js'));
-  console.log('[copy-ai-assets] Copied tf.min.js into public/');
-} else {
-  console.warn('[copy-ai-assets] @tensorflow/tfjs not found in node_modules.');
-}
-
-// 3. Ensure custom models directory exists
-const customModelsDir = join(publicDir, 'models', 'custom');
-mkdirSync(customModelsDir, { recursive: true });
 
 if (!existsSync(join(publicDir, 'models', 'pose_landmarker_full.task'))) {
   console.warn(

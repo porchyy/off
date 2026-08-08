@@ -1,6 +1,5 @@
 import { createStorage, defaultSettings } from './storage.js';
 import { scorePose } from './pose-utils.js';
-import * as PoseModel from './pose-model.js';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
@@ -30,7 +29,6 @@ let poorPostureMs = 0;
 let detectionSignal = 'neutral';
 let settings = { ...defaultSettings };
 let latestMetrics = null;
-let useCustomModel = false;
 let piPeer;
 let piSignal;
 let piReconnectTimer;
@@ -292,15 +290,8 @@ function loop() {
     const calculated = result.landmarks?.[0] && scorePose(result.landmarks[0]);
     if (calculated) {
       latestMetrics = calculated;
-      let m = calculated;
-      if (useCustomModel && PoseModel.isReady()) {
-        const customPred = PoseModel.predict(calculated);
-        if (customPred) {
-          m = customPred;
-        }
-      }
-      update(m);
-      if (saveAnalysisResults) save(m);
+      update(calculated);
+      if (saveAnalysisResults) save(calculated);
     }
     drawSleekSkeleton(ctx, result.landmarks?.[0], detectionSignal, latestMetrics);
   }
@@ -785,163 +776,6 @@ $('clearData')?.addEventListener('click', async () => {
   }
 });
 
-/* ── Custom AI Trainer Handlers ── */
-function updateTrainerUI() {
-  const counts = PoseModel.getExampleCounts();
-  const cGood = $('countGood');
-  const cCaution = $('countCaution');
-  const cRisk = $('countRisk');
-  const cTotal = $('countTotal');
-  if (cGood) cGood.textContent = counts.good;
-  if (cCaution) cCaution.textContent = counts.caution;
-  if (cRisk) cRisk.textContent = counts.risk;
-  if (cTotal) cTotal.textContent = counts.total;
-
-  const ready = PoseModel.isReady();
-  const saveBtn = $('saveModelBtn');
-  if (saveBtn) saveBtn.disabled = !ready;
-  const readyBadge = $('modelReadyBadge');
-  if (readyBadge) {
-    readyBadge.textContent = ready ? 'พร้อมใช้งาน' : 'ยังไม่มีโมเดล';
-    readyBadge.className = `badge ${ready ? 'good' : 'neutral'}`;
-  }
-}
-
-function updateModelStatusBadge() {
-  const badge = $('modelStatusBadge');
-  const activeAiBadge = $('activeAiBadge');
-
-  if (useCustomModel && PoseModel.isReady()) {
-    if (badge) {
-      badge.textContent = 'ใช้โมเดลที่เทรนเอง (Active)';
-      badge.className = 'badge good';
-    }
-    if (activeAiBadge) {
-      activeAiBadge.textContent = 'โมเดลส่วนตัวกำลังใช้งาน';
-      activeAiBadge.className = 'badge good';
-    }
-  } else {
-    if (badge) {
-      badge.textContent = 'ใช้สูตรคำนวณเดิม';
-      badge.className = 'badge neutral';
-    }
-    if (activeAiBadge) {
-      activeAiBadge.textContent = 'สูตรคำนวณมาตรฐาน';
-      activeAiBadge.className = 'badge neutral';
-    }
-  }
-}
-
-function handleTag(label, name) {
-  if (!running || !latestMetrics) {
-    toast('กรุณาเปิดเริ่มกล้องเพื่อสแกนและบันทึกตัวอย่างท่านั่ง');
-    return;
-  }
-  PoseModel.addExample(latestMetrics, label);
-  updateTrainerUI();
-  const counts = PoseModel.getExampleCounts();
-  toast(`บันทึกตัวอย่าง "${name}" แล้ว (${counts[label]} ตัวอย่าง)`);
-}
-
-$('tagGood')?.addEventListener('click', () => handleTag('good', 'ท่านี้ดี'));
-$('tagCaution')?.addEventListener('click', () => handleTag('caution', 'ท่านี้ระวัง'));
-$('tagRisk')?.addEventListener('click', () => handleTag('risk', 'ท่านี้แย่'));
-
-$('clearSamples')?.addEventListener('click', () => {
-  PoseModel.clearExamples();
-  updateTrainerUI();
-  toast('ล้างตัวอย่างที่เก็บไว้เรียบร้อย');
-});
-
-$('trainModelBtn')?.addEventListener('click', async () => {
-  const counts = PoseModel.getExampleCounts();
-  if (counts.total === 0) {
-    toast('กรุณาเก็บตัวอย่างท่านั่งอย่างน้อย 15-20 ตัวอย่างต่อป้ายกำกับก่อนเทรน');
-    return;
-  }
-
-  const box = $('trainProgressBox');
-  const bar = $('trainProgressBar');
-  const text = $('trainStatusText');
-  const pctText = $('trainPercent');
-
-  if (box) box.hidden = false;
-  $('trainModelBtn').disabled = true;
-
-  try {
-    await PoseModel.trainModel({
-      onEpochEnd: (epoch, totalEpochs, logs) => {
-        const pct = Math.round((epoch / totalEpochs) * 100);
-        if (bar) bar.style.width = `${pct}%`;
-        if (pctText) pctText.textContent = `${pct}%`;
-        if (text) text.textContent = `เทรน Epoch ${epoch}/${totalEpochs} (Loss: ${logs.loss.toFixed(3)})`;
-      }
-    });
-
-    if (text) text.textContent = 'เทรนโมเดลสำเร็จ!';
-    toast('เทรนโมเดล AI ส่วนตัวสำเร็จแล้ว');
-    updateTrainerUI();
-
-    const toggle = $('toggleCustomModel');
-    if (toggle) toggle.checked = true;
-    useCustomModel = true;
-    updateModelStatusBadge();
-
-    // Auto-save trained AI model to local browser storage (IndexedDB)
-    await PoseModel.saveModelToLocal();
-    toast('บันทึกโมเดล AI ส่วนตัวลงในเบราว์เซอร์เรียบร้อยแล้ว');
-  } catch (err) {
-    console.error(err);
-    toast(err.message || 'เกิดข้อผิดพลาดในการเทรนโมเดล');
-  } finally {
-    $('trainModelBtn').disabled = false;
-    setTimeout(() => { if (box) box.hidden = true; }, 3500);
-  }
-});
-
-$('saveModelBtn')?.addEventListener('click', async () => {
-  try {
-    await PoseModel.saveModel('custom-posture-model');
-    toast('ดาวน์โหลดไฟล์โมเดลสำเร็จ');
-  } catch (err) {
-    toast(err.message || 'บันทึกโมเดลไม่สำเร็จ');
-  }
-});
-
-$('loadModelBtn')?.addEventListener('click', () => {
-  $('modelFileInput')?.click();
-});
-
-$('modelFileInput')?.addEventListener('change', async (e) => {
-  const files = e.target.files;
-  if (!files || files.length === 0) return;
-  try {
-    await PoseModel.loadModel(files);
-    updateTrainerUI();
-    const toggle = $('toggleCustomModel');
-    if (toggle) toggle.checked = true;
-    useCustomModel = true;
-    updateModelStatusBadge();
-    toast('โหลดโมเดลที่เลือกเรียบร้อย');
-  } catch (err) {
-    console.error(err);
-    toast('โหลดโมเดลไม่สำเร็จ กรุณาเลือกไฟล์ model.json และ model.weights.bin พร้อมกัน');
-  }
-});
-
-$('toggleCustomModel')?.addEventListener('change', (e) => {
-  if (e.target.checked && !PoseModel.isReady()) {
-    toast('ยังไม่มีโมเดลที่เทรนสำเร็จ กรุณาเก็บตัวอย่างแล้วกดเทรน หรือโหลดไฟล์โมเดลก่อน');
-    e.target.checked = false;
-    useCustomModel = false;
-    updateModelStatusBadge();
-    return;
-  }
-  useCustomModel = e.target.checked;
-  updateModelStatusBadge();
-  toast(useCustomModel ? 'สลับมาใช้โมเดลที่เทรนเอง' : 'สลับกลับไปใช้สูตรคำนวณเดิม');
-});
-
 /* ── Chart Tabs & Notification Handlers ── */
 $('btnDailyChart')?.addEventListener('click', () => {
   $('btnDailyChart').classList.add('active');
@@ -1039,14 +873,6 @@ async function initApp() {
   await loadDashboard();
   beginPiCamera();
 
-  // Try loading saved personal model from local IndexedDB first
-  const loadedLocal = await PoseModel.loadModelFromLocal();
-  if (!loadedLocal) {
-    // Fallback to loading default model from URL if available
-    await PoseModel.loadModelFromUrl('./models/custom/model.json');
-  }
-  updateTrainerUI();
-  updateModelStatusBadge();
 }
 
 initApp();
