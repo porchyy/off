@@ -905,7 +905,7 @@ async function initApp() {
   await checkHealth();
   await loadDashboard();
   beginPiCamera();
-  setInterval(loadSensorReadings, 2_000);
+  setInterval(loadSensorReadings, 1_000);
 
 }
 

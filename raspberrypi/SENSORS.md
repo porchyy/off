@@ -66,8 +66,8 @@ cd ~/off/raspberrypi
 .venv/bin/python sensor_web_client.py --backend-url http://localhost:8000
 ~~~
 
-หน้า dashboard จะดึงค่า BH1750 และ TOF200C จาก endpoint
-/api/sensors/latest ทุก 2 วินาที โดยข้อมูลอยู่ใน memory ของ backend เท่านั้น
+หน้า dashboard จะแสดงค่า BH1750 และ TOF200C พร้อมกันจาก endpoint
+/api/sensors/latest ทุก 1 วินาที โดยข้อมูลอยู่ใน memory ของ backend เท่านั้น
 และไม่บันทึกลง database. หาก backend อยู่คนละเครื่อง ให้เปลี่ยน backend URL เป็น
 http://IP-ของ-backend:8000
 
