@@ -178,6 +178,11 @@ python posture_client.py --config config.yaml
 4. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
    `buffer.sqlite` แล้วยิงใหม่เมื่อกลับมา online
 
+บริการ `postureai-sensors.service` ถูก enable ให้เริ่มพร้อมระบบทุกครั้งที่เปิด Pi,
+ใช้ HTTP connection pool เดิมและปิด response ทุกครั้งเพื่อไม่ให้ socket สะสม หาก backend
+ยังเริ่มไม่เสร็จ client จะ retry แบบหน่วงสูงสุด 10 วินาที และ systemd จะ restart ให้อัตโนมัติ
+หากโปรเซสหยุดทำงาน.
+
 ## AI เสริมจาก Roboflow (ทางเลือก)
 
 ระบบหลักยังคงใช้ **MediaPipe Pose Landmarker Full บน Pi** เพื่อวาด skeleton,

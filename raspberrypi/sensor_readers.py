@@ -248,19 +248,26 @@ class Tof200cReader:
             if not _tof_device_responds(self.address, self.bus_number):
                 raise SensorReadError(f"ไม่พบ TOF200C ที่ 0x{self.address:02X}")
             sensor_type = detect_tof_sensor(self.address, self.bus_number)
+            self.sensor_type = sensor_type
             if sensor_type == "VL53L1X":
                 import adafruit_vl53l1x  # type: ignore
 
                 adapter = SMBusI2C(register_address_bytes=2, bus_number=self.bus_number)
+                # Store the adapter before constructing the driver so close()
+                # can release /dev/i2c-1 if driver initialization fails.
+                self._adapter = adapter
                 sensor = adafruit_vl53l1x.VL53L1X(adapter, address=self.address)
+                self._sensor = sensor
                 sensor.start_ranging()
             else:
                 import adafruit_vl53l0x  # type: ignore
 
                 adapter = SMBusI2C(register_address_bytes=1, bus_number=self.bus_number)
+                self._adapter = adapter
                 sensor = adafruit_vl53l0x.VL53L0X(
                     adapter, address=self.address, io_timeout_s=2
                 )
+                self._sensor = sensor
         except ImportError as error:
             self.close()
             raise SensorReadError(f"ไม่พบ dependency: {error.name or 'sensor driver'}") from error

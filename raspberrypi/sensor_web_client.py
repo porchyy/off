@@ -48,7 +48,13 @@ def publish_sensor_payload(
 ) -> None:
     """Publish one reading; callers decide how and when to retry failures."""
     response = put(endpoint, json=payload, timeout=timeout)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    finally:
+        # Explicitly release the socket back to requests' connection pool.
+        # This client runs forever, so relying on garbage collection can
+        # eventually exhaust the systemd service's file descriptor limit.
+        response.close()
 
 
 def main() -> int:
@@ -71,12 +77,15 @@ def main() -> int:
     endpoint = f"{args.backend_url.rstrip('/')}/api/sensors/latest"
 
     print(f"ส่งข้อมูล sensor ไปที่ {endpoint} — กด Ctrl+C เพื่อหยุด")
+    session = requests.Session()
+    backend_failures = 0
     try:
         while True:
             started = time.monotonic()
             payload = read_sensor_payload(bh1750, tof200c)
             try:
-                publish_sensor_payload(endpoint, payload, args.timeout)
+                publish_sensor_payload(endpoint, payload, args.timeout, session.put)
+                backend_failures = 0
                 lux = payload["lux"]
                 distance_cm = payload["distanceCm"]
                 print(
@@ -84,11 +93,16 @@ def main() -> int:
                     f"Distance: {f'{distance_cm:.1f} cm' if distance_cm is not None else 'SENSOR ERROR'}"
                 )
             except requests.RequestException as error:
-                print(f"Backend: ERROR ({error})")
+                backend_failures += 1
+                retry_seconds = min(10.0, max(args.interval, 2 ** min(backend_failures - 1, 4)))
+                print(f"Backend: ERROR ({error}); retrying in {retry_seconds:g}s")
+                time.sleep(max(0.0, retry_seconds - (time.monotonic() - started)))
+                continue
             time.sleep(max(0.0, args.interval - (time.monotonic() - started)))
     except KeyboardInterrupt:
         print("\nหยุด sensor web client")
     finally:
+        session.close()
         tof200c.close()
     return 0
 

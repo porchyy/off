@@ -33,6 +33,7 @@ sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 Description=PostureAI BH1750 and TOF200C sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -43,6 +44,9 @@ Environment=PYTHONUNBUFFERED=1
 ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5
 Restart=always
 RestartSec=3
+TimeoutStopSec=10
+# Safety guard; the client also closes/reuses every HTTP connection.
+LimitNOFILE=4096
 
 [Install]
 WantedBy=multi-user.target
