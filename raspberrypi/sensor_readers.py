@@ -84,9 +84,14 @@ class Bh1750Reader:
                 time.sleep(0.01)
                 bus.write_byte(self.address, BH1750_CONTINUOUS_HIGH_RES)
                 time.sleep(self.measurement_seconds)
-                data = bus.read_i2c_block_data(
-                    self.address, BH1750_CONTINUOUS_HIGH_RES, 2
-                )
+                # BH1750 has no register pointer.  SMBus block reads write a
+                # command byte immediately before receiving data, which can
+                # restart a conversion and make some modules return the same
+                # previous sample forever.  Receive the two measurement bytes
+                # directly instead.
+                read_message = smbus2.i2c_msg.read(self.address, 2)
+                bus.i2c_rdwr(read_message)
+                data = list(read_message)
             finally:
                 bus.close()
 

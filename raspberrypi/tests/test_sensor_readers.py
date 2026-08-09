@@ -19,6 +19,7 @@ class FakeBhBus:
 
     def __init__(self, _bus_number: int) -> None:
         self.closed = False
+        self.writes: list[tuple[int, int]] = []
 
     def read_byte(self, address: int) -> int:
         response = self.responses[address]
@@ -26,14 +27,14 @@ class FakeBhBus:
             raise response
         return int(response)
 
-    def write_byte(self, _address: int, _value: int) -> None:
-        pass
+    def write_byte(self, address: int, value: int) -> None:
+        self.writes.append((address, value))
 
-    def read_i2c_block_data(self, address: int, _command: int, _length: int) -> list[int]:
-        response = self.readings[address]
+    def i2c_rdwr(self, message) -> None:
+        response = self.readings[message.address]
         if isinstance(response, Exception):
             raise response
-        return response
+        message.data = list(response)
 
     def close(self) -> None:
         self.closed = True
@@ -41,7 +42,22 @@ class FakeBhBus:
 
 @pytest.fixture
 def fake_smbus(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(sys.modules, "smbus2", SimpleNamespace(SMBus=FakeBhBus))
+    class FakeReadMessage:
+        def __init__(self, address: int, _length: int) -> None:
+            self.address = address
+            self.data: list[int] = []
+
+        def __iter__(self):
+            return iter(self.data)
+
+    monkeypatch.setitem(
+        sys.modules,
+        "smbus2",
+        SimpleNamespace(
+            SMBus=FakeBhBus,
+            i2c_msg=SimpleNamespace(read=FakeReadMessage),
+        ),
+    )
     FakeBhBus.responses = {}
     FakeBhBus.readings = {}
 
