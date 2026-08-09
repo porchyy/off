@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import time
+from typing import Any, Callable
 
 import requests
 
@@ -15,6 +16,39 @@ from sensor_readers import (
     Tof200cReader,
     parse_i2c_address,
 )
+
+
+def read_sensor_payload(
+    bh1750: Bh1750Reader, tof200c: Tof200cReader
+) -> dict[str, float | bool | None]:
+    """Read both sensors independently so one failure does not hide the other."""
+    lux = None
+    distance_cm = None
+    try:
+        lux = bh1750.read_lux()
+    except SensorReadError:
+        pass
+    try:
+        distance_cm = tof200c.read_distance_cm()
+    except SensorReadError:
+        pass
+    return {
+        "lux": lux,
+        "distanceCm": distance_cm,
+        "bh1750Ok": lux is not None,
+        "tof200cOk": distance_cm is not None,
+    }
+
+
+def publish_sensor_payload(
+    endpoint: str,
+    payload: dict[str, float | bool | None],
+    timeout: float,
+    put: Callable[..., Any] = requests.put,
+) -> None:
+    """Publish one reading; callers decide how and when to retry failures."""
+    response = put(endpoint, json=payload, timeout=timeout)
+    response.raise_for_status()
 
 
 def main() -> int:
@@ -40,26 +74,11 @@ def main() -> int:
     try:
         while True:
             started = time.monotonic()
-            lux = None
-            distance_cm = None
+            payload = read_sensor_payload(bh1750, tof200c)
             try:
-                lux = bh1750.read_lux()
-            except SensorReadError:
-                pass
-            try:
-                distance_cm = tof200c.read_distance_cm()
-            except SensorReadError:
-                pass
-
-            payload = {
-                "lux": lux,
-                "distanceCm": distance_cm,
-                "bh1750Ok": lux is not None,
-                "tof200cOk": distance_cm is not None,
-            }
-            try:
-                response = requests.put(endpoint, json=payload, timeout=args.timeout)
-                response.raise_for_status()
+                publish_sensor_payload(endpoint, payload, args.timeout)
+                lux = payload["lux"]
+                distance_cm = payload["distanceCm"]
                 print(
                     f"Lux: {lux if lux is not None else 'SENSOR ERROR'} | "
                     f"Distance: {f'{distance_cm:.1f} cm' if distance_cm is not None else 'SENSOR ERROR'}"

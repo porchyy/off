@@ -106,6 +106,31 @@ for attempt in $(seq 1 30); do
     sleep 2
 done
 
+# Register the environmental sensor publisher before camera/MediaPipe checks.
+# A camera failure must not prevent BH1750/TOF200C from starting automatically.
+echo "Registering the persistent BH1750/TOF200C service..."
+sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
+[Unit]
+Description=PostureAI BH1750 and TOF200C sensor client
+Wants=network-online.target postureai-stack.service
+After=network-online.target postureai-stack.service
+
+[Service]
+Type=simple
+User=$INSTALL_USER
+SupplementaryGroups=i2c
+WorkingDirectory=$SCRIPT_DIR
+Environment=PYTHONUNBUFFERED=1
+ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now postureai-sensors.service
+
 echo "[5/6] Verifying MediaPipe, Pi Camera, and backend..."
 cd "$SCRIPT_DIR"
 .venv/bin/python posture_client.py --config config.yaml --check
@@ -146,27 +171,6 @@ Environment=PYTHONUNBUFFERED=1
 ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/posture_client.py --config $SCRIPT_DIR/config.yaml
 Restart=always
 RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
-[Unit]
-Description=PostureAI BH1750 and TOF200C sensor client
-Wants=network-online.target
-After=network-online.target postureai-stack.service
-Requires=postureai-stack.service
-
-[Service]
-Type=simple
-User=$INSTALL_USER
-SupplementaryGroups=i2c
-WorkingDirectory=$SCRIPT_DIR
-Environment=PYTHONUNBUFFERED=1
-ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5
-Restart=always
-RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
