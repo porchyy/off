@@ -38,6 +38,14 @@ sudo journalctl -u postureai-sensors -f
 
 ตัวติดตั้งจะเปิด I2C และสร้าง `postureai-sensors` service สำหรับอ่าน BH1750/TOF200C
 แล้วส่งค่าล่าสุดไปยัง dashboard ทุก 0.5 วินาทีโดยอัตโนมัติ รวมถึงหลัง reboot.
+หากตัวติดตั้งหลักหยุดก่อนขั้นสร้าง service (เช่น Docker หรือกล้องยังไม่พร้อม)
+สามารถติดตั้งเฉพาะ service เซนเซอร์ได้ด้วย:
+
+```bash
+chmod +x raspberrypi/install-sensor-service.sh
+./raspberrypi/install-sensor-service.sh
+sudo reboot
+```
 
 ค่าเกณฑ์ความเสี่ยงและเสียงที่บันทึกจาก dashboard จะถูก client ดึงมาใช้ภายใน 30 วินาที
 หาก backend หลุด client จะใช้ค่าล่าสุด/ค่าจาก `config.yaml` ต่อไป และ dashboard จะแสดง
