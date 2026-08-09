@@ -52,7 +52,8 @@ const state = (name, cls = 'neutral') => {
 
 function applyStorageMode() {
   const demo = storage.isDemo;
-  $('demoBanner').hidden = !demo;
+  const demoBanner = $('demoBanner');
+  if (demoBanner) demoBanner.hidden = !demo;
   $('dataDirField').hidden = demo;
   $('adminTokenField').hidden = demo;
   $('historyEyebrow').textContent = demo ? 'DEMO · LOCALSTORAGE' : 'LOCAL SQLITE DATABASE';
