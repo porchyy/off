@@ -36,6 +36,15 @@ def test_read_sensor_payload_keeps_working_sensor_value() -> None:
     }
 
 
+def test_read_sensor_payload_applies_lux_calibration() -> None:
+    payload = read_sensor_payload(
+        Reader(value=100.0), Reader(value=62.4), lux_calibration=4.0
+    )
+
+    assert payload["lux"] == 400.0
+    assert payload["bh1750Ok"] is True
+
+
 def test_publish_sensor_payload_uses_latest_endpoint_and_timeout() -> None:
     calls = []
 

@@ -5,6 +5,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_USER="${SUDO_USER:-$USER}"
 SERVICE_FILE="/etc/systemd/system/postureai-sensors.service"
+ENV_FILE="/etc/default/postureai-sensors"
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -28,6 +29,9 @@ python3 -m venv --system-site-packages "$SCRIPT_DIR/.venv"
 "$SCRIPT_DIR/.venv/bin/python" -m pip install -r "$SCRIPT_DIR/requirements-sensors.txt"
 
 echo "[3/4] Registering postureai-sensors.service..."
+if [ ! -f "$ENV_FILE" ]; then
+    printf 'POSTUREAI_LUX_CALIBRATION=1.0\n' | sudo tee "$ENV_FILE" >/dev/null
+fi
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
 Description=PostureAI BH1750 and TOF200C sensor client
@@ -40,7 +44,8 @@ User=$INSTALL_USER
 SupplementaryGroups=i2c
 WorkingDirectory=$SCRIPT_DIR
 Environment=PYTHONUNBUFFERED=1
-ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5
+EnvironmentFile=$ENV_FILE
+ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5 --lux-calibration \${POSTUREAI_LUX_CALIBRATION}
 Restart=always
 RestartSec=3
 
