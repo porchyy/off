@@ -76,20 +76,43 @@ cp config.example.yaml config.yaml   # แล้วแก้ค่าให้�
 sudo apt-get install -y alsa-utils
 ```
 
-## ทดสอบเสียงก่อนเปิดกล้อง
+## เสียงแจ้งเตือนผ่าน MAX98357A I2S เท่านั้น
 
-ต่อ USB speaker / ลำโพง HDMI / ช่องเสียงที่ต้องการ แล้วรัน:
+ระบบชุดนี้ใช้โมดูล **MAX98357A I2S 3W Class-D amplifier พร้อมลำโพง** เป็นเสียงจาก Pi
+โดยไม่ใช้ GPIO buzzer, USB audio หรือ HDMI audio. ปิด Raspberry Pi และถอดไฟก่อนต่อสาย:
+
+| MAX98357A | Raspberry Pi 5 |
+|---|---|
+| VIN | Pin 2 (5V) |
+| GND | Pin 6 (GND) |
+| BCLK | Pin 12 (GPIO18) |
+| LRC | Pin 35 (GPIO19) |
+| DIN | Pin 40 (GPIO21) |
+| SD | Pin 7 (GPIO4) |
+
+ต่อลำโพงเข้าขั้ว `SPK+` และ `SPK-` ของโมดูลเท่านั้น ห้ามต่อขั้วลำโพงข้างใดข้างหนึ่ง
+ลง GND จากนั้นติดตั้ง I2S overlay และตั้ง MAX98357A เป็น ALSA output หลัก:
 
 ```bash
-cd raspberrypi
-source .venv/bin/activate
-python posture_client.py --config config.yaml --test-sound
+cd ~/off
+chmod +x raspberrypi/setup-max98357.sh
+./raspberrypi/setup-max98357.sh
+sudo reboot
 ```
 
-ถ้าไม่ได้ยินเสียง ให้ดูอุปกรณ์ด้วย `aplay -L` แล้วนำชื่อมาใส่ที่
-`sound.device` ใน `config.yaml` จากนั้นเช็กระดับเสียงด้วย `alsamixer`.
-หากมีไฟล์เสียงของตัวเอง ให้ใช้ไฟล์ WAV และกำหนด path ที่ `sound.file`;
-เมื่อเว้นว่าง ระบบจะสร้างเสียง beep สองจังหวะให้เอง
+หลัง reboot ตรวจว่าระบบพบการ์ด `MAX98357A` แล้วทดสอบเสียง:
+
+```bash
+aplay -l | grep -i MAX98357A
+speaker-test -D plughw:CARD=MAX98357A,DEV=0 -c 2 -t sine -f 880 -l 1
+cd ~/off/raspberrypi
+.venv/bin/python posture_client.py --config config.yaml --test-sound
+```
+
+ปล่อยขา `GAIN` ว่างเพื่อใช้ค่า gain เริ่มต้นของบอร์ด สคริปต์ใช้ overlay ทางการ
+`dtoverlay=max98357a,sdmode-pin=4` และกำหนด
+`sound.device` เป็น `plughw:CARD=MAX98357A,DEV=0` จึงไม่อ้างอิงหมายเลข card
+ที่อาจเปลี่ยนหลัง reboot. เมื่อ `sound.file` ว่าง ระบบจะสร้างเสียง beep สองจังหวะให้เอง.
 
 ## ไฟ LED สีแดงแจ้งเตือน
 

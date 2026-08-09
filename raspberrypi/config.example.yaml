@@ -69,8 +69,8 @@ risk:
 
 sound:
   enabled: true
-  # ดูรายชื่ออุปกรณ์ด้วย: aplay -L (ส่วนใหญ่ใช้ default ได้เลย)
-  device: default
+  # ใช้เฉพาะ MAX98357A I2S DAC/amplifier; setup-max98357.sh ตั้งค่าให้อัตโนมัติ
+  device: "plughw:CARD=MAX98357A,DEV=0"
   volume: 0.75
   # เว้นว่างเพื่อใช้เสียง beep ในตัว หรือระบุไฟล์ WAV เช่น ./alert.wav
   file:
@@ -85,7 +85,7 @@ indicator:
   # ติดทันทีเมื่อคะแนนต่ำกว่าค่านี้ และดับทันทีเมื่อคะแนนกลับมาถึงเกณฑ์
   threshold: 50
 
-# Buzzer แจ้งเตือนด้วยเสียง: ดังเมื่อคะแนนต่ำกว่า threshold
+# ไม่ใช้ GPIO buzzer ในชุด MAX98357A นี้
 buzzer:
   enabled: false
   # BCM GPIO number: ค่า default คือ GPIO27 / physical pin 13

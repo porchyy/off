@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from client.alert import AlertController
+from client.alert import AlertController, SoundPlayer
 
 
 class FakeUploader:
@@ -36,6 +36,12 @@ class FakeIndicator:
 
     def off(self):
         self.off_count += 1
+
+
+def test_sound_player_defaults_to_max98357a_only():
+    player = SoundPlayer({})
+
+    assert player.device == "plughw:CARD=MAX98357A,DEV=0"
 
 
 def test_alert_waits_for_risk_duration_and_respects_cooldown():

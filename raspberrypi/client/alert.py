@@ -21,7 +21,7 @@ class SoundPlayer:
 
     def __init__(self, config: dict[str, Any]) -> None:
         self.enabled = bool(config.get("enabled", True))
-        self.device = str(config.get("device", "default"))
+        self.device = str(config.get("device", "plughw:CARD=MAX98357A,DEV=0"))
         self.file = config.get("file")
         self.volume = max(0.0, min(1.0, float(config.get("volume", 0.75))))
 
