@@ -79,30 +79,6 @@ cd ~/off/raspberrypi
 และไม่บันทึกลง database. หาก backend อยู่คนละเครื่อง ให้เปลี่ยน backend URL เป็น
 http://IP-ของ-backend:8000
 
-## Calibrate ค่า Lux
-
-วาง BH1750 และเครื่องวัดอ้างอิงที่ตำแหน่ง/ทิศทางเดียวกัน แล้วหาค่าตัวคูณจาก
-`ค่าอ้างอิง ÷ ค่า BH1750`. ตัวอย่าง เครื่องอ้างอิงอ่าน 400 Lux แต่ BH1750 อ่าน 100 Lux
-ให้ใช้ calibration `4.0`. แก้ไฟล์บน Pi:
-
-~~~bash
-sudo nano /etc/default/postureai-sensors
-~~~
-
-กำหนดค่าและ restart service:
-
-~~~text
-POSTUREAI_LUX_CALIBRATION=4.0
-~~~
-
-~~~bash
-sudo systemctl restart postureai-sensors
-sudo journalctl -u postureai-sensors -f
-~~~
-
-ตัวติดตั้งจะเก็บค่า calibration เดิมไว้เมื่อรันซ้ำ และค่า Lux ที่ส่งขึ้น dashboard
-จะเป็นค่าหลังคูณ calibration แล้ว.
-
 ## Expected output
 
 ~~~text
