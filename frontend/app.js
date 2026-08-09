@@ -23,7 +23,6 @@ let analysisVideo = video;
 let saveAnalysisResults = true;
 let lastSave = 0;
 let lastAlert = 0;
-let lastVoiceAlert = 0;
 let lastMetricAt = 0;
 let poorPostureMs = 0;
 let detectionSignal = 'neutral';
@@ -565,7 +564,6 @@ async function loadSettings() {
   $('riskThreshold').value = settings.riskThreshold;
   $('riskSeconds').value = settings.riskSeconds;
   $('soundEnabled').checked = settings.soundEnabled;
-  if ($('voiceEnabled')) $('voiceEnabled').checked = settings.voiceEnabled !== false;
   $('desktopEnabled').checked = settings.desktopEnabled;
   if (!storage.isDemo) $('dataDir').value = settings.dataDir || '';
 }
@@ -608,7 +606,7 @@ async function saveSettings() {
     riskSeconds: Number($('riskSeconds').value),
     dataDir: storage.isDemo ? 'localStorage' : $('dataDir').value,
     soundEnabled: $('soundEnabled').checked,
-    voiceEnabled: $('voiceEnabled') ? $('voiceEnabled').checked : true,
+    voiceEnabled: false,
     desktopEnabled: $('desktopEnabled').checked
   };
   try {
@@ -718,58 +716,14 @@ function drawBarChart(target, rows, field, maxValue, color) {
   });
 }
 
-function speakThaiAlert(message = 'กรุณายืดหลังตรงและปรับระดับคอครับ') {
-  if (!('speechSynthesis' in window)) {
-    playBeep();
-    return;
-  }
-  try {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = 'th-TH';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    const voices = window.speechSynthesis.getVoices();
-    const thVoice = voices.find(v => v.lang && (v.lang.includes('th') || v.lang.includes('TH')));
-    if (thVoice) utterance.voice = thVoice;
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    playBeep();
-  }
-}
-
 function notifyRisk(force = false, message = 'กรุณายืดหลังตรงและปรับระดับคอขึ้นครับ') {
   const now = Date.now();
   if (!force && now - lastAlert < 15000) return;
   lastAlert = now;
   $('riskPopup').hidden = false;
-  
-  if (force || now - lastVoiceAlert >= 30000) {
-    lastVoiceAlert = now;
-    if (settings.voiceEnabled) {
-      speakThaiAlert(message);
-    } else if (settings.soundEnabled) {
-      playBeep();
-    }
-  }
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
     new Notification('PostureAI: เสี่ยงจากท่านั่ง', { body: message });
   }
-}
-
-function playBeep() {
-  const Audio = window.AudioContext || window.webkitAudioContext;
-  if (!Audio) return;
-  const audio = new Audio();
-  const osc = audio.createOscillator();
-  const gain = audio.createGain();
-  osc.frequency.value = 880;
-  gain.gain.setValueAtTime(0.0001, audio.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.18, audio.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.22);
-  osc.connect(gain).connect(audio.destination);
-  osc.start();
-  osc.stop(audio.currentTime + 0.24);
 }
 
 async function downloadExport(format) {
