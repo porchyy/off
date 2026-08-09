@@ -114,7 +114,7 @@ def test_get_settings():
     assert response.status_code == 200
     data = response.json()
     assert data["riskThreshold"] == 60
-    assert data["riskSeconds"] == 45
+    assert data["riskSeconds"] == 0
     assert data["soundEnabled"] is True
     assert data["voiceEnabled"] is True
     assert data["desktopEnabled"] is False
@@ -158,8 +158,16 @@ def test_update_settings_accepts_internal_field_names():
     assert data["desktopEnabled"] is True
 
 
+def test_update_settings_accepts_immediate_alert():
+    response = client.put("/api/settings", json={"riskSeconds": 0, "soundEnabled": True})
+
+    assert response.status_code == 200
+    assert response.json()["riskSeconds"] == 0
+    assert response.json()["soundEnabled"] is True
+
+
 def test_update_settings_rejects_out_of_range_values():
-    response = client.put("/api/settings", json={"risk_threshold": 150, "risk_seconds": 1})
+    response = client.put("/api/settings", json={"risk_threshold": 150, "risk_seconds": -1})
     assert response.status_code == 422
 
 

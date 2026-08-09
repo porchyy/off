@@ -1,5 +1,5 @@
 import { createStorage, defaultSettings } from './storage.js';
-import { scorePose } from './pose-utils.js';
+import { isPostureRisk, scorePose } from './pose-utils.js';
 
 const $ = id => document.getElementById(id);
 const video = $('video');
@@ -69,7 +69,7 @@ function updateRisk(m) {
   if (m.score < settings.riskThreshold) poorPostureMs += delta;
   else poorPostureMs = Math.max(0, poorPostureMs - delta * 0.35);
 
-  const high = m.score < settings.riskThreshold - 10 || poorPostureMs >= settings.riskSeconds * 1000;
+  const high = isPostureRisk(m.score, settings.riskThreshold, poorPostureMs, settings.riskSeconds);
   detectionSignal = high ? 'risk' : 'good';
 
   $('officeRiskCard').className = `risk-card card ${high ? 'risk' : 'good'}`;

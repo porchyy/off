@@ -226,7 +226,7 @@ def write_settings(
         new_dir = current["dataDir"]
     next_values: dict[str, Any] = {
         "riskThreshold": _clamp_int(payload.risk_threshold, 1, 99, current["riskThreshold"]),
-        "riskSeconds": _clamp_int(payload.risk_seconds, 5, 600, current["riskSeconds"]),
+        "riskSeconds": _clamp_int(payload.risk_seconds, 0, 600, current["riskSeconds"]),
         "dataDir": new_dir,
         "soundEnabled": bool(payload.sound_enabled) if payload.sound_enabled is not None else current["soundEnabled"],
         "voiceEnabled": bool(payload.voice_enabled) if payload.voice_enabled is not None else current["voiceEnabled"],

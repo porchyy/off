@@ -246,8 +246,8 @@
           <input id="riskThreshold" type="number" min="1" max="99" step="1">
         </label>
         <label class="card setting">
-          <span class="setting-label">ระยะเวลาท่านั่งเสี่ยงต่อเนื่อง (วินาที)</span>
-          <input id="riskSeconds" type="number" min="5" max="600" step="5">
+          <span class="setting-label">ระยะเวลาท่านั่งเสี่ยงต่อเนื่อง (วินาที · 0 = เตือนทันที)</span>
+          <input id="riskSeconds" type="number" min="0" max="600" step="1">
         </label>
         <label id="dataDirField" class="card setting" hidden>
           <span class="setting-label">ตำแหน่งฐานข้อมูล <em>(เฉพาะเมื่อรันกับ Node server)</em></span>

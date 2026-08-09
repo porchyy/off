@@ -9,7 +9,7 @@ const KEYS = {
 
 export const defaultSettings = {
   riskThreshold: 60,
-  riskSeconds: 45,
+  riskSeconds: 0,
   dataDir: 'database',
   soundEnabled: true,
   voiceEnabled: true,

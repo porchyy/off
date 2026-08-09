@@ -64,6 +64,26 @@ def test_alert_waits_for_risk_duration_and_respects_cooldown():
     assert sound.play_count == 2
 
 
+def test_zero_risk_duration_alerts_immediately_and_respects_cooldown():
+    now = [100.0]
+    uploader = FakeUploader()
+    sound = FakeSound()
+    controller = AlertController(
+        {"risk": {"threshold": 60, "seconds": 0, "cooldown": 30}},
+        uploader,
+        sound,
+        clock=lambda: now[0],
+    )
+
+    assert controller.update({"score": 50}) is True
+    assert sound.play_count == 1
+    assert len(uploader.alerts) == 1
+
+    now[0] = 101.0
+    assert controller.update({"score": 40}) is False
+    assert sound.play_count == 1
+
+
 def test_good_posture_resets_low_score_timer():
     now = [0.0]
     controller = AlertController(
@@ -115,3 +135,7 @@ def test_dashboard_settings_apply_without_restarting_client():
     assert controller.threshold == 72
     assert controller.risk_seconds == 20
     assert sound.enabled is False
+
+    assert controller.apply_runtime_settings({"riskSeconds": 0, "soundEnabled": True}) is True
+    assert controller.risk_seconds == 0
+    assert sound.enabled is True

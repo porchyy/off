@@ -127,7 +127,7 @@ class AlertController:
             changed = changed or next_threshold != self.threshold
             self.threshold = next_threshold
         if isinstance(seconds, (int, float)):
-            next_seconds = min(600.0, max(5.0, float(seconds)))
+            next_seconds = min(600.0, max(0.0, float(seconds)))
             changed = changed or next_seconds != self.risk_seconds
             self.risk_seconds = next_seconds
         if isinstance(sound_enabled, bool):

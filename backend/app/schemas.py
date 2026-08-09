@@ -24,7 +24,7 @@ class HealthResponse(ApiModel):
 
 class SettingsModel(ApiModel):
     risk_threshold: int = Field(ge=1, le=99, serialization_alias="riskThreshold")
-    risk_seconds: int = Field(ge=5, le=600, serialization_alias="riskSeconds")
+    risk_seconds: int = Field(ge=0, le=600, serialization_alias="riskSeconds")
     data_dir: str = Field(serialization_alias="dataDir")
     sound_enabled: bool = Field(serialization_alias="soundEnabled")
     voice_enabled: bool = Field(serialization_alias="voiceEnabled")
@@ -34,7 +34,7 @@ class SettingsModel(ApiModel):
 
 class SettingsUpdate(ApiModel):
     risk_threshold: int | None = Field(default=None, ge=1, le=99, alias="riskThreshold")
-    risk_seconds: int | None = Field(default=None, ge=5, le=600, alias="riskSeconds")
+    risk_seconds: int | None = Field(default=None, ge=0, le=600, alias="riskSeconds")
     data_dir: str | None = Field(default=None, alias="dataDir")
     sound_enabled: bool | None = Field(default=None, alias="soundEnabled")
     voice_enabled: bool | None = Field(default=None, alias="voiceEnabled")

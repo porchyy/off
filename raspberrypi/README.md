@@ -150,8 +150,8 @@ python posture_client.py --config config.yaml
    (10 FPS) → POST เฉพาะคะแนนไป backend และส่งเฉพาะพิกัด landmark สำคัญไปวาด
    เส้นทับบน dashboard (ไม่ส่งหรือบันทึกภาพเพิ่ม)
 3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
-   ต่อเนื่องเกิน `risk.seconds` จะเล่นเสียงและ POST `/api/alerts` โดยเว้นช่วง
-   การแจ้งซ้ำตาม `risk.cooldown`
+   จะเล่นเสียงและ POST `/api/alerts` ทันทีเมื่อ `risk.seconds` เป็น `0` โดยเว้นช่วง
+   การแจ้งซ้ำตาม `risk.cooldown` (ตั้งค่าเวลาหน่วงได้จากหน้าเว็บ)
 4. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
    `buffer.sqlite` แล้วยิงใหม่เมื่อกลับมา online
 
