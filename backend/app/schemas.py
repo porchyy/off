@@ -99,7 +99,7 @@ class OkResponse(BaseModel):
     ok: bool = True
 
 
-class ClientStatusIn(BaseModel):
+class ClientStatusIn(ApiModel):
     online: bool = True
     last_sync_at: str | None = Field(default=None, alias="lastSyncAt")
     message: str | None = Field(default=None, max_length=160)

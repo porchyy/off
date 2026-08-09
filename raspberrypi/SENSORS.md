@@ -59,15 +59,23 @@ cd ~/off/raspberrypi
 
 ## Show values on the dashboard
 
-เมื่อ backend และ dashboard ทำงานอยู่บน Pi ให้รัน client นี้ใน terminal แยก:
+เมื่อใช้ `setup-pi5.sh` ระบบจะสร้าง `postureai-sensors` service เพื่ออ่านและส่งค่า
+ขึ้น dashboard ทุก 0.5 วินาทีโดยอัตโนมัติ รวมถึงหลัง reboot. ตรวจสถานะและ log ด้วย:
+
+~~~bash
+sudo systemctl status postureai-sensors
+sudo journalctl -u postureai-sensors -f
+~~~
+
+หากติดตั้งแบบ manual และ backend/dashboard ทำงานอยู่บน Pi ให้รัน client นี้ใน terminal แยก:
 
 ~~~bash
 cd ~/off/raspberrypi
-.venv/bin/python sensor_web_client.py --backend-url http://localhost:8000
+.venv/bin/python sensor_web_client.py --backend-url http://localhost:8000 --interval 0.5
 ~~~
 
 หน้า dashboard จะแสดงค่า BH1750 และ TOF200C พร้อมกันจาก endpoint
-/api/sensors/latest ทุก 1 วินาที โดยข้อมูลอยู่ใน memory ของ backend เท่านั้น
+/api/sensors/latest โดยข้อมูลอยู่ใน memory ของ backend เท่านั้น
 และไม่บันทึกลง database. หาก backend อยู่คนละเครื่อง ให้เปลี่ยน backend URL เป็น
 http://IP-ของ-backend:8000
 

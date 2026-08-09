@@ -901,12 +901,20 @@ initViewRouter();
 async function initApp() {
   storage = await createStorage();
   applyStorageMode();
-  await loadSettings();
-  await checkHealth();
-  await loadDashboard();
-  beginPiCamera();
-  setInterval(loadSensorReadings, 1_000);
 
+  // Start sensor polling immediately and independently of other initialization
+  loadSensorReadings();
+  setInterval(loadSensorReadings, 500);
+
+  try {
+    await loadSettings();
+    await checkHealth();
+    await loadDashboard();
+  } catch (error) {
+    console.error('App initialization error:', error);
+  }
+
+  beginPiCamera();
 }
 
 initApp();

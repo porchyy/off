@@ -27,7 +27,10 @@ echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
     docker.io docker-compose-v2 python3-venv python3-picamera2 python3-opencv \
-    libgl1 alsa-utils python3-gpiozero curl openssl
+    libgl1 alsa-utils python3-gpiozero i2c-tools raspi-config curl openssl
+
+echo "Enabling I2C for BH1750 and TOF200C..."
+sudo raspi-config nonint do_i2c 0
 
 DOCKER_BIN="$(command -v docker || true)"
 [ -n "$DOCKER_BIN" ] || fail "docker was not installed successfully"
@@ -44,8 +47,8 @@ if ! grep -q '^POSTUREAI_ADMIN_TOKEN=.' "$ENV_FILE" 2>/dev/null; then
     chmod 600 "$ENV_FILE"
 fi
 
-echo "[2/6] Granting camera/audio access to $INSTALL_USER..."
-sudo usermod -aG docker,video,audio,gpio "$INSTALL_USER"
+echo "[2/6] Granting camera/audio/I2C access to $INSTALL_USER..."
+sudo usermod -aG docker,video,audio,gpio,i2c "$INSTALL_USER"
 
 echo "[3/6] Creating the Pi sensor environment..."
 cd "$SCRIPT_DIR"
@@ -125,14 +128,37 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
+[Unit]
+Description=PostureAI BH1750 and TOF200C sensor client
+Wants=network-online.target
+After=network-online.target postureai-stack.service
+Requires=postureai-stack.service
+
+[Service]
+Type=simple
+User=$INSTALL_USER
+SupplementaryGroups=i2c
+WorkingDirectory=$SCRIPT_DIR
+Environment=PYTHONUNBUFFERED=1
+ExecStart=$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/sensor_web_client.py --backend-url http://127.0.0.1:8000 --interval 0.5
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now postureai-stack.service
 sudo systemctl enable --now postureai-client.service
+sudo systemctl enable --now postureai-sensors.service
 
 PI_IP="$(hostname -I | awk '{print $1}')"
 echo
 echo "PostureAI is ready. Open: http://$PI_IP:3000"
-echo "Status: sudo systemctl status postureai-stack postureai-client"
-echo "Logs:   sudo journalctl -u postureai-client -f"
+echo "Status: sudo systemctl status postureai-stack postureai-client postureai-sensors"
+echo "Camera/AI logs: sudo journalctl -u postureai-client -f"
+echo "Sensor logs:    sudo journalctl -u postureai-sensors -f"
 echo "Containers: sudo docker compose ps"
 echo "Web/API health: curl http://127.0.0.1:8000/api/health"
