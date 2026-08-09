@@ -19,15 +19,13 @@ from sensor_readers import (
 
 
 def read_sensor_payload(
-    bh1750: Bh1750Reader,
-    tof200c: Tof200cReader,
-    lux_calibration: float = 1.0,
+    bh1750: Bh1750Reader, tof200c: Tof200cReader
 ) -> dict[str, float | bool | None]:
     """Read both sensors independently so one failure does not hide the other."""
     lux = None
     distance_cm = None
     try:
-        lux = round(bh1750.read_lux() * lux_calibration, 1)
+        lux = bh1750.read_lux()
     except SensorReadError:
         pass
     try:
@@ -61,17 +59,11 @@ def main() -> int:
     parser.add_argument("--interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=3.0)
     parser.add_argument("--bus", type=int, default=1)
-    parser.add_argument(
-        "--lux-calibration",
-        type=float,
-        default=1.0,
-        help="ตัวคูณปรับค่า BH1750 (default: 1.0)",
-    )
     parser.add_argument("--bh1750-address", type=parse_i2c_address, action="append")
     parser.add_argument("--tof200c-address", type=parse_i2c_address, default=0x29)
     args = parser.parse_args()
-    if args.interval <= 0 or args.timeout <= 0 or args.lux_calibration <= 0:
-        parser.error("--interval, --timeout และ --lux-calibration ต้องมากกว่า 0")
+    if args.interval <= 0 or args.timeout <= 0:
+        parser.error("--interval และ --timeout ต้องมากกว่า 0")
 
     bh_addresses = tuple(args.bh1750_address) if args.bh1750_address else BH1750_ADDRESSES
     bh1750 = Bh1750Reader(addresses=bh_addresses, bus_number=args.bus)
@@ -82,9 +74,7 @@ def main() -> int:
     try:
         while True:
             started = time.monotonic()
-            payload = read_sensor_payload(
-                bh1750, tof200c, lux_calibration=args.lux_calibration
-            )
+            payload = read_sensor_payload(bh1750, tof200c)
             try:
                 publish_sensor_payload(endpoint, payload, args.timeout)
                 lux = payload["lux"]
