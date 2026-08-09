@@ -6,8 +6,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_USER="${SUDO_USER:-$USER}"
 DOCKER_BIN="$(command -v docker || true)"
+COMPOSE_BIN=""
+COMPOSE_MODE=""
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
+
+compose_cmd() {
+    if [ "$COMPOSE_MODE" = "plugin" ]; then
+        sudo "$DOCKER_BIN" compose "$@"
+    else
+        sudo "$COMPOSE_BIN" "$@"
+    fi
+}
 
 if [ "$(uname -m)" != "aarch64" ]; then
     fail "This installer requires a 64-bit ARM Raspberry Pi OS (aarch64)."
@@ -26,7 +36,7 @@ fi
 echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
-    docker.io docker-compose-v2 python3-venv python3-picamera2 python3-opencv \
+    docker.io python3-venv python3-picamera2 python3-opencv \
     libgl1 alsa-utils python3-gpiozero i2c-tools raspi-config curl openssl
 
 echo "Enabling I2C for BH1750 and TOF200C..."
@@ -34,7 +44,20 @@ sudo raspi-config nonint do_i2c 0
 
 DOCKER_BIN="$(command -v docker || true)"
 [ -n "$DOCKER_BIN" ] || fail "docker was not installed successfully"
-sudo "$DOCKER_BIN" compose version >/dev/null || fail "Docker Compose v2 is unavailable after installation"
+if sudo "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+    COMPOSE_MODE="plugin"
+    COMPOSE_EXEC="$DOCKER_BIN compose"
+    COMPOSE_DISPLAY="sudo docker compose"
+else
+    echo "Docker Compose plugin is unavailable; installing the Bookworm docker-compose package..."
+    sudo apt-get install -y docker-compose
+    COMPOSE_BIN="$(command -v docker-compose || true)"
+    [ -n "$COMPOSE_BIN" ] || fail "Docker Compose was not installed successfully"
+    sudo "$COMPOSE_BIN" version >/dev/null || fail "Docker Compose is unavailable after installation"
+    COMPOSE_MODE="standalone"
+    COMPOSE_EXEC="$COMPOSE_BIN"
+    COMPOSE_DISPLAY="sudo docker-compose"
+fi
 
 # The compose file enables administrator protection. Keep the secret out of
 # git, but let Docker Compose load it automatically from the project root.
@@ -69,7 +92,7 @@ fi
 echo "[4/6] Building and starting the web/backend containers..."
 cd "$PROJECT_DIR"
 mkdir -p database
-sudo "$DOCKER_BIN" compose up --build -d --remove-orphans
+compose_cmd up --build -d --remove-orphans
 
 echo "Waiting for backend health check..."
 for attempt in $(seq 1 30); do
@@ -77,8 +100,8 @@ for attempt in $(seq 1 30); do
         break
     fi
     if [ "$attempt" -eq 30 ]; then
-        sudo "$DOCKER_BIN" compose ps
-        fail "backend did not become healthy; inspect logs with: sudo docker compose logs backend"
+        compose_cmd ps
+        fail "backend did not become healthy; inspect logs with: $COMPOSE_DISPLAY logs backend"
     fi
     sleep 2
 done
@@ -99,8 +122,8 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$DOCKER_BIN compose up -d --remove-orphans
-ExecStop=$DOCKER_BIN compose down
+ExecStart=$COMPOSE_EXEC up -d --remove-orphans
+ExecStop=$COMPOSE_EXEC down
 TimeoutStartSec=0
 
 [Install]
@@ -160,5 +183,5 @@ echo "PostureAI is ready. Open: http://$PI_IP:3000"
 echo "Status: sudo systemctl status postureai-stack postureai-client postureai-sensors"
 echo "Camera/AI logs: sudo journalctl -u postureai-client -f"
 echo "Sensor logs:    sudo journalctl -u postureai-sensors -f"
-echo "Containers: sudo docker compose ps"
+echo "Containers: $COMPOSE_DISPLAY ps"
 echo "Web/API health: curl http://127.0.0.1:8000/api/health"

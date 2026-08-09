@@ -51,9 +51,9 @@ Raspberry Pi 5
 
 ## เริ่มต้นใช้งานด้วย Docker
 
-ต้องมี Docker Compose v2 (คำสั่ง `docker compose`) หากบน Pi ขึ้นหน้า `Usage: docker ...`
-ให้รัน `sudo apt update && sudo apt install -y docker-compose-v2` หรือใช้
-`raspberrypi/setup-pi5.sh` ซึ่งติดตั้งและตรวจสอบให้เอง
+`raspberrypi/setup-pi5.sh` จะตรวจ Docker Compose ให้อัตโนมัติ โดยใช้ `docker compose`
+เมื่อมี Compose plugin และ fallback ไปยังแพ็กเกจ `docker-compose` ของ Bookworm เมื่อ plugin
+ไม่มีใน repository ของระบบ
 
 ```bash
 umask 077
