@@ -68,6 +68,14 @@ def test_bh1750_uses_second_supported_address(fake_smbus: None) -> None:
     assert reader.address == 0x5C
 
 
+def test_bh1750_applies_the_configured_lux_scale(fake_smbus: None) -> None:
+    FakeBhBus.responses = {0x23: 1}
+    FakeBhBus.readings = {0x23: [0, 231]}
+    reader = Bh1750Reader(addresses=(0x23,), measurement_seconds=0, lux_scale=1.56)
+
+    assert reader.read_lux() == 300.3
+
+
 def test_bh1750_read_error_clears_cached_address(fake_smbus: None) -> None:
     FakeBhBus.responses = {0x23: 1}
     FakeBhBus.readings = {0x23: OSError("disconnected")}

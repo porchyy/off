@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import math
+import os
 import time
 from typing import Any, Callable
 
@@ -15,6 +17,16 @@ from sensor_readers import (
     SensorReadError,
     parse_i2c_address,
 )
+
+
+def parse_lux_scale(value: str) -> float:
+    try:
+        scale = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("lux scale ต้องเป็นตัวเลข") from error
+    if not math.isfinite(scale) or scale <= 0:
+        raise argparse.ArgumentTypeError("lux scale ต้องมากกว่า 0")
+    return scale
 
 
 def read_sensor_payload(bh1750: Bh1750Reader) -> dict[str, float | bool | None]:
@@ -56,12 +68,22 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=3.0)
     parser.add_argument("--bus", type=int, default=1)
     parser.add_argument("--bh1750-address", type=parse_i2c_address, action="append")
+    parser.add_argument(
+        "--lux-scale",
+        type=parse_lux_scale,
+        default=parse_lux_scale(os.getenv("POSTUREAI_BH1750_LUX_SCALE", "1.0")),
+        help="ตัวคูณปรับเทียบค่า Lux (default: 1.0)",
+    )
     args = parser.parse_args()
     if args.interval <= 0 or args.timeout <= 0:
         parser.error("--interval และ --timeout ต้องมากกว่า 0")
 
     bh_addresses = tuple(args.bh1750_address) if args.bh1750_address else BH1750_ADDRESSES
-    bh1750 = Bh1750Reader(addresses=bh_addresses, bus_number=args.bus)
+    bh1750 = Bh1750Reader(
+        addresses=bh_addresses,
+        bus_number=args.bus,
+        lux_scale=args.lux_scale,
+    )
     endpoint = f"{args.backend_url.rstrip('/')}/api/sensors/latest"
 
     print(f"ส่งข้อมูล sensor ไปที่ {endpoint} — กด Ctrl+C เพื่อหยุด")

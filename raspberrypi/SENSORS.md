@@ -74,6 +74,30 @@ cd ~/off/raspberrypi
 ของ backend เท่านั้นและไม่บันทึกลง database. หาก backend อยู่คนละเครื่อง ให้เปลี่ยน backend URL เป็น
 `http://IP-ของ-backend:8000`
 
+## ปรับเทียบค่า Lux
+
+ค่า BH1750 ขึ้นกับตำแหน่งและแสงรอบตัว หากต้องการปรับให้ค่าที่อ่านได้ตรงกับค่าอ้างอิง
+ให้ใช้ตัวคูณ `ค่าอ้างอิง ÷ ค่าเฉลี่ยที่อ่านได้` เช่น อ่านได้เฉลี่ย 192.5 Lux แต่ค่าอ้างอิงคือ
+300 Lux จะได้ตัวคูณ `1.56`.
+
+ทดสอบแบบปรับเทียบชั่วคราว:
+
+~~~bash
+.venv/bin/python test_bh1750.py --lux-scale 1.56
+~~~
+
+สำหรับ service ถาวร ให้สร้าง systemd override:
+
+~~~bash
+sudo systemctl edit postureai-sensors
+# เพิ่มสองบรรทัดนี้:
+[Service]
+Environment=POSTUREAI_BH1750_LUX_SCALE=1.56
+
+sudo systemctl daemon-reload
+sudo systemctl restart postureai-sensors
+~~~
+
 ## Expected output
 
 ~~~text

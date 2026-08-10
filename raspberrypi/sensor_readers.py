@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import time
 
 
@@ -36,10 +37,14 @@ class Bh1750Reader:
         addresses: tuple[int, ...] = BH1750_ADDRESSES,
         bus_number: int = I2C_BUS,
         measurement_seconds: float = 0.18,
+        lux_scale: float = 1.0,
     ) -> None:
         self.addresses = addresses
         self.bus_number = bus_number
         self.measurement_seconds = measurement_seconds
+        if not math.isfinite(lux_scale) or lux_scale <= 0:
+            raise ValueError("lux_scale must be a positive finite number")
+        self.lux_scale = lux_scale
         self.address: int | None = None
 
     def discover(self) -> int:
@@ -96,7 +101,7 @@ class Bh1750Reader:
             if len(data) != 2:
                 raise OSError("BH1750 returned an incomplete reading")
             raw_value = (data[0] << 8) | data[1]
-            return round(raw_value / 1.2, 1)
+            return round(raw_value / 1.2 * self.lux_scale, 1)
         except (OSError, FileNotFoundError, TypeError, ValueError) as error:
             self.address = None
             raise SensorReadError(str(error) or "I2C read failed") from error
