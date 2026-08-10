@@ -169,8 +169,15 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   const rElbow = getPt(14);
   const lWrist = getPt(15);
   const rWrist = getPt(16);
-  const lHip = getPt(23);
-  const rHip = getPt(24);
+  const rawLWaist = getPt(23);
+  const rawRWaist = getPt(24);
+  // Landmark 23/24 is pelvis-level.  Display the calculated waist reference
+  // slightly higher so the skeleton matches the scoring reference.
+  const liftWaist = (waist, shoulder) => waist && shoulder
+    ? { x: waist.x + (shoulder.x - waist.x) * 0.18, y: waist.y + (shoulder.y - waist.y) * 0.18 }
+    : waist;
+  const lWaist = liftWaist(rawLWaist, lShoulder);
+  const rWaist = liftWaist(rawRWaist, rShoulder);
 
   // Helper: Draw Glowing Neon Line
   function drawLine(p1, p2, width = 3.5, dashed = false) {
@@ -221,9 +228,9 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
     if (lEar) drawLine(lEar, lShoulder, 2);
     if (rEar) drawLine(rEar, rShoulder, 2);
 
-    if (lHip && rHip) {
-      const hCenter = { x: (lHip.x + rHip.x) / 2, y: (lHip.y + rHip.y) / 2 };
-      drawLine(sCenter, hCenter, 3.5);
+    if (lWaist && rWaist) {
+      const waistCenter = { x: (lWaist.x + rWaist.x) / 2, y: (lWaist.y + rWaist.y) / 2 };
+      drawLine(sCenter, waistCenter, 3.5);
     }
   }
 
@@ -233,10 +240,10 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   drawLine(rShoulder, rElbow, 3.5);
   drawLine(rElbow, rWrist, 3.5);
 
-  // Torso Sides & Hips
-  drawLine(lShoulder, lHip, 3);
-  drawLine(rShoulder, rHip, 3);
-  drawLine(lHip, rHip, 3.5);
+  // Torso sides and calculated waist reference
+  drawLine(lShoulder, lWaist, 3);
+  drawLine(rShoulder, rWaist, 3);
+  drawLine(lWaist, rWaist, 3.5);
 
   // 2. Horizontal Level Reference Line across Shoulders (HUD Guide)
   if (lShoulder && rShoulder) {
@@ -255,7 +262,7 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   }
 
   // 3. Draw Clean Joint Nodes
-  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist, lHip, rHip].forEach(pt => {
+  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist, lWaist, rWaist].forEach(pt => {
     drawNode(pt, 5.5);
   });
 

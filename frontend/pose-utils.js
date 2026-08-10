@@ -9,6 +9,10 @@ export function isPostureRisk(score, threshold, poorPostureMs, riskSeconds) {
   return score < threshold - 10 || poorPostureMs >= delayMs;
 }
 
+// MediaPipe hip joints are slightly below a natural seated waistline.  Move
+// the reference a little toward the shoulders before calculating torso angle.
+const WAIST_LIFT_RATIO = 0.18;
+
 export function scorePose(landmarks) {
   if (!landmarks || landmarks.length < 25) return null;
 
@@ -35,6 +39,11 @@ export function scorePose(landmarks) {
     y: (lh.y + rh.y) / 2,
     z: ((lh.z || 0) + (rh.z || 0)) / 2
   };
+  const midWaist = {
+    x: midHip.x + (midShoulder.x - midHip.x) * WAIST_LIFT_RATIO,
+    y: midHip.y + (midShoulder.y - midHip.y) * WAIST_LIFT_RATIO,
+    z: midHip.z + (midShoulder.z - midHip.z) * WAIST_LIFT_RATIO
+  };
 
   // 1. Neck metric (Forward Head Posture & 2D Tilt)
   const dxNeck = midEar.x - midShoulder.x;
@@ -49,16 +58,16 @@ export function scorePose(landmarks) {
 
   // 2. Shoulders metric (Imbalance and Rounding)
   const shoulderRoll = Math.abs(ls.y - rs.y) * 100; // Y imbalance (0-10)
-  const dzShoulders = midShoulder.z - midHip.z;
-  const dyShoulders = midHip.y - midShoulder.y;
+  const dzShoulders = midShoulder.z - midWaist.z;
+  const dyShoulders = midWaist.y - midShoulder.y;
   // Shoulder pitch detects slouching forward
   const shoulderPitch = Math.atan2(Math.abs(dzShoulders), Math.max(0.001, dyShoulders)) * 180 / Math.PI;
   let shoulders = shoulderRoll * 1.2 + shoulderPitch * 0.8;
 
   // 3. Torso metric (Leaning back/forward or sideways)
-  const dxTorso = midShoulder.x - midHip.x;
-  const dyTorso = midHip.y - midShoulder.y;
-  const dzTorso = midShoulder.z - midHip.z;
+  const dxTorso = midShoulder.x - midWaist.x;
+  const dyTorso = midWaist.y - midShoulder.y;
+  const dzTorso = midShoulder.z - midWaist.z;
 
   const torsoRoll = Math.atan2(Math.abs(dxTorso), Math.max(0.001, dyTorso)) * 180 / Math.PI;
   const torsoPitch = Math.atan2(Math.abs(dzTorso), Math.max(0.001, dyTorso)) * 180 / Math.PI;
@@ -68,7 +77,7 @@ export function scorePose(landmarks) {
   if (Math.abs(dzNeck) < 0.0001 && Math.abs(dzShoulders) < 0.0001) {
       neck = Math.abs(Math.atan2(nose.x - midShoulder.x, Math.max(0.001, midShoulder.y - nose.y)) * 180 / Math.PI);
       shoulders = Math.abs(ls.y - rs.y) * 100;
-      torso = Math.abs(Math.atan2(midShoulder.x - midHip.x, Math.max(0.001, midHip.y - midShoulder.y)) * 180 / Math.PI);
+      torso = Math.abs(Math.atan2(midShoulder.x - midWaist.x, Math.max(0.001, midWaist.y - midShoulder.y)) * 180 / Math.PI);
   }
 
   // Strict Scoring

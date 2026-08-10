@@ -26,6 +26,10 @@ DEFAULT_OVERLAY_MIN_VISIBILITY = 0.35
 # numbers readable without making the posture state feel delayed.
 DEFAULT_METRIC_SMOOTHING_ALPHA = 0.35
 METRIC_KEYS = ("score", "neck", "shoulders", "torso")
+# MediaPipe's hip joints sit slightly below the natural waistline.  Lift the
+# torso reference modestly toward the shoulders so the score better reflects
+# the waist position visible in a seated camera view.
+WAIST_LIFT_RATIO = 0.18
 
 # Keep the live overlay small: these are the points rendered by the dashboard
 # skeleton, rather than all 33 MediaPipe landmarks.
@@ -267,6 +271,9 @@ class MediaPipePoseDetector:
         mid_hip_x = (lh.x + rh.x) / 2.0
         mid_hip_y = (lh.y + rh.y) / 2.0
         mid_hip_z = (getattr(lh, "z", 0.0) + getattr(rh, "z", 0.0)) / 2.0
+        mid_waist_x = mid_hip_x + (mid_sh_x - mid_hip_x) * WAIST_LIFT_RATIO
+        mid_waist_y = mid_hip_y + (mid_sh_y - mid_hip_y) * WAIST_LIFT_RATIO
+        mid_waist_z = mid_hip_z + (mid_sh_z - mid_hip_z) * WAIST_LIFT_RATIO
 
         # 1. Neck metric
         dx_neck = mid_ear_x - mid_sh_x
@@ -279,15 +286,15 @@ class MediaPipePoseDetector:
 
         # 2. Shoulders metric
         shoulder_roll = abs(ls.y - rs.y) * 100.0
-        dz_sh = mid_sh_z - mid_hip_z
-        dy_sh = mid_hip_y - mid_sh_y
+        dz_sh = mid_sh_z - mid_waist_z
+        dy_sh = mid_waist_y - mid_sh_y
         shoulder_pitch = math.atan2(abs(dz_sh), max(0.001, dy_sh)) * 180.0 / math.pi
         shoulders = shoulder_roll * 1.2 + shoulder_pitch * 0.8
 
         # 3. Torso metric
-        dx_torso = mid_sh_x - mid_hip_x
-        dy_torso = mid_hip_y - mid_sh_y
-        dz_torso = mid_sh_z - mid_hip_z
+        dx_torso = mid_sh_x - mid_waist_x
+        dy_torso = mid_waist_y - mid_sh_y
+        dz_torso = mid_sh_z - mid_waist_z
 
         torso_roll = math.atan2(abs(dx_torso), max(0.001, dy_torso)) * 180.0 / math.pi
         torso_pitch = math.atan2(abs(dz_torso), max(0.001, dy_torso)) * 180.0 / math.pi
@@ -297,7 +304,7 @@ class MediaPipePoseDetector:
         if abs(dz_neck) < 0.0001 and abs(dz_sh) < 0.0001:
             neck = abs(math.atan2(nose.x - mid_sh_x, max(0.001, mid_sh_y - nose.y)) * 180.0 / math.pi)
             shoulders = abs(ls.y - rs.y) * 100.0
-            torso = abs(math.atan2(mid_sh_x - mid_hip_x, max(0.001, mid_hip_y - mid_sh_y)) * 180.0 / math.pi)
+            torso = abs(math.atan2(mid_sh_x - mid_waist_x, max(0.001, mid_waist_y - mid_sh_y)) * 180.0 / math.pi)
 
         neck_penalty = max(0.0, neck - 10.0) * 2.5
         shoulder_penalty = max(0.0, shoulders - 5.0) * 2.0
