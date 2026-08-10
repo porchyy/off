@@ -55,8 +55,8 @@ test('LocalStorageStorage addSample, summary, and stats', async () => {
   localStorage.clear();
   const storage = await createStorage();
 
-  await storage.addSample({ score: 90, neck: 10, shoulders: 2, upper_body: 1 });
-  await storage.addSample({ score: 70, neck: 15, shoulders: 5, upper_body: 4 });
+  await storage.addSample({ score: 90, neck: 10, shoulders: 2, torso: 1 });
+  await storage.addSample({ score: 70, neck: 15, shoulders: 5, torso: 4 });
   await storage.addAlert({ severity: 'risk', message: 'Adjust posture' });
 
   const summary = await storage.summary();
@@ -75,7 +75,7 @@ test('LocalStorageStorage export and clear', async () => {
   localStorage.clear();
   const storage = await createStorage();
 
-  await storage.addSample({ score: 85, neck: 10, shoulders: 2, upper_body: 1 });
+  await storage.addSample({ score: 85, neck: 10, shoulders: 2, torso: 1 });
   await storage.addAlert({ severity: 'caution', message: 'Watch out' });
 
   const csv = await storage.export('csv');

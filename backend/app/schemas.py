@@ -45,9 +45,9 @@ class SampleIn(BaseModel):
     score: float = Field(ge=0, le=100)
     neck: float
     shoulders: float
-    upper_body: float
+    torso: float
 
-    @field_validator("neck", "shoulders", "upper_body")
+    @field_validator("neck", "shoulders", "torso")
     @classmethod
     def _is_finite(cls, value: float) -> float:
         if value != value or value in (float("inf"), float("-inf")):

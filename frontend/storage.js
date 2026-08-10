@@ -38,7 +38,7 @@ const csvEscape = value => {
 };
 
 function rowsToCsv(rows) {
-  const columns = ['type', 'id', 'score', 'neck', 'shoulders', 'upper_body', 'severity', 'message', 'created_at'];
+  const columns = ['type', 'id', 'score', 'neck', 'shoulders', 'torso', 'severity', 'message', 'created_at'];
   return [
     columns.join(','),
     ...rows.map(row => columns.map(column => csvEscape(row[column])).join(','))
@@ -227,7 +227,7 @@ class LocalStorageStorage {
       score: sample.score,
       neck: sample.neck,
       shoulders: sample.shoulders,
-      upper_body: sample.upper_body,
+      torso: sample.torso,
       severity: null,
       message: null,
       created_at: sample.created_at
@@ -238,7 +238,7 @@ class LocalStorageStorage {
       score: null,
       neck: null,
       shoulders: null,
-      upper_body: null,
+      torso: null,
       severity: alert.severity,
       message: alert.message,
       created_at: alert.created_at

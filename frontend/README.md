@@ -31,7 +31,7 @@ npm test
 ```
 
 รัน unit tests ทั้งหมดด้วย Node.js Native Test Runner (`node --test`) ครอบคลุม:
-- การคำนวณคะแนน MediaPipe Pose (Score, Neck, Shoulder alignment, Upper-body alignment)
+- การคำนวณคะแนน MediaPipe Pose (Score, Neck, Shoulders, Torso)
 - การคัดกรอง Landmark ความชัดเจนต่ำ (Visibility threshold)
 - LocalStorage fallback storage (Demo mode)
 - การบันทึก/อ่านตั้งค่า, Samples, Alerts, Summary, Stats, Export (CSV/JSON) และ Clear data

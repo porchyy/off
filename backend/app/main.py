@@ -10,7 +10,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
 
 from .config import settings
 from .database import Base, SessionLocal, engine
@@ -26,23 +25,9 @@ async def _retention_loop() -> None:
             prune_expired_data(db, settings.retention_days)
 
 
-def _migrate_sample_columns() -> None:
-    """Add the upper-body metric to installations with an older SQLite DB.
-
-    SQLite cannot drop a column safely in place.  The obsolete ``torso`` data
-    is therefore left in old records, but no application code reads or writes
-    it after this migration.
-    """
-    with engine.begin() as connection:
-        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(samples)"))}
-        if "upper_body" not in columns:
-            connection.execute(text("ALTER TABLE samples ADD COLUMN upper_body FLOAT"))
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
-    _migrate_sample_columns()
     with SessionLocal() as db:
         ensure_defaults(db)
         prune_expired_data(db, settings.retention_days)

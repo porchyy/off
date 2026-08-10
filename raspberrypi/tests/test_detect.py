@@ -15,8 +15,6 @@ def test_overlay_uses_anatomical_head_to_shoulder_connections():
     assert (8, 12) in detect.OVERLAY_CONNECTIONS
     assert (0, 11) not in detect.OVERLAY_CONNECTIONS
     assert (0, 12) not in detect.OVERLAY_CONNECTIONS
-    assert 23 not in detect.OVERLAY_LANDMARK_INDICES
-    assert 24 not in detect.OVERLAY_LANDMARK_INDICES
 
 
 def test_live_detection_passes_camera_color_metadata_to_detector(monkeypatch):
@@ -25,7 +23,7 @@ def test_live_detection_passes_camera_color_metadata_to_detector(monkeypatch):
     class FakeDetector:
         def calculate_metrics(self, frame, color_space):
             received.append((frame, color_space))
-            return {"score": 90.0, "neck": 1.0, "shoulders": 2.0, "upper_body": 3.0}
+            return {"score": 90.0, "neck": 1.0, "shoulders": 2.0, "torso": 3.0}
 
     class FakeUploader:
         samples = []
@@ -49,7 +47,7 @@ def test_live_detection_forwards_compact_landmarks_to_overlay(monkeypatch):
                 "score": 90.0,
                 "neck": 1.0,
                 "shoulders": 2.0,
-                "upper_body": 3.0,
+                "torso": 3.0,
                 "landmarks": [{"index": 11, "x": 0.4, "y": 0.5, "visibility": 0.9}],
             }
 
@@ -66,11 +64,11 @@ def test_live_detection_forwards_compact_landmarks_to_overlay(monkeypatch):
         "picamera-frame", {}, uploader, pose_callback=lambda metrics, landmarks: sent.append((metrics, landmarks))
     )
 
-    assert uploader.metrics == {"score": 90.0, "neck": 1.0, "shoulders": 2.0, "upper_body": 3.0}
+    assert uploader.metrics == {"score": 90.0, "neck": 1.0, "shoulders": 2.0, "torso": 3.0}
     assert sent == [(uploader.metrics, [{"index": 11, "x": 0.4, "y": 0.5, "visibility": 0.9}])]
 
 
-def test_live_detection_shows_overlay_before_a_complete_upper_body_score(monkeypatch):
+def test_live_detection_shows_overlay_before_a_full_torso_score(monkeypatch):
     class FakeDetector:
         def calculate_metrics(self, frame, color_space):
             return {"landmarks": [{"index": 11, "x": 0.4, "y": 0.5, "visibility": 0.9}]}
@@ -127,19 +125,19 @@ def test_overlay_smoother_ignores_low_confidence_landmarks():
 def test_metric_smoother_rejects_a_single_score_spike():
     smoother = detect.PoseMetricSmoother()
 
-    assert smoother.update({"score": 90, "neck": 10, "shoulders": 5, "upper_body": 8}, 0.35)["score"] == 90.0
+    assert smoother.update({"score": 90, "neck": 10, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.0
     # A one-frame bad reading is removed by the median-of-three window.
-    assert smoother.update({"score": 20, "neck": 50, "shoulders": 30, "upper_body": 40}, 0.35)["score"] == 90.0
-    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "upper_body": 8}, 0.35)["score"] == 90.0
-    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "upper_body": 8}, 0.35)["score"] == 90.7
+    assert smoother.update({"score": 20, "neck": 50, "shoulders": 30, "torso": 40}, 0.35)["score"] == 90.0
+    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.0
+    assert smoother.update({"score": 92, "neck": 9, "shoulders": 5, "torso": 8}, 0.35)["score"] == 90.7
 
 
 def test_metric_smoother_resets_between_people_or_lost_poses():
     smoother = detect.PoseMetricSmoother()
-    smoother.update({"score": 90, "neck": 10, "shoulders": 5, "upper_body": 8}, 0.35)
+    smoother.update({"score": 90, "neck": 10, "shoulders": 5, "torso": 8}, 0.35)
     smoother.reset()
 
-    assert smoother.update({"score": 40, "neck": 35, "shoulders": 20, "upper_body": 30}, 0.35)["score"] == 40.0
+    assert smoother.update({"score": 40, "neck": 35, "shoulders": 20, "torso": 30}, 0.35)["score"] == 40.0
 
 
 def test_detector_initialization_fails_loudly_instead_of_using_fake_metrics(monkeypatch):
