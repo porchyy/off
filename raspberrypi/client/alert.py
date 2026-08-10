@@ -180,3 +180,13 @@ class AlertController:
             "message": f"ตรวจพบท่านั่งที่ควรปรับ (คะแนน {score:g})",
         })
         return True
+
+    def clear_posture(self) -> None:
+        """Clear posture warnings when no person has a measurable pose."""
+        self.low_since = None
+        if self.indicator is not None and self._indicator_is_on:
+            self.indicator.off()
+        self._indicator_is_on = False
+        if self.buzzer is not None and self._buzzer_is_on:
+            self.buzzer.off()
+        self._buzzer_is_on = False

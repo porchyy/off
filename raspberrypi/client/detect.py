@@ -384,6 +384,8 @@ def process_live_frame(
         )
         if "score" not in result:
             _metric_smoother.reset()
+            if alert_controller is not None:
+                alert_controller.clear_posture()
             logger.debug("pose detected but hips are not visible yet; sending overlay without a score")
             if frame_overlay_callback is not None:
                 frame_overlay_callback(landmarks, None)
@@ -410,6 +412,8 @@ def process_live_frame(
             pose_callback(metrics, landmarks)
     else:
         _metric_smoother.reset()
+        if alert_controller is not None:
+            alert_controller.clear_posture()
         if _pose_visible:
             logger.info("pose is no longer visible to the Pi camera")
             _pose_visible = False

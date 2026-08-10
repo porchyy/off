@@ -128,6 +128,22 @@ def test_led_turns_on_immediately_below_its_threshold_and_off_when_score_recover
     assert indicator.off_count == 1
 
 
+def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
+    indicator = FakeIndicator()
+    controller = AlertController(
+        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50}},
+        FakeUploader(),
+        FakeSound(),
+        indicator,
+    )
+
+    controller.update({"score": 49})
+    controller.clear_posture()
+
+    assert indicator.off_count == 1
+    assert controller.low_since is None
+
+
 def test_dashboard_settings_apply_without_restarting_client():
     sound = FakeSound()
     sound.enabled = True
