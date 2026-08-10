@@ -62,5 +62,20 @@ test('scorePose scores an upper body without any hip landmarks', () => {
   assert.ok(result.score < 100, 'Score should be less than 100 for slouched pose');
   assert.ok(result.neck > 10, 'Neck angle should be non-zero');
   assert.ok(result.shoulders > 0, 'Shoulders tilt should be non-zero');
-  assert.ok(result.upper_body > 0, 'Upper-body alignment should be non-zero');
+  assert.equal(Math.round(result.upper_body), 0, 'Side tilt alone is not forward slouching');
+});
+
+test('scorePose deducts points for forward slouching without hip landmarks', () => {
+  const landmarks = new Array(13).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
+  landmarks[0] = { x: 0.5, y: 0.2, z: -0.4, visibility: 0.9 };
+  landmarks[7] = { x: 0.48, y: 0.25, z: -0.4, visibility: 0.9 };
+  landmarks[8] = { x: 0.52, y: 0.25, z: -0.4, visibility: 0.9 };
+  landmarks[11] = { x: 0.4, y: 0.4, z: 0, visibility: 0.9 };
+  landmarks[12] = { x: 0.6, y: 0.4, z: 0, visibility: 0.9 };
+
+  const result = scorePose(landmarks);
+
+  assert.notEqual(result, null);
+  assert.ok(result.upper_body > 7, 'Forward head depth should register as slouching');
+  assert.ok(result.score < 100, 'Slouching should deduct points');
 });

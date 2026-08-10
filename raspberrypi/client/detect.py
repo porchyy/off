@@ -259,9 +259,11 @@ class MediaPipePoseDetector:
 
         head_x = sum(point.x for point in head_points) / len(head_points)
         head_y = sum(point.y for point in head_points) / len(head_points)
+        head_z = sum(getattr(point, "z", 0.0) for point in head_points) / len(head_points)
 
         mid_sh_x = (ls.x + rs.x) / 2.0
         mid_sh_y = (ls.y + rs.y) / 2.0
+        mid_sh_z = (getattr(ls, "z", 0.0) + getattr(rs, "z", 0.0)) / 2.0
 
         # 1. Neck metric: side displacement from the shoulder midpoint.
         # MediaPipe's monocular Z includes a person's natural head-to-shoulder
@@ -279,15 +281,27 @@ class MediaPipePoseDetector:
         dy_shoulder = rs.y - ls.y
         shoulder_roll = math.atan2(abs(dy_shoulder), max(0.001, abs(dx_shoulder))) * 180.0 / math.pi
         shoulders = shoulder_roll
-        upper_body = math.hypot(neck, shoulder_roll)
+        shoulder_span = max(0.001, math.hypot(dx_shoulder, dy_shoulder))
+
+        # 3. Slouching: a head moving forward becomes deeper than the
+        # shoulders.  MediaPipe always includes a small natural depth offset
+        # between ears and shoulders, so allow 35% of shoulder width before
+        # assigning a slouch angle.  Scaling by shoulder width makes this
+        # robust to the camera being closer or farther away.
+        # MediaPipe Z decreases toward the camera, so only a head closer than
+        # the shoulders counts as a forward slouch.
+        head_depth = max(0.0, mid_sh_z - head_z)
+        excess_head_depth = max(0.0, head_depth - shoulder_span * 0.35)
+        upper_body = math.atan2(excess_head_depth, shoulder_span) * 180.0 / math.pi
 
         # Angles inside a small neutral range are normal landmark noise.  The
         # calibrated penalties make sustained forward-head posture meaningful
         # without penalising a natural small shift in a seated position.
         neck_penalty = max(0.0, neck - 12.0) * 1.2
-        shoulder_penalty = max(0.0, upper_body - 10.0) * 0.8
+        shoulder_penalty = max(0.0, shoulders - 6.0) * 1.0
+        slouch_penalty = max(0.0, upper_body - 7.0) * 1.6
 
-        score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty))
+        score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - slouch_penalty))
 
         return {
             "score": round(score, 1),
@@ -385,7 +399,7 @@ def process_live_frame(
             frame_overlay_callback(landmarks, metrics)
         else:
             draw_pose_overlay(frame, landmarks, metrics, min_visibility=min_visibility)
-        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s°, upper_body=%s°",
+        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s°, slouch=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["upper_body"])
         uploader.send_sample(metrics)
 
