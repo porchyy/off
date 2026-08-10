@@ -39,7 +39,7 @@ sudo apt-get install -y \
     docker.io python3-venv python3-picamera2 python3-opencv \
     libgl1 alsa-utils python3-gpiozero i2c-tools raspi-config curl openssl
 
-echo "Enabling I2C for BH1750 and TOF200C..."
+echo "Enabling I2C for BH1750..."
 sudo raspi-config nonint do_i2c 0
 
 DOCKER_BIN="$(command -v docker || true)"
@@ -107,11 +107,11 @@ for attempt in $(seq 1 30); do
 done
 
 # Register the environmental sensor publisher before camera/MediaPipe checks.
-# A camera failure must not prevent BH1750/TOF200C from starting automatically.
-echo "Registering the persistent BH1750/TOF200C service..."
+# A camera failure must not prevent BH1750 from starting automatically.
+echo "Registering the persistent BH1750 service..."
 sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI BH1750 and TOF200C sensor client
+Description=PostureAI BH1750 sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
 StartLimitIntervalSec=0

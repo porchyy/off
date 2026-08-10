@@ -15,23 +15,12 @@ class Reader:
             raise self.error
         return self.value
 
-    def read_distance_cm(self):
-        if self.error:
-            raise self.error
-        return self.value
-
-
-def test_read_sensor_payload_keeps_working_sensor_value() -> None:
-    payload = read_sensor_payload(
-        Reader(error=SensorReadError("BH1750 disconnected")),
-        Reader(value=62.4),
-    )
+def test_read_sensor_payload_handles_bh1750_error() -> None:
+    payload = read_sensor_payload(Reader(error=SensorReadError("BH1750 disconnected")))
 
     assert payload == {
         "lux": None,
-        "distanceCm": 62.4,
         "bh1750Ok": False,
-        "tof200cOk": True,
     }
 
 
@@ -56,9 +45,7 @@ def test_publish_sensor_payload_uses_latest_endpoint_and_timeout() -> None:
 
     payload = {
         "lux": 423.5,
-        "distanceCm": 62.4,
         "bh1750Ok": True,
-        "tof200cOk": True,
     }
     publish_sensor_payload(
         "http://127.0.0.1:8000/api/sensors/latest", payload, 3.0, put
@@ -86,7 +73,7 @@ def test_publish_sensor_payload_closes_failed_response() -> None:
     try:
         publish_sensor_payload(
             "http://127.0.0.1:8000/api/sensors/latest",
-            {"lux": 100.0, "distanceCm": 50.0, "bh1750Ok": True, "tof200cOk": True},
+            {"lux": 100.0, "bh1750Ok": True},
             3.0,
             lambda *args, **kwargs: response,
         )

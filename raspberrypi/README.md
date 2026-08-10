@@ -36,7 +36,7 @@ sudo journalctl -u postureai-client -f
 sudo journalctl -u postureai-sensors -f
 ```
 
-ตัวติดตั้งจะเปิด I2C และสร้าง `postureai-sensors` service สำหรับอ่าน BH1750/TOF200C
+ตัวติดตั้งจะเปิด I2C และสร้าง `postureai-sensors` service สำหรับอ่าน BH1750
 แล้วส่งค่าล่าสุดไปยัง dashboard ทุก 0.5 วินาทีโดยอัตโนมัติ รวมถึงหลัง reboot.
 หากตัวติดตั้งหลักหยุดก่อนขั้นสร้าง service (เช่น Docker หรือกล้องยังไม่พร้อม)
 สามารถติดตั้งเฉพาะ service เซนเซอร์ได้ด้วย:
@@ -134,22 +134,6 @@ indicator:
 ทดสอบก่อนใช้งานจริงด้วย `python posture_client.py --config config.yaml --test-led`.
 LED จะติดทันทีเมื่อคะแนนต่ำกว่า `indicator.threshold` และจะปิดทันทีเมื่อคะแนนกลับมาถึงเกณฑ์
 โดยไม่ต้องรอเวลาการแจ้งเตือนเสียง. หากไฟทำงานกลับด้าน ให้ตั้ง `active_high: false`.
-
-## ทดสอบเซนเซอร์วัดระยะ TOF200C (VL53L0X / VL53L1X)
-
-ต่อ TOF200C ผ่าน I2C: `VCC → Pin 1 (3.3V)`, `GND → Pin 6`, `SDA → Pin 3`,
-และ `SCL → Pin 5` ของ Pi 5. จากนั้นติดตั้ง dependencies และทดสอบ:
-
-```bash
-cd raspberrypi
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python test_tof200c.py
-```
-
-สคริปต์จะตรวจหาอุปกรณ์ที่ address มาตรฐาน `0x29`, ระบุชิปให้อัตโนมัติว่า VL53L0X
-หรือ VL53L1X แล้วแสดงระยะเป็น mm/cm ต่อเนื่อง. หยุดด้วย `Ctrl+C`. หากบอร์ดเปลี่ยน I2C address มาแล้ว ให้ระบุ
-เช่น `test_tof200c.py --address 0x30`; หากไม่พบอุปกรณ์ ให้เปิด I2C ด้วย `sudo raspi-config`
-และตรวจสายด้วย `sudo i2cdetect -y 1`.
 
 ## คำสั่งตรวจสอบแบบ manual
 

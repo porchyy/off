@@ -4,13 +4,9 @@ import sys
 from types import SimpleNamespace
 
 import pytest
-import sensor_readers
-
 from sensor_readers import (
     Bh1750Reader,
     SensorReadError,
-    Tof200cReader,
-    millimeters_to_centimeters,
 )
 
 
@@ -81,74 +77,3 @@ def test_bh1750_read_error_clears_cached_address(fake_smbus: None) -> None:
         reader.read_lux()
 
     assert reader.address is None
-
-
-@pytest.mark.parametrize(
-    ("millimeters", "centimeters"),
-    [(0, 0.0), (624, 62.4), (1234.9, 123.5)],
-)
-def test_tof200c_converts_millimeters_to_centimeters(
-    millimeters: float, centimeters: float
-) -> None:
-    assert millimeters_to_centimeters(millimeters) == centimeters
-
-
-def test_tof200c_reports_out_of_range_without_crashing() -> None:
-    reader = Tof200cReader()
-    reader.sensor_type = "VL53L0X"
-    reader._sensor = SimpleNamespace(range=None)
-
-    with pytest.raises(SensorReadError, match="out of range"):
-        reader.read_distance_cm()
-
-
-def test_tof200c_i2c_error_drops_connection_for_retry() -> None:
-    class FailingSensor:
-        @property
-        def range(self) -> int:
-            raise OSError("disconnected")
-
-    reader = Tof200cReader()
-    reader.sensor_type = "VL53L0X"
-    reader._sensor = FailingSensor()
-
-    with pytest.raises(SensorReadError, match="disconnected"):
-        reader.read_distance_cm()
-
-    assert reader._sensor is None
-
-
-def test_tof200c_driver_init_failure_closes_i2c_adapter(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class FakeAdapter:
-        latest = None
-
-        def __init__(self, register_address_bytes: int, bus_number: int) -> None:
-            del register_address_bytes, bus_number
-            self.closed = False
-            FakeAdapter.latest = self
-
-        def deinit(self) -> None:
-            self.closed = True
-
-    class FailingDriver:
-        def __init__(self, *args, **kwargs) -> None:
-            del args, kwargs
-            raise OSError("driver init failed")
-
-    monkeypatch.setattr(sensor_readers, "_tof_device_responds", lambda *args: True)
-    monkeypatch.setattr(sensor_readers, "detect_tof_sensor", lambda *args: "VL53L0X")
-    monkeypatch.setattr(sensor_readers, "SMBusI2C", FakeAdapter)
-    monkeypatch.setitem(
-        sys.modules,
-        "adafruit_vl53l0x",
-        SimpleNamespace(VL53L0X=FailingDriver),
-    )
-
-    reader = Tof200cReader()
-    with pytest.raises(SensorReadError, match="driver init failed"):
-        reader.connect()
-
-    assert FakeAdapter.latest.closed is True
-    assert reader._adapter is None
