@@ -80,6 +80,8 @@ indicator:
   enabled: false
   # BCM GPIO number (ไม่ใช่เลข physical pin): ค่า default คือ GPIO17 / physical pin 11
   pin: 17
+  # เว้นว่างเพื่อให้ตรวจหา GPIO ของ Pi 5 อัตโนมัติ; ระบุเลขได้ เช่น 15
+  chip:
   # false หากโมดูลของคุณติดเมื่อสัญญาณ LOW
   active_high: true
   # ติดทันทีเมื่อคะแนนต่ำกว่าค่านี้ และดับทันทีเมื่อคะแนนกลับมาถึงเกณฑ์

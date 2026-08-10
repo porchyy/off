@@ -127,6 +127,8 @@ cd ~/off/raspberrypi
 indicator:
   enabled: true
   pin: 17
+  # เว้นว่างเพื่อให้ตรวจหา GPIO ของ Pi 5 อัตโนมัติ
+  chip:
   active_high: true
   threshold: 50
 ```

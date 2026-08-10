@@ -31,6 +31,15 @@ def test_config_validates_led_pin_as_bcm_gpio(tmp_path):
         validate_config({"indicator": {"pin": 40}}, tmp_path / "config.yaml")
 
 
+def test_config_accepts_a_non_negative_led_gpiochip(tmp_path):
+    config = validate_config({"indicator": {"chip": 15}}, tmp_path / "config.yaml")
+
+    assert config["indicator"]["chip"] == 15
+
+    with pytest.raises(ValueError, match="indicator.chip"):
+        validate_config({"indicator": {"chip": -1}}, tmp_path / "config.yaml")
+
+
 def test_config_supports_lcd_1602_i2c_defaults(tmp_path):
     config = validate_config({"lcd": {"enabled": True, "i2c_address": "0x3f"}}, tmp_path / "config.yaml")
 
