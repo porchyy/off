@@ -266,7 +266,7 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`คะแนนท่านั่ง: ${metrics.score ?? '--'}/100`, 28, 38);
     ctx.fillStyle = mainColor;
-    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | ค่อมตัว: ${metrics.upper_body ?? '--'}°`, 28, 58);
+    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | แนวไหล่: ${metrics.upper_body ?? '--'}°`, 28, 58);
     ctx.restore();
   }
 }

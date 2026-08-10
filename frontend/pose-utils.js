@@ -23,13 +23,11 @@ export function scorePose(landmarks) {
   // this keeps scoring available when the camera only sees a seated upper body.
   const head = {
     x: headPoints.reduce((sum, point) => sum + point.x, 0) / headPoints.length,
-    y: headPoints.reduce((sum, point) => sum + point.y, 0) / headPoints.length,
-    z: headPoints.reduce((sum, point) => sum + (point.z || 0), 0) / headPoints.length
+    y: headPoints.reduce((sum, point) => sum + point.y, 0) / headPoints.length
   };
   const midShoulder = {
     x: (ls.x + rs.x) / 2,
-    y: (ls.y + rs.y) / 2,
-    z: ((ls.z || 0) + (rs.z || 0)) / 2
+    y: (ls.y + rs.y) / 2
   };
   // 1. Neck metric (visible side tilt).
   // Absolute MediaPipe Z includes normal head-to-shoulder depth.  Using it
@@ -46,22 +44,12 @@ export function scorePose(landmarks) {
   const dyShoulder = rs.y - ls.y;
   const shoulderRoll = Math.atan2(Math.abs(dyShoulder), Math.max(0.001, Math.abs(dxShoulder))) * 180 / Math.PI;
   const shoulders = shoulderRoll;
-  const shoulderSpan = Math.max(0.001, Math.hypot(dxShoulder, dyShoulder));
-
-  // A forward-slouched head is deeper than the shoulders.  A small natural
-  // head-depth offset is expected, so ignore the first 35% of shoulder width.
-  // This normalisation keeps the angle stable across camera distances.
-  // MediaPipe Z decreases toward the camera; only forward head movement is
-  // counted as slouching.
-  const headDepth = Math.max(0, midShoulder.z - head.z);
-  const excessHeadDepth = Math.max(0, headDepth - shoulderSpan * 0.35);
-  const upper_body = Math.atan2(excessHeadDepth, shoulderSpan) * 180 / Math.PI;
+  const upper_body = Math.hypot(neck, shoulderRoll);
 
   const neckPenalty = Math.max(0, neck - 12) * 1.2;
-  const shoulderPenalty = Math.max(0, shoulders - 6) * 1.0;
-  const slouchPenalty = Math.max(0, upper_body - 7) * 1.6;
+  const shoulderPenalty = Math.max(0, upper_body - 10) * 0.8;
 
-  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - slouchPenalty));
+  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty));
 
   return { neck, shoulders, upper_body, score };
 }
