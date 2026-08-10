@@ -32,6 +32,8 @@ test('scorePose calculates correct metrics for upright posture', () => {
 
   // Perfectly aligned vertically
   landmarks[0] = { x: 0.5, y: 0.2, z: 0, visibility: 0.9 };  // nose
+  landmarks[7] = { x: 0.48, y: 0.25, z: 0, visibility: 0.9 }; // left ear
+  landmarks[8] = { x: 0.52, y: 0.25, z: 0, visibility: 0.9 }; // right ear
   landmarks[11] = { x: 0.4, y: 0.4, z: 0, visibility: 0.9 }; // left shoulder
   landmarks[12] = { x: 0.6, y: 0.4, z: 0, visibility: 0.9 }; // right shoulder
   landmarks[23] = { x: 0.4, y: 0.7, z: 0, visibility: 0.9 }; // left hip
@@ -51,6 +53,8 @@ test('scorePose deducts points for forward neck tilt and uneven shoulders', () =
 
   // Slouching / neck tilted forward
   landmarks[0] = { x: 0.7, y: 0.3, z: 0, visibility: 0.9 };  // nose tilted to x=0.7
+  landmarks[7] = { x: 0.68, y: 0.3, z: 0, visibility: 0.9 };
+  landmarks[8] = { x: 0.72, y: 0.3, z: 0, visibility: 0.9 };
   landmarks[11] = { x: 0.4, y: 0.4, z: 0, visibility: 0.9 }; // left shoulder
   landmarks[12] = { x: 0.6, y: 0.45, z: 0, visibility: 0.9 };// right shoulder (uneven y)
   landmarks[23] = { x: 0.4, y: 0.7, z: 0, visibility: 0.9 }; // left hip
@@ -62,4 +66,21 @@ test('scorePose deducts points for forward neck tilt and uneven shoulders', () =
   assert.ok(result.score < 100, 'Score should be less than 100 for slouched pose');
   assert.ok(result.neck > 10, 'Neck angle should be non-zero');
   assert.ok(result.shoulders > 0, 'Shoulders tilt should be non-zero');
+});
+
+test('scorePose detects forward shoulder-to-waist slouching in 3D', () => {
+  const landmarks = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
+  landmarks[0] = { x: 0.5, y: 0.2, z: -0.1, visibility: 0.9 };
+  landmarks[7] = { x: 0.48, y: 0.25, z: -0.1, visibility: 0.9 };
+  landmarks[8] = { x: 0.52, y: 0.25, z: -0.1, visibility: 0.9 };
+  landmarks[11] = { x: 0.4, y: 0.4, z: -0.25, visibility: 0.9 };
+  landmarks[12] = { x: 0.6, y: 0.4, z: -0.25, visibility: 0.9 };
+  landmarks[23] = { x: 0.4, y: 0.7, z: 0, visibility: 0.9 };
+  landmarks[24] = { x: 0.6, y: 0.7, z: 0, visibility: 0.9 };
+
+  const result = scorePose(landmarks);
+
+  assert.notEqual(result, null);
+  assert.ok(result.torso > 8, 'Forward shoulders should register as a slouch');
+  assert.ok(result.score < 100, 'Slouching should deduct points');
 });
