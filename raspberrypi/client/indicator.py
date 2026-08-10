@@ -37,6 +37,8 @@ class GpioLed:
         self.chip = int(configured_chip) if configured_chip is not None else _detect_lgpio_chip()
         self._led: Any | None = None
         self._pin_factory: Any | None = None
+        self._lgpio: Any | None = None
+        self._lgpio_handle: int | None = None
         self._is_on = False
 
         if not self.enabled:
@@ -62,15 +64,46 @@ class GpioLed:
             if self._pin_factory is not None:
                 self._pin_factory.close()
                 self._pin_factory = None
+            if self._initialize_lgpio_fallback():
+                return
             # Posture monitoring must keep working if a non-essential LED is
             # disconnected or this client is run outside a Raspberry Pi.
             logger.error("red LED indicator is unavailable: %s", exc)
 
-    def on(self) -> bool:
-        if self._led is None:
+    def _initialize_lgpio_fallback(self) -> bool:
+        """Use lgpio directly when gpiozero cannot open a Pi 5 GPIO chip."""
+        if self.chip is None:
             return False
+        handle: int | None = None
         try:
-            self._led.on()
+            import lgpio  # type: ignore
+
+            handle = lgpio.gpiochip_open(self.chip)
+            inactive_level = 0 if self.active_high else 1
+            lgpio.gpio_claim_output(handle, self.pin, inactive_level)
+            self._lgpio = lgpio
+            self._lgpio_handle = handle
+            logger.info("red LED indicator ready on BCM GPIO%s via direct gpiochip%s", self.pin, self.chip)
+            return True
+        except Exception as exc:
+            if handle is not None:
+                try:
+                    lgpio.gpiochip_close(handle)
+                except Exception:
+                    pass
+            logger.debug("direct lgpio LED fallback is unavailable: %s", exc)
+            return False
+
+    def on(self) -> bool:
+        try:
+            if self._led is not None:
+                self._led.on()
+            elif self._lgpio is not None and self._lgpio_handle is not None:
+                self._lgpio.gpio_write(
+                    self._lgpio_handle, self.pin, 1 if self.active_high else 0
+                )
+            else:
+                return False
             self._is_on = True
             return True
         except Exception as exc:
@@ -78,10 +111,15 @@ class GpioLed:
             return False
 
     def off(self) -> bool:
-        if self._led is None:
-            return False
         try:
-            self._led.off()
+            if self._led is not None:
+                self._led.off()
+            elif self._lgpio is not None and self._lgpio_handle is not None:
+                self._lgpio.gpio_write(
+                    self._lgpio_handle, self.pin, 0 if self.active_high else 1
+                )
+            else:
+                return False
             self._is_on = False
             return True
         except Exception as exc:
@@ -113,3 +151,9 @@ class GpioLed:
         if self._pin_factory is not None:
             self._pin_factory.close()
             self._pin_factory = None
+        if self._lgpio is not None and self._lgpio_handle is not None:
+            self.off()
+            self._lgpio.gpio_free(self._lgpio_handle, self.pin)
+            self._lgpio.gpiochip_close(self._lgpio_handle)
+            self._lgpio_handle = None
+            self._lgpio = None
