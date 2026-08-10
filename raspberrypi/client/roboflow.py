@@ -77,7 +77,7 @@ class RoboflowPostureClient:
                 self._last_logged_label = result["label"]
             return result
         except (ValueError, requests.RequestException) as exc:
-            # A cloud outage must never stop the local MediaPipe pipeline.
+            # A cloud outage must never stop the local YOLOv5 pipeline.
             if now - self._last_warning_at >= 30:
                 logger.warning("Roboflow posture inference failed: %s", exc)
                 self._last_warning_at = now
@@ -127,7 +127,7 @@ class RoboflowInferenceWorker:
     """Run optional cloud inference away from the camera and pose loop.
 
     Only one pending frame is retained.  A slow network response therefore
-    cannot build a backlog or freeze MediaPipe/WebRTC, and the next request
+    cannot build a backlog or freeze YOLOv5/WebRTC, and the next request
     always uses the newest available camera frame.
     """
 

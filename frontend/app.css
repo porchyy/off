@@ -484,8 +484,7 @@ body {
 }
 
 .video-wrap video,
-.video-wrap .pi-camera,
-.video-wrap canvas {
+.video-wrap .pi-camera {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -497,10 +496,6 @@ body {
   display: block;
   background: #050817;
   object-fit: cover;
-}
-
-.video-wrap canvas {
-  pointer-events: none;
 }
 
 .video-wrap > p {

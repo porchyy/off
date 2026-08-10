@@ -1,0 +1,5 @@
+# Runtime required by itakurah/Sitting-Posture-Detection-YOLOv5's small640.pt.
+# PyQt is intentionally omitted because PostureAI uses the existing web UI.
+torch==2.2.0
+torchvision==0.17.0
+yolov5==7.0.11

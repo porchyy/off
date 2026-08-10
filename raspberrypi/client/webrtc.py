@@ -55,14 +55,13 @@ class PiWebRtcSender:
             self._loop.call_soon_threadsafe(lambda: None)
         self._thread.join(timeout=5)
 
-    def publish_pose(self, metrics: dict[str, Any], landmarks: list[dict[str, Any]]) -> None:
-        """Store the newest compact AI result for the dashboard overlay."""
+    def publish_detection(self, metrics: dict[str, Any]) -> None:
+        """Store the newest YOLOv5 result for the dashboard."""
         with self._pose_lock:
             self._pose_revision += 1
             self._latest_pose = {
-                "type": "pose_update",
+                "type": "posture_update",
                 "metrics": dict(metrics),
-                "landmarks": list(landmarks),
             }
 
     def publish_roboflow_result(self, result: dict[str, Any]) -> None:
@@ -89,7 +88,7 @@ class PiWebRtcSender:
                     logger.info("WebRTC signaling connected")
                     viewer_ready = asyncio.Event()
                     send_lock = asyncio.Lock()
-                    pose_task = asyncio.create_task(self._send_pose_updates(socket, viewer_ready, send_lock))
+                    posture_task = asyncio.create_task(self._send_posture_updates(socket, viewer_ready, send_lock))
                     try:
                         async for raw in socket:
                             message = json.loads(raw)
@@ -112,9 +111,9 @@ class PiWebRtcSender:
                             elif message.get("type") == "error" and message.get("code") == "peer_unavailable":
                                 viewer_ready.clear()
                     finally:
-                        pose_task.cancel()
+                        posture_task.cancel()
                         with suppress(asyncio.CancelledError):
-                            await pose_task
+                            await posture_task
             except Exception as exc:
                 if not self._stop.is_set():
                     logger.warning("WebRTC signaling unavailable: %s; retrying", exc)
@@ -122,10 +121,10 @@ class PiWebRtcSender:
                     retry_seconds = min(retry_seconds * 2, 10)
         await self._close_peer()
 
-    async def _send_pose_updates(
+    async def _send_posture_updates(
         self, socket: Any, viewer_ready: asyncio.Event, send_lock: asyncio.Lock
     ) -> None:
-        """Forward only the most recent landmarks, never a queue of stale poses."""
+        """Forward only the most recent posture classification."""
         delivered_revision = 0
         delivered_roboflow_revision = 0
         while not self._stop.is_set():

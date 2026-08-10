@@ -18,12 +18,14 @@ sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 als
 python3 -m venv --system-site-packages .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
-MODEL_PATH="$PROJECT_DIR/frontend/public/models/pose_landmarker_full.task"
+.venv/bin/python -m pip uninstall -y mediapipe
+.venv/bin/python -m pip install -r requirements-yolov5.txt
+MODEL_PATH="$SCRIPT_DIR/models/small640.pt"
 if [ ! -s "$MODEL_PATH" ]; then
-    echo "Downloading MediaPipe Pose Landmarker Full model..."
+    echo "Downloading upstream YOLOv5 sitting-posture model..."
     mkdir -p "$(dirname "$MODEL_PATH")"
-    curl -fL --retry 2 -o "$MODEL_PATH" \
-        https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
+    curl -fL --retry 3 -o "$MODEL_PATH" \
+        https://raw.githubusercontent.com/itakurah/Sitting-Posture-Detection-YOLOv5/main/data/inference_models/small640.pt
 fi
 
 if [ ! -f config.yaml ]; then

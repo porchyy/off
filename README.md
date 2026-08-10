@@ -7,8 +7,8 @@ PostureAI คือระบบติดตามท่านั่งสำห�
 ## สิ่งที่ระบบทำได้
 
 - รับภาพสดจาก Pi Camera ผ่าน WebRTC ในเครือข่ายภายใน
-- วิเคราะห์ landmark ของร่างกายด้วย MediaPipe Pose บน Raspberry Pi
-- แสดงคะแนนท่านั่ง, คอเอียง, ไหล่ไม่สมดุล และแนวลำตัวบน dashboard
+- ใช้ YOLOv5 จำแนกท่านั่งเป็น `sitting_good` หรือ `sitting_bad` บน Raspberry Pi
+- แสดงผลการจำแนก ความมั่นใจของโมเดล และคะแนนท่านั่งบน dashboard
 - แจ้งเตือนผ่านเสียงบน Pi, ไฟ LED และการแจ้งเตือนบนหน้าเว็บตามค่าที่ตั้งไว้
 - บันทึกเฉพาะคะแนน ตัวชี้วัด เวลา และเหตุการณ์แจ้งเตือนลง SQLite
 - ดูสถิติย้อนหลัง ปรับค่าเกณฑ์ความเสี่ยง และ export ข้อมูลเป็น CSV หรือ JSON (เก็บสูงสุด 30 วัน)
@@ -22,7 +22,7 @@ Pi Camera
    │
    ▼
 Raspberry Pi 5
-  ├─ MediaPipe Pose วิเคราะห์ภาพภายในอุปกรณ์
+  ├─ YOLOv5 วิเคราะห์ภาพภายในอุปกรณ์
   ├─ แจ้งเตือนเสียง / LED
   ├─ ส่ง video stream ตรงไปยัง Dashboard ผ่าน WebRTC
   └─ ส่งคะแนนและเหตุการณ์ไปยัง Backend
@@ -44,7 +44,7 @@ Raspberry Pi 5
 | --- | --- |
 | `frontend/` | Dashboard แบบ Vite + Vanilla JavaScript สำหรับดูภาพสด คะแนน สถิติ และตั้งค่าระบบ |
 | `backend/` | FastAPI API, WebRTC signaling และ SQLite persistence |
-| `raspberrypi/` | Pi client สำหรับกล้อง การวิเคราะห์ MediaPipe การแจ้งเตือน และ offline buffer |
+| `raspberrypi/` | Pi client สำหรับกล้อง การวิเคราะห์ YOLOv5 การแจ้งเตือน และ offline buffer |
 | `database/` | ตำแหน่งเก็บ SQLite ของระบบเมื่อใช้งานผ่าน Docker |
 | `docker/` | Dockerfile และ Nginx configuration |
 | `docs/` | คู่มือติดตั้ง Pi และเอกสารออกแบบ |
@@ -107,7 +107,7 @@ npm run dev
 
 ## ตั้งค่า Raspberry Pi 5
 
-Pi client ต้องติดตั้ง Python dependencies, MediaPipe model และตั้งค่าการเชื่อมต่อกับ backend ก่อนเริ่มใช้จริง
+Pi client ต้องติดตั้ง Python dependencies, YOLOv5 posture model และตั้งค่าการเชื่อมต่อกับ backend ก่อนเริ่มใช้จริง
 
 ```bash
 cd raspberrypi
@@ -169,6 +169,6 @@ pytest
 
 ## ความเป็นส่วนตัวและข้อควรระวัง
 
-- MediaPipe ประมวลผล landmark บน Raspberry Pi และไม่จัดเก็บวิดีโอลง SQLite
+- YOLOv5 ประมวลผลภาพบน Raspberry Pi และไม่จัดเก็บวิดีโอลง SQLite
 - Dashboard และ Pi ควรอยู่ในเครือข่ายที่เชื่อถือได้; ผู้ดูแลต้องใช้รหัสผ่านเพื่อแก้การตั้งค่าหรือลบข้อมูล และระบบนี้ยังไม่รองรับการเปิดใช้งานบนอินเทอร์เน็ตสาธารณะ
 - คะแนนท่านั่งเป็นข้อมูลช่วยติดตามและปรับพฤติกรรมเท่านั้น ไม่ใช่ผลวินิจฉัยทางการแพทย์
