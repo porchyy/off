@@ -90,8 +90,8 @@ function update(m) {
   $('status').textContent = s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่';
   $('advice').textContent = s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
-  $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
-  $('torso').textContent = `${m.torso.toFixed(0)}°`;
+  $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
+  $('upperBody').textContent = `${m.upper_body.toFixed(0)}°`;
   updateLcdPreview(s);
   state(s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่', cls);
   updateRisk(m);
@@ -169,8 +169,6 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   const rElbow = getPt(14);
   const lWrist = getPt(15);
   const rWrist = getPt(16);
-  const lHip = getPt(23);
-  const rHip = getPt(24);
 
   // Helper: Draw Glowing Neon Line
   function drawLine(p1, p2, width = 3.5, dashed = false) {
@@ -221,10 +219,6 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
     if (lEar) drawLine(lEar, lShoulder, 2);
     if (rEar) drawLine(rEar, rShoulder, 2);
 
-    if (lHip && rHip) {
-      const hCenter = { x: (lHip.x + rHip.x) / 2, y: (lHip.y + rHip.y) / 2 };
-      drawLine(sCenter, hCenter, 3.5);
-    }
   }
 
   // Arms
@@ -232,11 +226,6 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   drawLine(lElbow, lWrist, 3.5);
   drawLine(rShoulder, rElbow, 3.5);
   drawLine(rElbow, rWrist, 3.5);
-
-  // Torso Sides & Hips
-  drawLine(lShoulder, lHip, 3);
-  drawLine(rShoulder, rHip, 3);
-  drawLine(lHip, rHip, 3.5);
 
   // 2. Horizontal Level Reference Line across Shoulders (HUD Guide)
   if (lShoulder && rShoulder) {
@@ -255,7 +244,7 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   }
 
   // 3. Draw Clean Joint Nodes
-  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist, lHip, rHip].forEach(pt => {
+  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist].forEach(pt => {
     drawNode(pt, 5.5);
   });
 
@@ -277,7 +266,7 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`คะแนนท่านั่ง: ${metrics.score ?? '--'}/100`, 28, 38);
     ctx.fillStyle = mainColor;
-    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | ไหล่: ${metrics.shoulders ?? '--'}°`, 28, 58);
+    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | แนวไหล่: ${metrics.upper_body ?? '--'}°`, 28, 58);
     ctx.restore();
   }
 }
@@ -527,7 +516,7 @@ function connectPiCamera() {
     } else if (message.type === 'pose_update') {
       piLandmarks = piOverlayLandmarks(message.landmarks);
       const metrics = message.metrics;
-      if (['score', 'neck', 'shoulders', 'torso'].every(key => Number.isFinite(metrics?.[key]))) {
+      if (['score', 'neck', 'shoulders', 'upper_body'].every(key => Number.isFinite(metrics?.[key]))) {
         piMetrics = metrics;
         latestMetrics = metrics;
         update(metrics);

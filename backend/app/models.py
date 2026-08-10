@@ -21,7 +21,7 @@ class Sample(Base):
     score: Mapped[float] = mapped_column(Float, nullable=False)
     neck: Mapped[float | None] = mapped_column(Float, nullable=True)
     shoulders: Mapped[float | None] = mapped_column(Float, nullable=True)
-    torso: Mapped[float | None] = mapped_column(Float, nullable=True)
+    upper_body: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=_utcnow_iso)
 
 

@@ -7,7 +7,7 @@ import io
 from typing import Iterable
 
 COLUMNS = [
-    "type", "id", "score", "neck", "shoulders", "torso",
+    "type", "id", "score", "neck", "shoulders", "upper_body",
     "severity", "message", "created_at",
 ]
 

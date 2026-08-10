@@ -64,6 +64,6 @@ token in a local `.env` file with mode `600`; never commit it.
 
 FastAPI lifespan handler initializes the database on boot (`Base.metadata.create_all()`):
 
-- `samples(id, score, neck, shoulders, torso, created_at)`
+- `samples(id, score, neck, shoulders, upper_body, created_at)`
 - `alerts(id, severity, message, created_at)`
 - `settings(key, value)` — key/value JSON-encoded strings

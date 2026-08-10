@@ -172,7 +172,7 @@ def test_add_sample_success():
         "score": 88.5,
         "neck": 11.2,
         "shoulders": 4.1,
-        "torso": 3.0,
+        "upper_body": 3.0,
     }
     response = client.post("/api/samples", json=sample)
     assert response.status_code == 201
@@ -184,7 +184,7 @@ def test_add_sample_validation_invalid_score():
         "score": 150.0,  # exceeds max 100
         "neck": 10.0,
         "shoulders": 5.0,
-        "torso": 2.0,
+        "upper_body": 2.0,
     }
     response = client.post("/api/samples", json=sample)
     assert response.status_code == 422  # Unprocessable Entity
@@ -211,8 +211,8 @@ def test_add_alert_invalid_severity():
 
 def test_summary_and_stats():
     # Add samples and alert
-    client.post("/api/samples", json={"score": 90.0, "neck": 10.0, "shoulders": 2.0, "torso": 1.0})
-    client.post("/api/samples", json={"score": 70.0, "neck": 15.0, "shoulders": 8.0, "torso": 6.0})
+    client.post("/api/samples", json={"score": 90.0, "neck": 10.0, "shoulders": 2.0, "upper_body": 1.0})
+    client.post("/api/samples", json={"score": 70.0, "neck": 15.0, "shoulders": 8.0, "upper_body": 6.0})
     client.post("/api/alerts", json={"severity": "caution", "message": "Slouching warning"})
 
     # Check Summary
@@ -233,7 +233,7 @@ def test_summary_and_stats():
 
 
 def test_export_csv_and_json():
-    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
+    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "upper_body": 3.0})
     client.post("/api/alerts", json={"severity": "risk", "message": "Posture risk alert"})
 
     # Test CSV export
@@ -256,7 +256,7 @@ def test_export_csv_and_json():
 
 
 def test_clear_data():
-    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
+    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "upper_body": 3.0})
     client.post("/api/alerts", json={"severity": "risk", "message": "Posture risk alert"})
 
     clear_res = client.delete("/api/data")
@@ -270,7 +270,7 @@ def test_clear_data():
 
 
 def test_prune_data():
-    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
+    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "upper_body": 3.0})
     prune_res = client.post("/api/data/prune?days=90")
     assert prune_res.status_code == 200
     assert prune_res.json() == {"ok": True}

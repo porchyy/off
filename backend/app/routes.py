@@ -259,7 +259,7 @@ def add_sample(payload: SampleIn, db: Session = Depends(get_db)) -> OkResponse:
         score=payload.score,
         neck=payload.neck,
         shoulders=payload.shoulders,
-        torso=payload.torso,
+        upper_body=payload.upper_body,
     ))
     db.commit()
     return OkResponse()
@@ -321,11 +321,11 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
 @router.get("/api/export")
 def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = Depends(get_db)):
     samples = db.execute(text(
-        "SELECT 'sample' AS type, id, score, neck, shoulders, torso, "
+        "SELECT 'sample' AS type, id, score, neck, shoulders, upper_body, "
         "NULL AS severity, NULL AS message, created_at FROM samples ORDER BY id"
     )).mappings().all()
     alerts = db.execute(text(
-        "SELECT 'alert' AS type, id, NULL AS score, NULL AS neck, NULL AS shoulders, NULL AS torso, "
+        "SELECT 'alert' AS type, id, NULL AS score, NULL AS neck, NULL AS shoulders, NULL AS upper_body, "
         "severity, message, created_at FROM alerts ORDER BY id"
     )).mappings().all()
     rows = sorted([*samples, *alerts], key=lambda r: r["created_at"])
