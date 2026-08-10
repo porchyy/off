@@ -91,6 +91,18 @@ class CharacterLcd:
         lines = self.format_metrics(metrics, columns=self.cols, risk_threshold=self.risk_threshold)
         return self._write(lines)
 
+    def show_incomplete_pose(self) -> bool:
+        """Prompt the user to sit correctly until a full pose is visible."""
+        return self._write(
+            (self._fit("POSE NOT READY", self.cols), self._fit("PLEASE SIT WELL", self.cols))
+        )
+
+    def show_waiting_for_pose(self) -> bool:
+        """Clear any stale score while the camera cannot see a person."""
+        return self._write(
+            (self._fit("POSTUREAI READY", self.cols), self._fit("WAITING FOR POSE", self.cols))
+        )
+
     def show_test(self) -> bool:
         return self._write((self._fit("SCORE:  82/100", self.cols), self._fit("GOOD POSTURE", self.cols)), force=True)
 
