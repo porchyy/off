@@ -23,31 +23,41 @@ export function scorePose(landmarks) {
   // this keeps scoring available when the camera only sees a seated upper body.
   const head = {
     x: headPoints.reduce((sum, point) => sum + point.x, 0) / headPoints.length,
-    y: headPoints.reduce((sum, point) => sum + point.y, 0) / headPoints.length
+    y: headPoints.reduce((sum, point) => sum + point.y, 0) / headPoints.length,
+    z: headPoints.reduce((sum, point) => sum + (point.z || 0), 0) / headPoints.length
   };
   const midShoulder = {
     x: (ls.x + rs.x) / 2,
-    y: (ls.y + rs.y) / 2
+    y: (ls.y + rs.y) / 2,
+    z: ((ls.z || 0) + (rs.z || 0)) / 2
   };
-  // 1. Neck metric (visible side tilt).
-  // Absolute MediaPipe Z includes normal head-to-shoulder depth.  Using it
-  // directly makes a healthy seated person look severely bent, so scoring
-  // uses the stable 2D alignment available from a single camera.
+  // 1. Neck metric (forward head and side tilt).
   const dxNeck = head.x - midShoulder.x;
   const dyNeck = midShoulder.y - head.y;
+  const dzNeck = head.z - midShoulder.z;
+
+  const neckPitch = Math.atan2(Math.abs(dzNeck), Math.max(0.001, dyNeck)) * 180 / Math.PI;
   const neckRoll = Math.atan2(Math.abs(dxNeck), Math.max(0.001, dyNeck)) * 180 / Math.PI;
-  const neck = neckRoll;
+  let neck = Math.hypot(neckPitch, neckRoll);
 
   // 2. Shoulder alignment.  Use angles, not screen distances, so the same
   // posture gets a comparable result at different camera distances.
   const dxShoulder = rs.x - ls.x;
   const dyShoulder = rs.y - ls.y;
+  const dzShoulder = (rs.z || 0) - (ls.z || 0);
   const shoulderRoll = Math.atan2(Math.abs(dyShoulder), Math.max(0.001, Math.abs(dxShoulder))) * 180 / Math.PI;
+  const shoulderDepth = Math.atan2(Math.abs(dzShoulder), Math.max(0.001, Math.hypot(dxShoulder, dyShoulder))) * 180 / Math.PI;
   const shoulders = shoulderRoll;
-  const upper_body = Math.hypot(neck, shoulderRoll);
+  let upper_body = Math.hypot(shoulderRoll, shoulderDepth);
 
-  const neckPenalty = Math.max(0, neck - 12) * 1.2;
-  const shoulderPenalty = Math.max(0, upper_body - 10) * 0.8;
+  // 2D fallback for MediaPipe outputs that do not contain reliable depth.
+  if (Math.abs(dzNeck) < 0.0001 && Math.abs(dzShoulder) < 0.0001) {
+      neck = Math.abs(Math.atan2(head.x - midShoulder.x, Math.max(0.001, midShoulder.y - head.y)) * 180 / Math.PI);
+      upper_body = shoulderRoll;
+  }
+
+  const neckPenalty = Math.max(0, neck - 8) * 2.8;
+  const shoulderPenalty = Math.max(0, upper_body - 4) * 3.3;
 
   const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty));
 

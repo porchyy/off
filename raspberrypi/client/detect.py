@@ -259,33 +259,47 @@ class MediaPipePoseDetector:
 
         head_x = sum(point.x for point in head_points) / len(head_points)
         head_y = sum(point.y for point in head_points) / len(head_points)
+        head_z = sum(getattr(point, "z", 0.0) for point in head_points) / len(head_points)
 
         mid_sh_x = (ls.x + rs.x) / 2.0
         mid_sh_y = (ls.y + rs.y) / 2.0
+        mid_sh_z = (getattr(ls, "z", 0.0) + getattr(rs, "z", 0.0)) / 2.0
 
-        # 1. Neck metric: side displacement from the shoulder midpoint.
-        # MediaPipe's monocular Z includes a person's natural head-to-shoulder
-        # depth, so treating its absolute value as a bad-posture angle made a
-        # normally seated person score zero.  The stable camera-independent
-        # signal here is the visible 2D head/shoulder alignment.
+        # 1. Neck metric: head displacement from the shoulder midpoint.
+        # Normalising depth by the head-to-shoulder height keeps the angle
+        # stable when a person sits nearer or farther from the camera.
         dx_neck = head_x - mid_sh_x
         dy_neck = mid_sh_y - head_y
-        neck_roll = math.atan2(abs(dx_neck), max(0.001, dy_neck)) * 180.0 / math.pi
-        neck = neck_roll
+        dz_neck = head_z - mid_sh_z
 
-        # 2. Shoulder alignment.  An angle (rather than raw pixel distance)
-        # remains comparable when the person sits nearer or farther away.
+        neck_pitch = math.atan2(abs(dz_neck), max(0.001, dy_neck)) * 180.0 / math.pi
+        neck_roll = math.atan2(abs(dx_neck), max(0.001, dy_neck)) * 180.0 / math.pi
+        neck = math.sqrt(neck_pitch * neck_pitch + neck_roll * neck_roll)
+
+        # 2. Shoulder alignment.  The roll detects one shoulder sitting
+        # higher; the depth component detects a turned or collapsed shoulder.
+        # Both are angles, rather than raw pixel distances, so they are
+        # comparable across camera positions.
         dx_shoulder = rs.x - ls.x
         dy_shoulder = rs.y - ls.y
+        dz_shoulder = getattr(rs, "z", 0.0) - getattr(ls, "z", 0.0)
         shoulder_roll = math.atan2(abs(dy_shoulder), max(0.001, abs(dx_shoulder))) * 180.0 / math.pi
+        shoulder_depth = math.atan2(
+            abs(dz_shoulder), max(0.001, math.hypot(dx_shoulder, dy_shoulder))
+        ) * 180.0 / math.pi
         shoulders = shoulder_roll
-        upper_body = math.hypot(neck, shoulder_roll)
+        upper_body = math.hypot(shoulder_roll, shoulder_depth)
+
+        # Fallback 2D if no Z
+        if abs(dz_neck) < 0.0001 and abs(dz_shoulder) < 0.0001:
+            neck = abs(math.atan2(head_x - mid_sh_x, max(0.001, mid_sh_y - head_y)) * 180.0 / math.pi)
+            upper_body = shoulder_roll
 
         # Angles inside a small neutral range are normal landmark noise.  The
         # calibrated penalties make sustained forward-head posture meaningful
         # without penalising a natural small shift in a seated position.
-        neck_penalty = max(0.0, neck - 12.0) * 1.2
-        shoulder_penalty = max(0.0, upper_body - 10.0) * 0.8
+        neck_penalty = max(0.0, neck - 8.0) * 2.8
+        shoulder_penalty = max(0.0, upper_body - 4.0) * 3.3
 
         score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty))
 
