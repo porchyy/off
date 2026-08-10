@@ -245,18 +245,15 @@ class MediaPipePoseDetector:
         re = landmarks[8]
         ls = landmarks[11]
         rs = landmarks[12]
-        # MediaPipe has no literal waist landmark.  Its left/right hip joints
-        # sit at the waist/pelvis line and are the closest stable pair to use
-        # as the user's waist reference.
-        lw = landmarks[23]
-        rw = landmarks[24]
+        lh = landmarks[23]
+        rh = landmarks[24]
 
         # Ensure key landmarks are visible enough
-        for pt in [nose, le, re, ls, rs, lw, rw]:
+        for pt in [nose, le, re, ls, rs, lh, rh]:
             if getattr(pt, "visibility", 1.0) < 0.45:
                 # The dashboard can still prove that Pose is working by
                 # drawing the visible upper-body landmarks. Scoring waits for
-                # waist reference as it needs the full upper body to be meaningful.
+                # hips as it needs the full torso to be meaningful.
                 return {"landmarks": overlay_landmarks}
 
         mid_ear_x = (le.x + re.x) / 2.0
@@ -267,45 +264,43 @@ class MediaPipePoseDetector:
         mid_sh_y = (ls.y + rs.y) / 2.0
         mid_sh_z = (getattr(ls, "z", 0.0) + getattr(rs, "z", 0.0)) / 2.0
 
-        mid_waist_x = (lw.x + rw.x) / 2.0
-        mid_waist_y = (lw.y + rw.y) / 2.0
-        mid_waist_z = (getattr(lw, "z", 0.0) + getattr(rw, "z", 0.0)) / 2.0
+        mid_hip_x = (lh.x + rh.x) / 2.0
+        mid_hip_y = (lh.y + rh.y) / 2.0
+        mid_hip_z = (getattr(lh, "z", 0.0) + getattr(rh, "z", 0.0)) / 2.0
 
-        # 1. Neck metric: forward head and side tilt.  MediaPipe Z gets
-        # smaller toward the camera.  A small natural head-depth allowance
-        # prevents normal anatomy from being treated as a forward slouch.
+        # 1. Neck metric
         dx_neck = mid_ear_x - mid_sh_x
-        neck_height = max(0.001, abs(mid_sh_y - mid_ear_y))
-        shoulder_width = max(0.001, math.hypot(rs.x - ls.x, rs.y - ls.y))
-        forward_head_depth = max(0.0, mid_sh_z - mid_ear_z - shoulder_width * 0.45)
-        neck_pitch = math.atan2(forward_head_depth, neck_height) * 180.0 / math.pi
-        neck_roll = math.atan2(abs(dx_neck), neck_height) * 180.0 / math.pi
+        dy_neck = mid_sh_y - mid_ear_y
+        dz_neck = mid_ear_z - mid_sh_z
+
+        neck_pitch = math.atan2(abs(dz_neck), max(0.001, dy_neck)) * 180.0 / math.pi
+        neck_roll = math.atan2(abs(dx_neck), max(0.001, dy_neck)) * 180.0 / math.pi
         neck = math.sqrt(neck_pitch * neck_pitch + neck_roll * neck_roll)
 
-        # 2. Shoulder level: an angle is independent of camera distance.
-        shoulder_roll = math.atan2(abs(ls.y - rs.y), max(0.001, abs(ls.x - rs.x))) * 180.0 / math.pi
-        shoulders = shoulder_roll
+        # 2. Shoulders metric
+        shoulder_roll = abs(ls.y - rs.y) * 100.0
+        dz_sh = mid_sh_z - mid_hip_z
+        dy_sh = mid_hip_y - mid_sh_y
+        shoulder_pitch = math.atan2(abs(dz_sh), max(0.001, dy_sh)) * 180.0 / math.pi
+        shoulders = shoulder_roll * 1.2 + shoulder_pitch * 0.8
 
-        # 3. Shoulder-to-waist alignment.  This is the slouch measure: the
-        # shoulder midpoint moving forward of the waist and/or sideways from
-        # it. It uses only the visible waist reference; knees and feet are not
-        # required.
-        dx_torso = mid_sh_x - mid_waist_x
-        torso_vertical = max(0.001, abs(mid_waist_y - mid_sh_y))
-        torso_height = math.hypot(dx_torso, torso_vertical)
-        torso_roll = math.atan2(abs(dx_torso), torso_vertical) * 180.0 / math.pi
-        forward_torso_depth = max(0.0, mid_waist_z - mid_sh_z - torso_height * 0.15)
-        torso_pitch = math.atan2(forward_torso_depth, torso_height) * 180.0 / math.pi
-        torso = math.hypot(torso_roll, torso_pitch)
+        # 3. Torso metric
+        dx_torso = mid_sh_x - mid_hip_x
+        dy_torso = mid_hip_y - mid_sh_y
+        dz_torso = mid_sh_z - mid_hip_z
+
+        torso_roll = math.atan2(abs(dx_torso), max(0.001, dy_torso)) * 180.0 / math.pi
+        torso_pitch = math.atan2(abs(dz_torso), max(0.001, dy_torso)) * 180.0 / math.pi
+        torso = math.sqrt(torso_roll * torso_roll + torso_pitch * torso_pitch)
 
         # Fallback 2D if no Z
-        if abs(mid_sh_z - mid_ear_z) < 0.0001 and abs(mid_sh_z - mid_waist_z) < 0.0001:
-            neck = abs(math.atan2(nose.x - mid_sh_x, max(0.001, abs(mid_sh_y - nose.y))) * 180.0 / math.pi)
-            shoulders = shoulder_roll
-            torso = torso_roll
+        if abs(dz_neck) < 0.0001 and abs(dz_sh) < 0.0001:
+            neck = abs(math.atan2(nose.x - mid_sh_x, max(0.001, mid_sh_y - nose.y)) * 180.0 / math.pi)
+            shoulders = abs(ls.y - rs.y) * 100.0
+            torso = abs(math.atan2(mid_sh_x - mid_hip_x, max(0.001, mid_hip_y - mid_sh_y)) * 180.0 / math.pi)
 
-        neck_penalty = max(0.0, neck - 12.0) * 1.5
-        shoulder_penalty = max(0.0, shoulders - 6.0) * 1.5
+        neck_penalty = max(0.0, neck - 10.0) * 2.5
+        shoulder_penalty = max(0.0, shoulders - 5.0) * 2.0
         torso_penalty = max(0.0, torso - 8.0) * 1.8
 
         score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
@@ -393,7 +388,7 @@ def process_live_frame(
                 alert_controller.clear_posture()
             if lcd_display is not None:
                 lcd_display.show_incomplete_pose()
-            logger.debug("pose detected but the waist reference is not visible yet; sending overlay without a score")
+            logger.debug("pose detected but hips are not visible yet; sending overlay without a score")
             if frame_overlay_callback is not None:
                 frame_overlay_callback(landmarks, None)
             else:
@@ -406,7 +401,7 @@ def process_live_frame(
             frame_overlay_callback(landmarks, metrics)
         else:
             draw_pose_overlay(frame, landmarks, metrics, min_visibility=min_visibility)
-        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s°, waist_alignment=%s°",
+        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
         uploader.send_sample(metrics)
 
