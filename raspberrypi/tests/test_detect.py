@@ -37,6 +37,28 @@ def test_frontal_desk_metrics_ignore_unstable_relative_depth():
     assert with_depth == flat
 
 
+def test_calibrated_forward_lean_lowers_the_frontal_desk_score():
+    aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, forward_lean=0)
+    leaning = detect.score_frontal_desk_metrics(neck=4, shoulders=3, forward_lean=28)
+
+    assert aligned == 100.0
+    assert leaning < aligned
+
+
+def test_forward_lean_proxy_uses_a_personal_neutral_depth_baseline():
+    detector = object.__new__(detect.MediaPipePoseDetector)
+    detector._forward_lean_baseline = None
+    detector._forward_lean_samples = detect.deque(maxlen=20)
+    neutral = (Point(0.5, 0.2, -0.1), Point(0.45, 0.28, -0.1), Point(0.55, 0.28, -0.1), Point(0.4, 0.45, 0.0), Point(0.6, 0.45, 0.0))
+    metrics = {"neck": 0.0, "shoulders": 0.0}
+
+    for _ in range(20):
+        assert detector._forward_lean_proxy(metrics, *neutral) == 0.0
+
+    leaning = (Point(0.5, 0.2, -0.3), Point(0.45, 0.28, -0.3), Point(0.55, 0.28, -0.3), Point(0.4, 0.45, 0.0), Point(0.6, 0.45, 0.0))
+    assert detector._forward_lean_proxy(metrics, *leaning) > 8.0
+
+
 def test_upper_body_metrics_penalize_forward_head_and_dropped_shoulder():
     upright = detect.calculate_upper_body_metrics(
         Point(0.5, 0.2), Point(0.45, 0.28), Point(0.55, 0.28), Point(0.4, 0.45), Point(0.6, 0.45)

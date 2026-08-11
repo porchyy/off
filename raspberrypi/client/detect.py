@@ -224,18 +224,22 @@ def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_
     # shoulder depth: it was the source of 50-60 degree false readings.
     shoulder_tilt = math.atan2(abs(float(left_shoulder.y) - float(right_shoulder.y)), max(0.001, abs(float(left_shoulder.x) - float(right_shoulder.x)))) * degrees
     shoulders = shoulder_tilt
-    torso = neck * 0.7 + shoulders * 0.3
-
-    neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
-    shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
-    torso_penalty = min(20.0, max(0.0, torso - 15.0) * 0.8)
-    score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
+    torso = 0.0
+    score = score_frontal_desk_metrics(neck, shoulders, torso)
     return {
         "neck": round(neck, 1),
         "shoulders": round(shoulders, 1),
         "torso": round(torso, 1),
         "score": round(score, 1),
     }
+
+
+def score_frontal_desk_metrics(neck: float, shoulders: float, forward_lean: float) -> float:
+    """Score a frontal desk pose, with optional calibrated forward-lean trend."""
+    neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
+    shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
+    lean_penalty = min(25.0, max(0.0, forward_lean - 8.0) * 1.0)
+    return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - lean_penalty)), 1)
 
 
 class MediaPipePoseDetector:
@@ -248,6 +252,8 @@ class MediaPipePoseDetector:
             raise FileNotFoundError(f"Pose Landmarker Full model not found: {model_path}")
         self.mp = mp
         self._last_timestamp_ms = -1
+        self._forward_lean_baseline: float | None = None
+        self._forward_lean_samples: deque[float] = deque(maxlen=20)
         options = mp.tasks.vision.PoseLandmarkerOptions(
             base_options=mp.tasks.BaseOptions(model_asset_path=str(model_path)),
             running_mode=mp.tasks.vision.RunningMode.VIDEO,
@@ -316,11 +322,41 @@ class MediaPipePoseDetector:
         for pt in [nose, le, re, ls, rs]:
             if getattr(pt, "visibility", 1.0) < 0.45:
                 return {"landmarks": overlay_landmarks}
+        metrics = calculate_upper_body_metrics(nose, le, re, ls, rs)
+        metrics["torso"] = self._forward_lean_proxy(metrics, nose, le, re, ls, rs)
+        metrics["score"] = score_frontal_desk_metrics(metrics["neck"], metrics["shoulders"], metrics["torso"])
         return {
-            **calculate_upper_body_metrics(nose, le, re, ls, rs),
+            **metrics,
             "landmarks": overlay_landmarks,
             "person_box": person_box,
         }
+
+    def _forward_lean_proxy(self, metrics: dict[str, float], nose: Any, left_ear: Any, right_ear: Any, left_shoulder: Any, right_shoulder: Any) -> float:
+        """Return forward-lean change relative to this person's neutral pose.
+
+        The first twenty stable, aligned frames form a per-session reference.
+        Only the *change* in relative depth from that reference is used, never
+        raw Z, so a slightly diagonal camera cannot create a false slouch.
+        """
+        head_z = (float(getattr(nose, "z", 0.0)) + float(getattr(left_ear, "z", 0.0)) + float(getattr(right_ear, "z", 0.0))) / 3
+        shoulder_z = (float(getattr(left_shoulder, "z", 0.0)) + float(getattr(right_shoulder, "z", 0.0))) / 2
+        relative_depth = shoulder_z - head_z  # positive when the head moves closer than the shoulders
+        head_y = (float(nose.y) + float(left_ear.y) + float(right_ear.y)) / 3
+        shoulder_y = (float(left_shoulder.y) + float(right_shoulder.y)) / 2
+        vertical = max(0.001, shoulder_y - head_y)
+
+        if self._forward_lean_baseline is None:
+            # Ask the user to sit naturally upright after a restart; only use
+            # frames without an obvious 2-D lean as the neutral reference.
+            if metrics["neck"] <= 12.0 and metrics["shoulders"] <= 10.0:
+                self._forward_lean_samples.append(relative_depth)
+            if len(self._forward_lean_samples) == self._forward_lean_samples.maxlen:
+                self._forward_lean_baseline = sorted(self._forward_lean_samples)[len(self._forward_lean_samples) // 2]
+                logger.info("calibrated frontal forward-lean baseline; monitoring relative change")
+            return 0.0
+
+        change_toward_camera = max(0.0, relative_depth - self._forward_lean_baseline)
+        return round(math.atan2(change_toward_camera, vertical) * 180.0 / math.pi, 1)
 
     def close(self) -> None:
         self.pose.close()
