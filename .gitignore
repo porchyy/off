@@ -33,6 +33,7 @@ database/postureai.sqlite-shm
 database/postureai.sqlite-wal
 database/buffer.sqlite
 raspberrypi/buffer.sqlite
+raspberrypi/models/
 postureai.config.json
 
 # OS

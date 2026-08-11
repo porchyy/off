@@ -68,6 +68,45 @@ def test_live_detection_forwards_compact_landmarks_to_overlay(monkeypatch):
     assert sent == [(uploader.metrics, [{"index": 11, "x": 0.4, "y": 0.5, "visibility": 0.9}])]
 
 
+def test_kanden_classifier_replaces_the_score_but_keeps_mediapipe_measurements(monkeypatch):
+    class FakeDetector:
+        def calculate_metrics(self, frame, color_space):
+            return {
+                "score": 93.0,
+                "neck": 2.0,
+                "shoulders": 1.0,
+                "torso": 2.0,
+                "landmarks": [{"index": 11, "x": 0.4, "y": 0.5, "visibility": 0.9}],
+            }
+
+    class FakeClassifier:
+        def classify(self, frame, color_space, *, interval):
+            return {"posture_label": "slouch", "posture_confidence": 0.9}
+
+    class FakeUploader:
+        def send_sample(self, metrics):
+            self.metrics = metrics
+
+    monkeypatch.setattr(detect, "get_detector", lambda: FakeDetector())
+    monkeypatch.setattr(detect, "get_posture_classifier", lambda config: FakeClassifier())
+    monkeypatch.setattr(detect, "_last_analysis_at", 0.0)
+    detect._metric_smoother.reset()
+    uploader = FakeUploader()
+    sent = []
+
+    detect.process_live_frame(
+        "picamera-frame",
+        {"posture_classifier": {"min_confidence": 0.65, "interval": 0.5}},
+        uploader,
+        pose_callback=lambda metrics, landmarks: sent.append(metrics),
+    )
+
+    assert uploader.metrics["score"] == 30.0
+    assert sent[0]["posture_label"] == "slouch"
+    assert sent[0]["posture_ai_used"] is True
+    assert sent[0]["neck"] == 2.0
+
+
 def test_live_detection_shows_overlay_before_a_full_torso_score(monkeypatch):
     class FakeDetector:
         def calculate_metrics(self, frame, color_space):

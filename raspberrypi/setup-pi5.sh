@@ -89,6 +89,13 @@ if [ ! -s "$MODEL_PATH" ]; then
     curl -fL --retry 2 -o "$MODEL_PATH" \
         https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
 fi
+CLASSIFIER_MODEL="$SCRIPT_DIR/models/kanden_posture_classifier.onnx"
+if [ ! -s "$CLASSIFIER_MODEL" ]; then
+    echo "Downloading Kanden ONNX posture classifier..."
+    mkdir -p "$(dirname "$CLASSIFIER_MODEL")"
+    curl -fL --retry 2 -o "$CLASSIFIER_MODEL" \
+        https://huggingface.co/SeiyaCM/KandenAiHackathonPostureModel/resolve/main/exported/posture_classifier.onnx
+fi
 if [ ! -f config.yaml ]; then
     cp config.example.yaml config.yaml
 fi
@@ -114,6 +121,13 @@ detection.update({
     "metric_smoothing_alpha": 0.35,
     "mode": "mediapipe",
     "model": "../frontend/public/models/pose_landmarker_full.task",
+})
+classifier = config.setdefault("posture_classifier", {})
+classifier.update({
+    "enabled": True,
+    "model": "models/kanden_posture_classifier.onnx",
+    "interval": 0.5,
+    "min_confidence": 0.65,
 })
 path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
 PY

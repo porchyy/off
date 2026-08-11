@@ -41,6 +41,16 @@ detection:
   # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น
   model: ../frontend/public/models/pose_landmarker_full.task
 
+# AI จำแนกท่านั่งที่เทรนแล้ว: ใช้ MediaPipe หา skeleton ก่อน แล้ว Kanden ONNX
+# ตัดสิน Good / Slouch / Chin rest / Stretch จากภาพกล้องจริง
+posture_classifier:
+  enabled: true
+  model: models/kanden_posture_classifier.onnx
+  # วิเคราะห์ภาพทุก 0.5 วินาที แล้วใช้ผลล่าสุดระหว่างนั้นเพื่อให้ Pi ลื่น
+  interval: 0.5
+  # ความมั่นใจต่ำกว่านี้จะกลับไปใช้คะแนนจาก MediaPipe ชั่วคราว
+  min_confidence: 0.65
+
 # AI เสริมจาก Roboflow: ใช้ผล Good/Slouch/Leaning บนหน้าเว็บ
 # API key ต้องอยู่ใน environment ของ systemd เท่านั้น ไม่ใส่ในไฟล์นี้
 roboflow:

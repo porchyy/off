@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "posture_classifier", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -81,6 +81,17 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
     detection["model"] = str(model_path)
+
+    posture_classifier = config["posture_classifier"]
+    posture_classifier["enabled"] = bool(posture_classifier.get("enabled", True))
+    classifier_model = Path(str(posture_classifier.get("model", "models/kanden_posture_classifier.onnx")))
+    if not classifier_model.is_absolute():
+        classifier_model = config_path.parent / classifier_model
+    posture_classifier["model"] = str(classifier_model)
+    posture_classifier["interval"] = min(5.0, max(0.1, float(posture_classifier.get("interval", 0.5))))
+    posture_classifier["min_confidence"] = min(
+        1.0, max(0.0, float(posture_classifier.get("min_confidence", 0.65)))
+    )
 
     roboflow = config["roboflow"]
     roboflow["enabled"] = bool(roboflow.get("enabled", False))
@@ -219,6 +230,10 @@ def main(argv: list[str] | None = None) -> int:
                 from client.detect import close_detector, get_detector
 
                 get_detector(config["detection"]["model"])
+                from client.detect import get_posture_classifier
+
+                if config["posture_classifier"]["enabled"] and get_posture_classifier(config) is None:
+                    raise RuntimeError("Kanden ONNX posture classifier is not ready")
             camera = open_camera(config["camera"])
             ok, frame = camera.read()
             if not ok or frame is None:
@@ -228,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
             if not response.ok:
                 logger.error("backend health check returned %s", response.status_code)
                 return 1
-            detector_name = "MediaPipe, " if config["detection"]["enabled"] else ""
+            detector_name = "MediaPipe + Kanden classifier, " if config["detection"]["enabled"] else ""
             logger.info("self-check OK: %s%s camera, and backend are ready", detector_name, camera.backend)
             return 0
         except Exception as exc:

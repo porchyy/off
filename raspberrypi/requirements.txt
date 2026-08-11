@@ -1,5 +1,6 @@
 opencv-python-headless==4.10.0.84
 mediapipe==0.10.18
+onnxruntime==1.20.1
 PyYAML==6.0.2
 requests==2.32.3
 aiortc==1.10.0

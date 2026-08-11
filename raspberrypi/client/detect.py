@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 _pose_detector: MediaPipePoseDetector | None = None
 _detector_model_path: Path | None = None
+_posture_classifier: Any | None = None
+_classifier_model_path: Path | None = None
+_failed_classifier_model_path: Path | None = None
 _last_analysis_at = 0.0
 _pose_visible = False
 # Prefer a responsive overlay on a 10 FPS Pi inference stream.  The previous
@@ -192,7 +195,13 @@ def draw_pose_overlay(
     for point in points.values():
         cv2.circle(frame, point, 4, (0, 255, 0), -1, cv2.LINE_AA)
 
-    label = "POSE: detecting" if metrics is None else f"POSTURE: {metrics['score']:.0f}/100"
+    if metrics is None:
+        label = "POSE: detecting"
+    elif metrics.get("posture_label") and metrics.get("posture_ai_used"):
+        confidence = float(metrics.get("posture_confidence", 0)) * 100
+        label = f"AI: {str(metrics['posture_label']).upper()} {confidence:.0f}%"
+    else:
+        label = f"POSTURE: {metrics['score']:.0f}/100"
     cv2.putText(frame, label, (16, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2, cv2.LINE_AA)
 
 
@@ -342,15 +351,51 @@ def get_detector(model_path: str | Path) -> MediaPipePoseDetector:
 
 
 def close_detector() -> None:
-    global _pose_detector, _detector_model_path, _last_analysis_at, _pose_visible
+    global _pose_detector, _detector_model_path, _posture_classifier, _classifier_model_path
+    global _failed_classifier_model_path, _last_analysis_at, _pose_visible
     if _pose_detector is not None:
         _pose_detector.close()
     _pose_detector = None
     _detector_model_path = None
+    if _posture_classifier is not None:
+        _posture_classifier.close()
+    _posture_classifier = None
+    _classifier_model_path = None
+    _failed_classifier_model_path = None
     _last_analysis_at = 0.0
     _pose_visible = False
     _overlay_smoother.reset()
     _metric_smoother.reset()
+
+
+def get_posture_classifier(config: dict[str, Any]) -> Any | None:
+    """Return the optional ONNX classifier without ever interrupting Pose."""
+    global _posture_classifier, _classifier_model_path, _failed_classifier_model_path
+    settings = config.get("posture_classifier", {})
+    if not settings.get("enabled", True):
+        return None
+    model_value = settings.get("model")
+    if not model_value:
+        return None
+    model_path = Path(str(model_value)).resolve()
+    if _failed_classifier_model_path == model_path:
+        return None
+    if _posture_classifier is not None and _classifier_model_path == model_path:
+        return _posture_classifier
+    if _posture_classifier is not None:
+        _posture_classifier.close()
+        _posture_classifier = None
+    try:
+        from client.posture_classifier import OnnxPostureClassifier
+
+        _posture_classifier = OnnxPostureClassifier(model_path)
+        _classifier_model_path = model_path
+        logger.info("initialized Kanden ONNX posture classifier: %s", model_path)
+        return _posture_classifier
+    except Exception as exc:
+        _failed_classifier_model_path = model_path
+        logger.error("Kanden posture classifier is unavailable; using MediaPipe score fallback: %s", exc)
+        return None
 
 
 def process_live_frame(
@@ -403,14 +448,43 @@ def process_live_frame(
             if pose_callback is not None:
                 pose_callback({}, landmarks)
             return
+        classifier = get_posture_classifier(config)
+        if classifier is not None:
+            try:
+                classification = classifier.classify(
+                    frame,
+                    color_space,
+                    interval=float(config.get("posture_classifier", {}).get("interval", 0.5)),
+                )
+                result.update(classification)
+                confidence = float(classification["posture_confidence"])
+                min_confidence = float(config.get("posture_classifier", {}).get("min_confidence", 0.65))
+                if confidence >= min_confidence:
+                    from client.posture_classifier import score_for_label
+
+                    result["score"] = score_for_label(str(classification["posture_label"]))
+                    result["posture_ai_used"] = True
+                else:
+                    result["posture_ai_used"] = False
+                    logger.debug(
+                        "Kanden classifier confidence %.0f%% is below %.0f%%; using MediaPipe score fallback",
+                        confidence * 100,
+                        min_confidence * 100,
+                    )
+            except Exception as exc:
+                logger.warning("Kanden posture classifier failed for this frame; using MediaPipe score fallback: %s", exc)
+
         metrics = _metric_smoother.update(result, metric_alpha)
+        for key in ("posture_label", "posture_confidence", "posture_ai_used"):
+            if key in result:
+                metrics[key] = result[key]
         if frame_overlay_callback is not None:
             frame_overlay_callback(landmarks, metrics)
         else:
             draw_pose_overlay(frame, landmarks, metrics, min_visibility=min_visibility)
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
-        uploader.send_sample(metrics)
+        uploader.send_sample({key: metrics[key] for key in METRIC_KEYS})
 
         if lcd_display is not None:
             lcd_display.show_metrics(metrics)

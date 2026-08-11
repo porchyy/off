@@ -57,7 +57,16 @@ class CharacterLcd:
     @classmethod
     def format_metrics(cls, metrics: dict[str, Any], *, columns: int, risk_threshold: float) -> tuple[str, str]:
         score = max(0, min(100, round(float(metrics["score"]))))
-        if score >= 70:
+        ai_label = str(metrics.get("posture_label", "")) if metrics.get("posture_ai_used") else ""
+        ai_status = {
+            "good": "GOOD POSTURE",
+            "slouch": "SLOUCH DETECT",
+            "chin_rest": "CHIN REST",
+            "stretch": "STRETCH BREAK",
+        }.get(ai_label)
+        if ai_status:
+            status = ai_status
+        elif score >= 70:
             status = "GOOD POSTURE"
         elif score >= 40:
             status = "CHECK POSTURE"

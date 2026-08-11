@@ -92,9 +92,26 @@ function update(m) {
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
+  updatePostureModelResult(m);
   updateLcdPreview(s);
   state(s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่', cls);
   updateRisk(m);
+}
+
+function updatePostureModelResult(metrics) {
+  const el = $('postureModelResult');
+  const label = String(metrics?.posture_label || '');
+  const confidence = Number(metrics?.posture_confidence);
+  if (!label || !Number.isFinite(confidence)) return;
+  const labels = {
+    good: 'AI: ท่านั่งดี',
+    slouch: 'AI: หลังค่อม',
+    chin_rest: 'AI: เท้าคาง',
+    stretch: 'AI: กำลังยืดตัว'
+  };
+  const used = metrics?.posture_ai_used === true;
+  el.hidden = false;
+  el.textContent = `${labels[label] || `AI: ${label}`} (${Math.round(confidence * 100)}%)${used ? '' : ' · รอยืนยัน'}`;
 }
 
 function updateLcdPreview(score) {
@@ -427,6 +444,7 @@ function endPiCamera() {
   piLandmarks = [];
   piMetrics = null;
   piRoboflowResult = null;
+  $('postureModelResult').hidden = true;
   $('roboflowResult').hidden = true;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.hidden = true;
@@ -538,6 +556,8 @@ function connectPiCamera() {
         piMetrics = metrics;
         latestMetrics = metrics;
         update(metrics);
+      } else {
+        $('postureModelResult').hidden = true;
       }
       if (!running || analysisVideo !== $('piCamera')) drawPiOverlay();
     } else if (message.type === 'roboflow_update') {
