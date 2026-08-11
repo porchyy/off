@@ -43,6 +43,17 @@ def test_front_view_head_and_torso_lean_reduce_score():
     assert result["score"] < 70
 
 
+def test_front_view_allows_small_normal_camera_alignment_variations():
+    result = YoloV8PoseDetector._analyze_keypoints(
+        front_view_keypoints(head_x=54, shoulder_left_y=38, shoulder_right_y=42, hip_x=53),
+        [20, 10, 80, 100], 0.9, 100, 120,
+    )
+
+    assert result is not None
+    assert result["posture"] in {"perfect", "good"}
+    assert result["score"] >= 70
+
+
 def test_front_view_draws_partial_pose_but_does_not_score_without_all_reference_points():
     keypoints = front_view_keypoints()
     keypoints[4][2] = 0.1

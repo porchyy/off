@@ -41,6 +41,9 @@ class YoloV8PoseDetector:
         self.model = YOLO(str(model_path))
         self.confidence = min(1.0, max(0.05, float(config.get("confidence", 0.35))))
         self.iou = min(1.0, max(0.05, float(config.get("iou", 0.5))))
+        # Single-frame pose points naturally jitter. Keep the live score calm
+        # without delaying the camera or changing alert/LCD integrations.
+        self._smoothed_angles: dict[str, float] | None = None
         logger.info("YOLOv8-Pose front-view model ready: %s", model_path)
 
     @staticmethod
@@ -65,6 +68,19 @@ class YoloV8PoseDetector:
         if confidence < 0.35 or x <= 0 or y <= 0:
             return None
         return x, y, confidence
+
+    @staticmethod
+    def _score_front_view(neck: float, shoulders: float, torso: float) -> tuple[float, str]:
+        """Allow normal front-camera movement before deducting posture points."""
+        score = (
+            100
+            - max(0.0, neck - 12) * 1.6
+            - max(0.0, shoulders - 8) * 1.8
+            - max(0.0, torso - 12) * 1.6
+        )
+        score = round(max(0.0, min(100.0, score)), 1)
+        posture = "perfect" if score >= 90 else "good" if score >= 70 else "bad"
+        return score, posture
 
     @classmethod
     def _analyze_keypoints(
@@ -119,9 +135,7 @@ class YoloV8PoseDetector:
         neck = math.degrees(math.atan2(abs(head_x - shoulder_x), head_to_shoulder))
         shoulders = math.degrees(math.atan2(abs(ls[1] - rs[1]), shoulder_width))
         torso = math.degrees(math.atan2(abs(shoulder_x - hip_x), shoulder_to_hip))
-        score = 100 - max(0.0, neck - 6) * 3.0 - max(0.0, shoulders - 4) * 3.0 - max(0.0, torso - 5) * 2.5
-        score = round(max(0.0, min(100.0, score)), 1)
-        posture = "perfect" if score >= 90 else "good" if score >= 70 else "bad"
+        score, posture = cls._score_front_view(neck, shoulders, torso)
         visible_confidence = sum(point[2] for point in required) / len(required)
         preview.update({
             "score": score,
@@ -133,6 +147,26 @@ class YoloV8PoseDetector:
             "scorable": True,
         })
         return preview
+
+    def _smooth_metrics(self, metrics: dict[str, Any]) -> dict[str, Any]:
+        if not metrics.get("scorable", False):
+            return metrics
+        raw = {name: float(metrics[name]) for name in ("neck", "shoulders", "torso")}
+        if self._smoothed_angles is None:
+            self._smoothed_angles = raw
+        else:
+            # A 30% update follows intentional movement within ~1 second but
+            # filters individual-frame YOLO keypoint noise.
+            self._smoothed_angles = {
+                name: self._smoothed_angles[name] * 0.7 + raw[name] * 0.3
+                for name in raw
+            }
+        for name, value in self._smoothed_angles.items():
+            metrics[name] = round(value, 1)
+        metrics["score"], metrics["posture"] = self._score_front_view(
+            metrics["neck"], metrics["shoulders"], metrics["torso"]
+        )
+        return metrics
 
     def calculate_metrics(self, frame: Any, color_space: str = "bgr") -> dict[str, Any] | None:
         if color_space not in {"bgr", "rgb"}:
@@ -153,7 +187,8 @@ class YoloV8PoseDetector:
         best_index = max(range(len(boxes)), key=lambda index: (boxes[index][2] - boxes[index][0]) * (boxes[index][3] - boxes[index][1]))
         keypoints = result.keypoints.data[best_index].cpu().tolist()
         height, width = frame.shape[:2]
-        return self._analyze_keypoints(keypoints, boxes[best_index], confidences[best_index], width, height)
+        metrics = self._analyze_keypoints(keypoints, boxes[best_index], confidences[best_index], width, height)
+        return self._smooth_metrics(metrics) if metrics is not None else None
 
 
 def get_detector(model_path: str | Path, config: dict[str, Any]) -> YoloV8PoseDetector:
