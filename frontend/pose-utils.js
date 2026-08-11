@@ -45,14 +45,15 @@ export function scorePose(landmarks) {
     Math.abs(leftShoulder.y - rightShoulder.y),
     Math.max(0.001, Math.abs(leftShoulder.x - rightShoulder.x))
   ) * degrees;
-  // The Pi adds a calibrated forward-lean trend to this value. Browser-only
+  // The Pi adds a calibrated signed lean trend to this value. Browser-only
   // analysis has no shared per-person baseline, so it intentionally reports 0.
   const torso = 0;
 
   const neckPenalty = Math.min(30, Math.max(0, neck - 12) * 1.2);
   const shoulderPenalty = Math.min(30, Math.max(0, shoulders - 10) * 1.0);
-  const torsoPenalty = Math.min(25, Math.max(0, torso - 8) * 1.0);
-  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - torsoPenalty));
+  const forwardLeanPenalty = Math.min(25, Math.max(0, torso - 8) * 1.0);
+  const backwardLeanPenalty = Math.min(15, Math.max(0, -torso - 20) * 0.6);
+  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - forwardLeanPenalty - backwardLeanPenalty));
 
   return { neck, shoulders, torso, score };
 }

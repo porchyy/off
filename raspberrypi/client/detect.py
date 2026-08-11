@@ -234,12 +234,18 @@ def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_
     }
 
 
-def score_frontal_desk_metrics(neck: float, shoulders: float, forward_lean: float) -> float:
-    """Score a frontal desk pose, with optional calibrated forward-lean trend."""
+def score_frontal_desk_metrics(neck: float, shoulders: float, lean_trend: float) -> float:
+    """Score a frontal desk pose with a signed calibrated lean trend.
+
+    Positive degrees mean the upper body moved toward the camera; negative
+    degrees mean it moved away. A small recline is acceptable, so it has a
+    broader penalty threshold than forward leaning.
+    """
     neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
     shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
-    lean_penalty = min(25.0, max(0.0, forward_lean - 8.0) * 1.0)
-    return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - lean_penalty)), 1)
+    forward_lean_penalty = min(25.0, max(0.0, lean_trend - 8.0) * 1.0)
+    backward_lean_penalty = min(15.0, max(0.0, -lean_trend - 20.0) * 0.6)
+    return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - forward_lean_penalty - backward_lean_penalty)), 1)
 
 
 class MediaPipePoseDetector:
@@ -332,7 +338,7 @@ class MediaPipePoseDetector:
         }
 
     def _forward_lean_proxy(self, metrics: dict[str, float], nose: Any, left_ear: Any, right_ear: Any, left_shoulder: Any, right_shoulder: Any) -> float:
-        """Return forward-lean change relative to this person's neutral pose.
+        """Return signed lean change relative to this person's neutral pose.
 
         The first twenty stable, aligned frames form a per-session reference.
         Only the *change* in relative depth from that reference is used, never
@@ -355,8 +361,8 @@ class MediaPipePoseDetector:
                 logger.info("calibrated frontal forward-lean baseline; monitoring relative change")
             return 0.0
 
-        change_toward_camera = max(0.0, relative_depth - self._forward_lean_baseline)
-        return round(math.atan2(change_toward_camera, vertical) * 180.0 / math.pi, 1)
+        depth_change = relative_depth - self._forward_lean_baseline
+        return round(math.atan2(depth_change, vertical) * 180.0 / math.pi, 1)
 
     def close(self) -> None:
         self.pose.close()

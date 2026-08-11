@@ -37,12 +37,16 @@ def test_frontal_desk_metrics_ignore_unstable_relative_depth():
     assert with_depth == flat
 
 
-def test_calibrated_forward_lean_lowers_the_frontal_desk_score():
-    aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, forward_lean=0)
-    leaning = detect.score_frontal_desk_metrics(neck=4, shoulders=3, forward_lean=28)
+def test_calibrated_lean_trend_lowers_the_frontal_desk_score_only_when_extreme():
+    aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0)
+    leaning_forward = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=28)
+    slightly_reclined = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=-15)
+    leaning_back_far = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=-40)
 
     assert aligned == 100.0
-    assert leaning < aligned
+    assert leaning_forward < aligned
+    assert slightly_reclined == aligned
+    assert leaning_back_far < aligned
 
 
 def test_forward_lean_proxy_uses_a_personal_neutral_depth_baseline():
@@ -57,6 +61,8 @@ def test_forward_lean_proxy_uses_a_personal_neutral_depth_baseline():
 
     leaning = (Point(0.5, 0.2, -0.3), Point(0.45, 0.28, -0.3), Point(0.55, 0.28, -0.3), Point(0.4, 0.45, 0.0), Point(0.6, 0.45, 0.0))
     assert detector._forward_lean_proxy(metrics, *leaning) > 8.0
+    reclined = (Point(0.5, 0.2, 0.1), Point(0.45, 0.28, 0.1), Point(0.55, 0.28, 0.1), Point(0.4, 0.45, 0.0), Point(0.6, 0.45, 0.0))
+    assert detector._forward_lean_proxy(metrics, *reclined) < 0.0
 
 
 def test_upper_body_metrics_penalize_forward_head_and_dropped_shoulder():
