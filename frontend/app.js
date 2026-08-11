@@ -131,7 +131,7 @@ function drawDetectionBox(metrics) {
   const y = Math.max(0, y1);
   const width = x2 - x1;
   const height = y2 - y1;
-  const color = metrics.posture === 'bad' ? '#ff4d6d' : metrics.posture === 'good' ? '#ffd166' : '#22e58d';
+  const color = metrics.posture === 'bad' ? '#ff4d6d' : metrics.posture === 'good' ? '#ffd166' : metrics.posture === 'perfect' ? '#22e58d' : '#7aa7ff';
   const label = `${metrics.posture || 'posture'} ${Math.round(Number(metrics.confidence || 0) * 100)}%`;
   const fontSize = Math.max(14, Math.round(sourceWidth / 40));
   const padding = Math.max(5, Math.round(sourceWidth / 128));

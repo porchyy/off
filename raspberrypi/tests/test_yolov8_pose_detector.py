@@ -43,8 +43,13 @@ def test_front_view_head_and_torso_lean_reduce_score():
     assert result["score"] < 70
 
 
-def test_front_view_requires_ears_shoulders_and_hips():
+def test_front_view_draws_partial_pose_but_does_not_score_without_all_reference_points():
     keypoints = front_view_keypoints()
     keypoints[4][2] = 0.1
 
-    assert YoloV8PoseDetector._analyze_keypoints(keypoints, [20, 10, 80, 100], 0.9, 100, 120) is None
+    result = YoloV8PoseDetector._analyze_keypoints(keypoints, [20, 10, 80, 100], 0.9, 100, 120)
+
+    assert result is not None
+    assert result["posture"] == "align_camera"
+    assert result["scorable"] is False
+    assert "score" not in result

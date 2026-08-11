@@ -83,36 +83,13 @@ class YoloV8PoseDetector:
         left_hip = cls._point(keypoints, 11)
         right_hip = cls._point(keypoints, 12)
         required = (left_ear, right_ear, left_shoulder, right_shoulder, left_hip, right_hip)
-        if any(point is None for point in required):
-            return None
-
-        le, re, ls, rs, lh, rh = required  # type: ignore[misc]
-        head_x, head_y = (le[0] + re[0]) / 2, (le[1] + re[1]) / 2
-        shoulder_x, shoulder_y = (ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2
-        hip_x, hip_y = (lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2
-        head_to_shoulder = shoulder_y - head_y
-        shoulder_to_hip = hip_y - shoulder_y
-        shoulder_width = abs(ls[0] - rs[0])
-        if head_to_shoulder <= 1 or shoulder_to_hip <= 1 or shoulder_width <= 1:
-            return None
-
-        # Front-view metrics: lateral head drift, shoulder height imbalance,
-        # and lateral torso lean. These are stable 2D measures for one camera.
-        neck = math.degrees(math.atan2(abs(head_x - shoulder_x), head_to_shoulder))
-        shoulders = math.degrees(math.atan2(abs(ls[1] - rs[1]), shoulder_width))
-        torso = math.degrees(math.atan2(abs(shoulder_x - hip_x), shoulder_to_hip))
-        score = 100 - max(0.0, neck - 6) * 3.0 - max(0.0, shoulders - 4) * 3.0 - max(0.0, torso - 5) * 2.5
-        score = round(max(0.0, min(100.0, score)), 1)
-        posture = "perfect" if score >= 90 else "good" if score >= 70 else "bad"
         x1, y1, x2, y2 = (int(max(0, value)) for value in box[:4])
-        visible_confidence = sum(point[2] for point in required) / len(required)
-        return {
-            "score": score,
-            "neck": round(neck, 1),
-            "shoulders": round(shoulders, 1),
-            "torso": round(torso, 1),
-            "posture": posture,
-            "confidence": round(min(float(box_confidence), visible_confidence), 4),
+        preview = {
+            # Still send a visible YOLOv8-Pose frame when the person is only
+            # partly in view. This matches the source project's visual
+            # feedback while keeping incomplete poses out of scoring/alerts.
+            "posture": "align_camera",
+            "confidence": round(float(box_confidence), 4),
             "bbox": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
             "keypoints": [
                 {"index": index, "x": round(float(point[0]), 1), "y": round(float(point[1]), 1), "visibility": round(float(point[2]), 4)}
@@ -122,7 +99,40 @@ class YoloV8PoseDetector:
             "frame_width": int(frame_width),
             "frame_height": int(frame_height),
             "detector": "yolov8_pose",
+            "scorable": False,
         }
+        if any(point is None for point in required):
+            return preview
+
+        le, re, ls, rs, lh, rh = required  # type: ignore[misc]
+        head_x, head_y = (le[0] + re[0]) / 2, (le[1] + re[1]) / 2
+        shoulder_x, shoulder_y = (ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2
+        hip_x, hip_y = (lh[0] + rh[0]) / 2, (lh[1] + rh[1]) / 2
+        head_to_shoulder = shoulder_y - head_y
+        shoulder_to_hip = hip_y - shoulder_y
+        shoulder_width = abs(ls[0] - rs[0])
+        if head_to_shoulder <= 1 or shoulder_to_hip <= 1 or shoulder_width <= 1:
+            return preview
+
+        # Front-view metrics: lateral head drift, shoulder height imbalance,
+        # and lateral torso lean. These are stable 2D measures for one camera.
+        neck = math.degrees(math.atan2(abs(head_x - shoulder_x), head_to_shoulder))
+        shoulders = math.degrees(math.atan2(abs(ls[1] - rs[1]), shoulder_width))
+        torso = math.degrees(math.atan2(abs(shoulder_x - hip_x), shoulder_to_hip))
+        score = 100 - max(0.0, neck - 6) * 3.0 - max(0.0, shoulders - 4) * 3.0 - max(0.0, torso - 5) * 2.5
+        score = round(max(0.0, min(100.0, score)), 1)
+        posture = "perfect" if score >= 90 else "good" if score >= 70 else "bad"
+        visible_confidence = sum(point[2] for point in required) / len(required)
+        preview.update({
+            "score": score,
+            "neck": round(neck, 1),
+            "shoulders": round(shoulders, 1),
+            "torso": round(torso, 1),
+            "posture": posture,
+            "confidence": round(min(float(box_confidence), visible_confidence), 4),
+            "scorable": True,
+        })
+        return preview
 
     def calculate_metrics(self, frame: Any, color_space: str = "bgr") -> dict[str, Any] | None:
         if color_space not in {"bgr", "rgb"}:
@@ -189,6 +199,16 @@ def process_live_frame(
             lcd_display.show_waiting_for_pose()
         if detection_callback is not None:
             detection_callback({})
+        return
+
+    if not metrics.get("scorable", False):
+        logger.info("YOLOv8-Pose person detected; waiting for ears, shoulders and hips to score")
+        if alert_controller is not None:
+            alert_controller.clear_posture()
+        if lcd_display is not None:
+            lcd_display.show_waiting_for_pose()
+        if detection_callback is not None:
+            detection_callback(metrics)
         return
 
     logger.info("YOLOv8-Pose posture: %s (score %.1f, %.0f%% confidence)", metrics["posture"], metrics["score"], metrics["confidence"] * 100)
