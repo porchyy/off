@@ -70,7 +70,7 @@ export function scorePose(landmarks) {
 
   // Make visible left/right head drift from the shoulder midpoint meaningful
   // in the score, matching the Pi-side posture calculation.
-  const neckPenalty = Math.min(40, Math.max(0, neck - 6) * 2.5);
+  const neckPenalty = Math.min(40, Math.max(0, neck - 6) * 2.6);
   const shoulderPenalty = Math.min(30, Math.max(0, shoulders - 10) * 1.0);
   const forwardLeanPenalty = Math.min(45, Math.max(0, torso - 5) * 2.0);
   const backwardLeanPenalty = Math.min(30, Math.max(0, -torso - 15) * 1.2);

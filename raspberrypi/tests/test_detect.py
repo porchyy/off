@@ -54,7 +54,7 @@ def test_head_drift_from_shoulders_is_penalized_at_the_visible_14_degree_range()
     head_to_side = detect.score_frontal_desk_metrics(neck=14, shoulders=3, lean_trend=0)
 
     assert aligned == 100.0
-    assert head_to_side == 80.0
+    assert head_to_side == 79.2
 
 
 def test_visible_hips_add_pelvic_tilt_and_sideways_trunk_lean_to_score():
