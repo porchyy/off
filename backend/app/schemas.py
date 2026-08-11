@@ -113,8 +113,6 @@ class ClientStatusResponse(ClientStatusIn):
 class SensorReadingsIn(ApiModel):
     lux: float | None = Field(default=None, ge=0)
     bh1750_ok: bool = Field(alias="bh1750Ok")
-    distance_cm: float | None = Field(default=None, ge=0, alias="distanceCm")
-    vl53l1x_ok: bool = Field(default=False, alias="vl53l1xOk")
 
 
 class SensorReadingsResponse(SensorReadingsIn):

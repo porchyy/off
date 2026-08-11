@@ -1,3 +1,2 @@
 smbus2==0.5.0
 requests==2.32.3
-adafruit-circuitpython-vl53l1x>=1.0.0

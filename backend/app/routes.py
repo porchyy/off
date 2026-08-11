@@ -99,8 +99,6 @@ def put_latest_sensor_readings(payload: SensorReadingsIn) -> Response:
     sensor_store.update(
         lux=payload.lux,
         bh1750_ok=payload.bh1750_ok,
-        distance_cm=payload.distance_cm,
-        vl53l1x_ok=payload.vl53l1x_ok,
     )
     return Response(status_code=204)
 

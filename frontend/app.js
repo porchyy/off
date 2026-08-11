@@ -118,20 +118,6 @@ function update(m) {
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
-  const tofTrend = $('tofTrend');
-  const tofCalibration = $('tofCalibration');
-  if (tofTrend && tofCalibration) {
-    const delta = typeof m.tof_delta_cm === 'number' ? m.tof_delta_cm : NaN;
-    const distance = typeof m.tof_distance_cm === 'number' ? m.tof_distance_cm : NaN;
-    if (Number.isFinite(delta) && Number.isFinite(distance)) {
-      const direction = delta > 0 ? 'โน้มเข้า' : delta < 0 ? 'เอนออก' : 'ปกติ';
-      tofTrend.textContent = `${direction} ${Math.abs(delta).toFixed(1)} cm`;
-      tofCalibration.textContent = `TOF400C: ${distance.toFixed(1)} cm · ${m.tof_status || 'พร้อมใช้งาน'}`;
-    } else {
-      tofTrend.textContent = '--';
-      tofCalibration.textContent = `TOF400C: ${m.tof_status || 'รอข้อมูลจากเซนเซอร์'}`;
-    }
-  }
   updatePostureModelResult(m);
   updateLcdPreview(m);
   state(band.state, cls);
@@ -707,10 +693,9 @@ async function checkHealth() {
 
 async function loadSensorReadings() {
   const lux = $('sensorLux');
-  const distance = $('sensorDistance');
   const status = $('sensorDataState');
   const updatedAt = $('sensorUpdatedAt');
-  if (!lux || !distance || !status || !updatedAt) return;
+  if (!lux || !status || !updatedAt) return;
 
   try {
     const response = await fetch('/api/sensors/latest', { cache: 'no-store' });
@@ -718,9 +703,8 @@ async function loadSensorReadings() {
     const data = await response.json();
     const updated = data.updatedAt ? new Date(data.updatedAt) : null;
     const stale = !updated || Date.now() - updated.getTime() > 10_000;
-    const online = data.bh1750Ok || data.vl53l1xOk;
+    const online = data.bh1750Ok;
     lux.textContent = data.bh1750Ok && Number.isFinite(data.lux) ? Number(data.lux).toFixed(1) : '--';
-    distance.textContent = data.vl53l1xOk && Number.isFinite(data.distanceCm) ? Number(data.distanceCm).toFixed(1) : '--';
     status.textContent = stale ? 'กำลังรอข้อมูลใหม่' : online ? 'ออนไลน์' : 'Sensor error';
     status.className = 'badge ' + (stale ? 'neutral' : online ? 'good' : 'risk');
     updatedAt.textContent = updated
@@ -728,7 +712,6 @@ async function loadSensorReadings() {
       : 'รอ Raspberry Pi sensor client ส่งข้อมูล';
   } catch {
     lux.textContent = '--';
-    distance.textContent = '--';
     status.textContent = 'ไม่พบข้อมูล';
     status.className = 'badge neutral';
     updatedAt.textContent = 'ยังเชื่อมต่อกับ sensor API ไม่ได้';

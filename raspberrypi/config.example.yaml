@@ -72,23 +72,6 @@ video:
   height: 360
   fps: 12
 
-# TOF400C / VL53L1X ติดใกล้กล้องและหันไปช่วงหน้าอกของผู้ใช้
-# service postureai-sensors เป็นผู้เปิด I2C; client อ่านค่าผ่าน backend จึงไม่แย่ง I2C กัน
-tof400c:
-  enabled: true
-  poll_seconds: 0.5
-  stale_seconds: 3
-  # เก็บ 6 ค่า (ประมาณ 3 วินาทีเมื่อ sensor service ส่งทุก 0.5 วินาที) เป็นท่านั่งอ้างอิงอัตโนมัติ
-  calibration_samples: 6
-  absence_reset_seconds: 8
-  # ระยะลด = โน้มเข้าหากล้อง, ระยะเพิ่ม = เอนออกจากกล้อง
-  forward_start_cm: 8
-  recline_start_cm: 10
-  forward_points_per_cm: 2.0
-  recline_points_per_cm: 1.5
-  max_forward_penalty: 35
-  max_recline_penalty: 25
-
 risk:
   threshold: 60
   # 0 = แจ้งเตือนทันทีเมื่อคะแนนต่ำกว่าเกณฑ์

@@ -21,23 +21,6 @@ def test_read_sensor_payload_handles_bh1750_error() -> None:
     assert payload == {
         "lux": None,
         "bh1750Ok": False,
-        "distanceCm": None,
-        "vl53l1xOk": False,
-    }
-
-
-def test_read_sensor_payload_includes_vl53l1x_distance() -> None:
-    class TofReader:
-        def read_distance_cm(self):
-            return 84.2
-
-    payload = read_sensor_payload(Reader(value=220.0), TofReader())
-
-    assert payload == {
-        "lux": 220.0,
-        "bh1750Ok": True,
-        "distanceCm": 84.2,
-        "vl53l1xOk": True,
     }
 
 

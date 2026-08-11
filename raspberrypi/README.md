@@ -38,8 +38,8 @@ sudo journalctl -u postureai-client -f
 sudo journalctl -u postureai-sensors -f
 ```
 
-ตัวติดตั้งจะเปิด I2C และสร้าง `postureai-sensors` service สำหรับอ่าน BH1750 และ
-TOF400C แล้วส่งค่าล่าสุดไปยัง dashboard ทุก 0.5 วินาทีโดยอัตโนมัติ รวมถึงหลัง reboot.
+ตัวติดตั้งจะเปิด I2C และสร้าง `postureai-sensors` service สำหรับอ่าน BH1750
+แล้วส่งค่าล่าสุดไปยัง dashboard ทุก 0.5 วินาทีโดยอัตโนมัติ รวมถึงหลัง reboot.
 หากตัวติดตั้งหลักหยุดก่อนขั้นสร้าง service (เช่น Docker หรือกล้องยังไม่พร้อม)
 สามารถติดตั้งเฉพาะ service เซนเซอร์ได้ด้วย:
 

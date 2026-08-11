@@ -64,8 +64,6 @@ def test_latest_sensor_readings_round_trip():
         json={
             "lux": 423.5,
             "bh1750Ok": True,
-            "distanceCm": 84.2,
-            "vl53l1xOk": True,
         },
     )
     assert response.status_code == 204
@@ -74,8 +72,6 @@ def test_latest_sensor_readings_round_trip():
     assert latest.status_code == 200
     assert latest.json()["lux"] == 423.5
     assert latest.json()["bh1750Ok"] is True
-    assert latest.json()["distanceCm"] == 84.2
-    assert latest.json()["vl53l1xOk"] is True
     assert latest.json()["updatedAt"]
 
 

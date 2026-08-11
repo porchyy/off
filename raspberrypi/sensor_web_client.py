@@ -11,14 +11,7 @@ from typing import Any, Callable
 
 import requests
 
-from sensor_readers import (
-    BH1750_ADDRESSES,
-    Bh1750Reader,
-    SensorReadError,
-    VL53L1X_DEFAULT_ADDRESS,
-    Vl53l1xReader,
-    parse_i2c_address,
-)
+from sensor_readers import BH1750_ADDRESSES, Bh1750Reader, SensorReadError, parse_i2c_address
 
 
 def parse_lux_scale(value: str) -> float:
@@ -33,25 +26,16 @@ def parse_lux_scale(value: str) -> float:
 
 def read_sensor_payload(
     bh1750: Bh1750Reader,
-    vl53l1x: Vl53l1xReader | None = None,
 ) -> dict[str, float | bool | None]:
-    """Read available environment and distance sensors without failing either."""
+    """Read the BH1750 without failing the publisher on an I2C error."""
     lux = None
-    distance_cm = None
     try:
         lux = bh1750.read_lux()
     except SensorReadError:
         pass
-    if vl53l1x is not None:
-        try:
-            distance_cm = vl53l1x.read_distance_cm()
-        except SensorReadError:
-            pass
     return {
         "lux": lux,
         "bh1750Ok": lux is not None,
-        "distanceCm": distance_cm,
-        "vl53l1xOk": distance_cm is not None,
     }
 
 
@@ -81,11 +65,6 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=3.0)
     parser.add_argument("--bus", type=int, default=1)
     parser.add_argument("--bh1750-address", type=parse_i2c_address, action="append")
-    parser.add_argument("--disable-vl53l1x", action="store_true", help="ไม่อ่าน TOF400C / VL53L1X")
-    parser.add_argument("--vl53l1x-address", type=parse_i2c_address, default=VL53L1X_DEFAULT_ADDRESS)
-    # Short mode เหมาะกับการทดสอบระยะใกล้รอบโต๊ะทำงาน.
-    parser.add_argument("--vl53l1x-mode", choices=("short", "long"), default="short")
-    parser.add_argument("--vl53l1x-timing-budget", type=int, default=50, choices=(15, 20, 33, 50, 100, 200, 500))
     parser.add_argument(
         "--lux-scale",
         type=parse_lux_scale,
@@ -102,11 +81,6 @@ def main() -> int:
         bus_number=args.bus,
         lux_scale=args.lux_scale,
     )
-    vl53l1x = None if args.disable_vl53l1x else Vl53l1xReader(
-        address=args.vl53l1x_address,
-        distance_mode=1 if args.vl53l1x_mode == "short" else 2,
-        timing_budget=args.vl53l1x_timing_budget,
-    )
     endpoint = f"{args.backend_url.rstrip('/')}/api/sensors/latest"
 
     print(f"ส่งข้อมูล sensor ไปที่ {endpoint} — กด Ctrl+C เพื่อหยุด")
@@ -115,13 +89,12 @@ def main() -> int:
     try:
         while True:
             started = time.monotonic()
-            payload = read_sensor_payload(bh1750, vl53l1x)
+            payload = read_sensor_payload(bh1750)
             try:
                 publish_sensor_payload(endpoint, payload, args.timeout, session.put)
                 backend_failures = 0
                 lux = payload["lux"]
-                distance_cm = payload["distanceCm"]
-                print(f"Lux: {lux if lux is not None else 'SENSOR ERROR'} | Distance: {distance_cm if distance_cm is not None else 'SENSOR ERROR'} cm")
+                print(f"Lux: {lux if lux is not None else 'SENSOR ERROR'}")
             except requests.RequestException as error:
                 backend_failures += 1
                 retry_seconds = min(10.0, max(args.interval, 2 ** min(backend_failures - 1, 4)))
@@ -133,8 +106,6 @@ def main() -> int:
         print("\nหยุด sensor web client")
     finally:
         session.close()
-        if vl53l1x is not None:
-            vl53l1x.close()
     return 0
 
 

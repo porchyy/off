@@ -152,11 +152,11 @@ for attempt in $(seq 1 30); do
 done
 
 # Register the environmental sensor publisher before camera/MediaPipe checks.
-# A camera failure must not prevent environment/distance sensors from starting.
-echo "Registering the persistent BH1750 + VL53L1X service..."
+# A camera failure must not prevent the environment sensor from starting.
+echo "Registering the persistent BH1750 service..."
 sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI BH1750 and VL53L1X sensor client
+Description=PostureAI BH1750 sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
 StartLimitIntervalSec=0
