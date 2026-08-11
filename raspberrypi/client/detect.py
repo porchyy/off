@@ -195,14 +195,9 @@ def draw_pose_overlay(
     for point in points.values():
         cv2.circle(frame, point, 4, (0, 255, 0), -1, cv2.LINE_AA)
 
-    if metrics is None:
-        label = "POSE: detecting"
-    elif metrics.get("posture_label") and metrics.get("posture_ai_used"):
-        confidence = float(metrics.get("posture_confidence", 0)) * 100
-        label = f"AI: {str(metrics['posture_label']).upper()} {confidence:.0f}%"
-    else:
-        label = f"POSTURE: {metrics['score']:.0f}/100"
-    cv2.putText(frame, label, (16, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2, cv2.LINE_AA)
+    # The browser mirrors its live camera preview like a selfie view. Keep
+    # text out of this Pi-burned overlay so labels never become reversed; the
+    # dashboard sidebar and LCD show the current class and score normally.
 
 
 class MediaPipePoseDetector:

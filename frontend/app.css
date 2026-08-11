@@ -497,9 +497,6 @@ body {
   display: block;
   background: #050817;
   object-fit: cover;
-  /* Pi burns the live skeleton and AI label into its frame. Mirroring that
-     frame reverses the label and makes the physical camera view confusing. */
-  transform: none;
 }
 
 .video-wrap canvas {
