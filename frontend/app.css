@@ -499,6 +499,11 @@ body {
   object-fit: cover;
 }
 
+.video-wrap:has(.camera-signal.caution) {
+  border-color: var(--status-caution);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.22), inset 0 0 60px rgba(245, 158, 11, 0.03);
+}
+
 .video-wrap canvas {
   pointer-events: none;
 }
@@ -539,6 +544,11 @@ body {
 .camera-signal.good {
   background: var(--status-good);
   color: #062414;
+}
+
+.camera-signal.caution {
+  background: var(--status-caution);
+  color: #2e1d00;
 }
 
 .camera-signal.risk {
@@ -1380,6 +1390,7 @@ body {
 .score output { font-size: 64px; }
 .risk-card { border-left: 3px solid var(--border-default); }
 .risk-card.good { border-left-color: var(--status-good); }
+.risk-card.caution { border-left-color: var(--status-caution); }
 .risk-card.risk { border-left-color: var(--status-risk); }
 .details { padding-top: 20px; }
 .detail-row { padding: 12px 0; }

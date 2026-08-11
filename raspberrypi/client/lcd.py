@@ -66,9 +66,9 @@ class CharacterLcd:
         }.get(ai_label)
         if ai_status:
             status = ai_status
-        elif score >= 70:
+        elif score >= 80:
             status = "GOOD POSTURE"
-        elif score >= 40:
+        elif score >= risk_threshold:
             status = "CHECK POSTURE"
         else:
             status = "ADJUST POSTURE"

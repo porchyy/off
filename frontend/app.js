@@ -69,39 +69,58 @@ function updateRisk(m) {
   else poorPostureMs = Math.max(0, poorPostureMs - delta * 0.35);
 
   const high = isPostureRisk(m.score, settings.riskThreshold, poorPostureMs, settings.riskSeconds);
-  detectionSignal = high ? 'risk' : 'good';
+  const band = scoreBand(Math.round(m.score));
+  detectionSignal = band.cls;
 
-  $('officeRiskCard').className = `risk-card card ${high ? 'risk' : 'good'}`;
-  $('cameraSignal').className = `camera-signal ${high ? 'risk' : 'good'}`;
-  $('cameraSignal').textContent = high ? 'สีแดง: เสี่ยงจากท่านั่ง' : 'สีเขียว: ท่านั่งอยู่ในเกณฑ์ดี';
-  $('officeRisk').textContent = high ? 'สีแดง · เสี่ยงจากท่านั่ง' : 'สีเขียว · ความเสี่ยงจากท่านั่งต่ำ';
+  $('officeRiskCard').className = `risk-card card ${band.cls}`;
+  $('cameraSignal').className = `camera-signal ${band.cls}`;
+  $('cameraSignal').textContent = band.camera;
+  $('officeRisk').textContent = band.risk;
   $('riskReason').textContent = high
     ? `ตรวจพบท่าค้างหรือโน้มตัวต่อเนื่อง ${Math.round(poorPostureMs / 1000)} วินาที ควรลุกพักและปรับเก้าอี้/จอภาพ`
-    : 'ท่าที่เห็นตอนนี้ใกล้กลางลำตัว และยังไม่พบการค้างในระดับเตือน';
+    : band.reason;
   if (high) notifyRisk();
+}
+
+function scoreBand(score) {
+  if (score >= 80) return {
+    cls: 'good', status: 'ท่านั่งดี', state: 'กำลังติดตาม',
+    advice: 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย',
+    camera: 'สีเขียว: ท่านั่งอยู่ในเกณฑ์ดี',
+    risk: 'สีเขียว · ความเสี่ยงจากท่านั่งต่ำ',
+    reason: 'ท่าที่เห็นตอนนี้อยู่ในเกณฑ์ดี'
+  };
+  if (score >= 60) return {
+    cls: 'caution', status: 'ปรับท่านั่ง', state: 'ปรับพฤติกรรม',
+    advice: 'ลองยืดหลัง ดึงคางเข้า และคลายไหล่เล็กน้อย',
+    camera: 'สีส้ม: ควรปรับท่านั่ง',
+    risk: 'สีส้ม · ควรปรับท่านั่ง',
+    reason: 'คะแนนอยู่ระหว่าง 60–79: ควรปรับท่า แต่ยังไม่ใช่ระดับเสี่ยง'
+  };
+  return {
+    cls: 'risk', status: 'เสี่ยงจากท่านั่ง', state: 'ท่านั่งเสี่ยง',
+    advice: 'พักสั้น ๆ แล้วจัดหลัง คอ และไหล่ให้ตรง',
+    camera: 'สีแดง: เสี่ยงจากท่านั่ง',
+    risk: 'สีแดง · เสี่ยงจากท่านั่ง',
+    reason: 'คะแนนต่ำกว่า 60: ควรพักและปรับท่านั่งทันที'
+  };
 }
 
 function update(m) {
   const s = Math.round(m.score);
-  const aiUsed = m.posture_ai_used === true;
-  const aiState = aiUsed ? {
-    good: { cls: 'good', status: 'ท่านั่งดี', advice: 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' },
-    slouch: { cls: 'risk', status: 'หลังค่อม', advice: 'ยืดหลังและดึงคางเข้าเล็กน้อย' },
-    chin_rest: { cls: 'risk', status: 'เท้าคาง', advice: 'วางมือลงและจัดศีรษะให้อยู่เหนือไหล่' },
-    stretch: { cls: 'good', status: 'กำลังยืดตัว', advice: 'ยืดเสร็จแล้วกลับสู่ท่านั่งหลังตรง' }
-  }[m.posture_label] : null;
-  const cls = aiState?.cls || (s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk');
+  const band = scoreBand(s);
+  const cls = band.cls;
   $('score').value = s;
   $('score').textContent = s;
   $('score').style.color = `var(--status-${cls})`;
-  $('status').textContent = aiState?.status || (s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่');
-  $('advice').textContent = aiState?.advice || (s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง');
+  $('status').textContent = band.status;
+  $('advice').textContent = band.advice;
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
   updatePostureModelResult(m);
   updateLcdPreview(m);
-  state(aiState?.status || (s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่'), cls);
+  state(band.state, cls);
   updateRisk(m);
 }
 
@@ -131,9 +150,9 @@ function updateLcdPreview(metrics) {
     stretch: 'STRETCH BREAK'
   }[aiLabel];
   $('lcdLine1').textContent = `SCORE: ${String(safeScore).padStart(3, ' ')}/100`;
-  $('lcdLine2').textContent = aiStatus || (safeScore >= 70
+  $('lcdLine2').textContent = aiStatus || (safeScore >= 80
     ? 'GOOD POSTURE'
-    : safeScore >= 40
+    : safeScore >= 60
       ? 'CHECK POSTURE'
       : 'ADJUST POSTURE');
 }
@@ -182,9 +201,10 @@ function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
   if (!landmarks || landmarks.length === 0) return;
 
   const isRisk = signal === 'risk';
-  const mainColor = isRisk ? '#ff4d6d' : '#00e5c7';
-  const glowColor = isRisk ? 'rgba(255, 77, 109, 0.7)' : 'rgba(0, 229, 199, 0.7)';
-  const secondaryColor = isRisk ? '#ff9aaa' : '#80f5e5';
+  const isCaution = signal === 'caution';
+  const mainColor = isRisk ? '#ff4d6d' : isCaution ? '#f59e0b' : '#00e5c7';
+  const glowColor = isRisk ? 'rgba(255, 77, 109, 0.7)' : isCaution ? 'rgba(245, 158, 11, 0.7)' : 'rgba(0, 229, 199, 0.7)';
+  const secondaryColor = isRisk ? '#ff9aaa' : isCaution ? '#fcd34d' : '#80f5e5';
 
   const lm = landmarks;
   const getPt = idx => (lm[idx] && (lm[idx].visibility === undefined || lm[idx].visibility > 0.35))

@@ -51,8 +51,8 @@ export function scorePose(landmarks) {
 
   const neckPenalty = Math.min(30, Math.max(0, neck - 12) * 1.2);
   const shoulderPenalty = Math.min(30, Math.max(0, shoulders - 10) * 1.0);
-  const forwardLeanPenalty = Math.min(25, Math.max(0, torso - 8) * 1.0);
-  const backwardLeanPenalty = Math.min(15, Math.max(0, -torso - 20) * 0.6);
+  const forwardLeanPenalty = Math.min(35, Math.max(0, torso - 6) * 1.4);
+  const backwardLeanPenalty = Math.min(20, Math.max(0, -torso - 18) * 0.8);
   const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - forwardLeanPenalty - backwardLeanPenalty));
 
   return { neck, shoulders, torso, score };

@@ -21,6 +21,12 @@ def test_lcd_1602_uses_risk_message_for_low_score():
     assert line == " ADJUST POSTURE "
 
 
+def test_lcd_1602_marks_scores_from_60_to_79_as_check_posture():
+    _, line = CharacterLcd.format_metrics({"score": 69}, columns=16, risk_threshold=60)
+
+    assert line == " CHECK POSTURE  "
+
+
 def test_lcd_1602_shows_the_trained_classifier_label_when_it_was_used():
     _, line = CharacterLcd.format_metrics(
         {"score": 30, "posture_label": "slouch", "posture_ai_used": True},
