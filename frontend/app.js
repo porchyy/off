@@ -97,7 +97,7 @@ function update(m) {
   $('status').textContent = aiState?.status || (s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่');
   $('advice').textContent = aiState?.advice || (s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง');
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
-  $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
+  $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
   updatePostureModelResult(m);
   updateLcdPreview(m);

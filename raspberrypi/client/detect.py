@@ -240,12 +240,12 @@ def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_
         shoulders = shoulder_tilt
         torso = neck * 0.7 + shoulders * 0.3
 
-    # Calibrated for an approximately eye-level, front-facing seated camera.
-    # Small natural asymmetries do not reduce the score; sustained upper-body
-    # lean, forward head position, or a dropped shoulder does.
-    neck_penalty = max(0.0, neck - 15.0) * 1.6
-    shoulder_penalty = max(0.0, shoulders - 7.0) * 2.2
-    torso_penalty = max(0.0, torso - 18.0) * 1.8
+    # A sitting camera is rarely perfectly level, and MediaPipe shoulder
+    # depth varies with small rotations.  Use broad, capped penalties so one
+    # noisy shoulder estimate cannot pin the score at zero on every frame.
+    neck_penalty = min(30.0, max(0.0, neck - 20.0) * 1.0)
+    shoulder_penalty = min(35.0, max(0.0, shoulders - 20.0) * 0.7)
+    torso_penalty = min(30.0, max(0.0, torso - 25.0) * 0.7)
     score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
     return {
         "neck": round(neck, 1),
@@ -495,7 +495,7 @@ def process_live_frame(
             frame_overlay_callback(landmarks, metrics)
         else:
             draw_pose_overlay(frame, landmarks, metrics, min_visibility=min_visibility)
-        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s%%, torso=%s°",
+        logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s°, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
         uploader.send_sample({key: metrics[key] for key in METRIC_KEYS})
 

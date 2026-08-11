@@ -50,9 +50,11 @@ export function scorePose(landmarks) {
     torso = neck * 0.7 + shoulders * 0.3;
   }
 
-  const neckPenalty = Math.max(0, neck - 15) * 1.6;
-  const shoulderPenalty = Math.max(0, shoulders - 7) * 2.2;
-  const torsoPenalty = Math.max(0, torso - 18) * 1.8;
+  // Camera roll and a small body rotation can make the shoulder angle noisy.
+  // Cap each contribution so one landmark estimate cannot force 0/100.
+  const neckPenalty = Math.min(30, Math.max(0, neck - 20) * 1.0);
+  const shoulderPenalty = Math.min(35, Math.max(0, shoulders - 20) * 0.7);
+  const torsoPenalty = Math.min(30, Math.max(0, torso - 25) * 0.7);
 
   const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - torsoPenalty));
 
