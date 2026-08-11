@@ -197,55 +197,38 @@ def draw_pose_overlay(
 
 
 def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_shoulder: Any, right_shoulder: Any) -> dict[str, float]:
-    """Score seated posture from head and shoulder landmarks only.
+    """Score the fixed frontal desk-camera view from 2-D upper-body points.
 
-    A frontal RGB camera cannot measure the spine's physical curvature.  The
-    ``torso`` value is therefore an upper-body hunch/rotation *proxy*: forward
-    head displacement plus left/right shoulder depth mismatch.  Hips and legs
-    are intentionally excluded because a desk commonly occludes them.
+    This profile deliberately uses only image-plane locations of the nose,
+    ears and shoulders. Relative MediaPipe Z varies when this camera is a
+    little off-centre, so it must not create a large false shoulder angle.
+    ``torso`` remains an upper-body alignment indicator, not spinal curvature.
     """
     mid_ear_x = (float(left_ear.x) + float(right_ear.x)) / 2
     mid_ear_y = (float(left_ear.y) + float(right_ear.y)) / 2
-    mid_ear_z = (float(getattr(left_ear, "z", 0.0)) + float(getattr(right_ear, "z", 0.0))) / 2
     mid_shoulder_x = (float(left_shoulder.x) + float(right_shoulder.x)) / 2
     mid_shoulder_y = (float(left_shoulder.y) + float(right_shoulder.y)) / 2
-    mid_shoulder_z = (float(getattr(left_shoulder, "z", 0.0)) + float(getattr(right_shoulder, "z", 0.0))) / 2
 
-    vertical = max(0.001, mid_shoulder_y - mid_ear_y)
-    shoulder_width = max(
-        0.001,
-        math.hypot(float(left_shoulder.x) - float(right_shoulder.x), float(left_shoulder.y) - float(right_shoulder.y)),
-    )
+    head_x = (float(nose.x) + mid_ear_x) / 2
+    head_y = (float(nose.y) + mid_ear_y) / 2
+    vertical = max(0.001, mid_shoulder_y - head_y)
     degrees = 180.0 / math.pi
 
-    # Head forward/back and side tilt relative to the shoulder midpoint.
-    neck_forward = math.atan2(abs(mid_ear_z - mid_shoulder_z), vertical) * degrees
-    neck_side_tilt = math.atan2(abs(mid_ear_x - mid_shoulder_x), vertical) * degrees
-    neck = math.hypot(neck_forward, neck_side_tilt)
+    # Front view: assess only head/neck side alignment and head roll. Forward
+    # head posture requires a side view, not an uncalibrated Z estimate.
+    head_offset = math.atan2(abs(head_x - mid_shoulder_x), vertical) * degrees
+    head_roll = math.atan2(abs(float(left_ear.y) - float(right_ear.y)), max(0.001, abs(float(left_ear.x) - float(right_ear.x)))) * degrees
+    neck = math.hypot(head_offset, head_roll)
 
-    # Shoulder height difference and depth mismatch flag a dropped shoulder
-    # or upper-body rotation without needing the hip landmarks.
+    # Shoulder height is reliable in this fixed frontal view. Do not infer
+    # shoulder depth: it was the source of 50-60 degree false readings.
     shoulder_tilt = math.atan2(abs(float(left_shoulder.y) - float(right_shoulder.y)), max(0.001, abs(float(left_shoulder.x) - float(right_shoulder.x)))) * degrees
-    shoulder_depth = math.atan2(
-        abs(float(getattr(left_shoulder, "z", 0.0)) - float(getattr(right_shoulder, "z", 0.0))),
-        shoulder_width,
-    ) * degrees
-    shoulders = math.hypot(shoulder_tilt, shoulder_depth)
-    torso = neck_forward * 0.7 + shoulder_depth * 0.3
+    shoulders = shoulder_tilt
+    torso = neck * 0.7 + shoulders * 0.3
 
-    # A 2-D webcam / mock landmark set has no useful depth.  Preserve a
-    # useful, conservative front-view estimate rather than fabricating 3-D.
-    if abs(mid_ear_z - mid_shoulder_z) < 0.0001 and abs(float(getattr(left_shoulder, "z", 0.0)) - float(getattr(right_shoulder, "z", 0.0))) < 0.0001:
-        neck = abs(math.atan2(float(nose.x) - mid_shoulder_x, max(0.001, mid_shoulder_y - float(nose.y))) * degrees)
-        shoulders = shoulder_tilt
-        torso = neck * 0.7 + shoulders * 0.3
-
-    # A sitting camera is rarely perfectly level, and MediaPipe shoulder
-    # depth varies with small rotations.  Use broad, capped penalties so one
-    # noisy shoulder estimate cannot pin the score at zero on every frame.
-    neck_penalty = min(30.0, max(0.0, neck - 20.0) * 1.0)
-    shoulder_penalty = min(35.0, max(0.0, shoulders - 20.0) * 0.7)
-    torso_penalty = min(30.0, max(0.0, torso - 25.0) * 0.7)
+    neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
+    shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
+    torso_penalty = min(20.0, max(0.0, torso - 15.0) * 0.8)
     score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
     return {
         "neck": round(neck, 1),

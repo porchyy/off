@@ -46,6 +46,22 @@ test('scorePose calculates correct metrics for upright posture', () => {
   assert.equal(Math.round(result.torso), 0);
 });
 
+test('scorePose ignores MediaPipe relative depth for the fixed frontal camera', () => {
+  const flat = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
+  flat[0] = { x: 0.5, y: 0.2, z: 0, visibility: 0.9 };
+  flat[7] = { x: 0.45, y: 0.28, z: 0, visibility: 0.9 };
+  flat[8] = { x: 0.55, y: 0.28, z: 0, visibility: 0.9 };
+  flat[11] = { x: 0.4, y: 0.45, z: 0, visibility: 0.9 };
+  flat[12] = { x: 0.6, y: 0.45, z: 0, visibility: 0.9 };
+  const withDepth = structuredClone(flat);
+  withDepth[7].z = -0.9;
+  withDepth[8].z = 0.7;
+  withDepth[11].z = 1.0;
+  withDepth[12].z = -1.0;
+
+  assert.deepEqual(scorePose(withDepth), scorePose(flat));
+});
+
 test('scorePose deducts points for forward neck tilt and uneven shoulders', () => {
   const landmarks = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
 

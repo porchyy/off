@@ -26,6 +26,17 @@ def test_upper_body_metrics_do_not_need_hips_or_legs():
     assert metrics == {"neck": 0.0, "shoulders": 0.0, "torso": 0.0, "score": 100.0}
 
 
+def test_frontal_desk_metrics_ignore_unstable_relative_depth():
+    flat = detect.calculate_upper_body_metrics(
+        Point(0.5, 0.2), Point(0.45, 0.28), Point(0.55, 0.28), Point(0.4, 0.45), Point(0.6, 0.45)
+    )
+    with_depth = detect.calculate_upper_body_metrics(
+        Point(0.5, 0.2, -0.5), Point(0.45, 0.28, -0.9), Point(0.55, 0.28, 0.7), Point(0.4, 0.45, 1.0), Point(0.6, 0.45, -1.0)
+    )
+
+    assert with_depth == flat
+
+
 def test_upper_body_metrics_penalize_forward_head_and_dropped_shoulder():
     upright = detect.calculate_upper_body_metrics(
         Point(0.5, 0.2), Point(0.45, 0.28), Point(0.55, 0.28), Point(0.4, 0.45), Point(0.6, 0.45)
