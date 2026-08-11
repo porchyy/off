@@ -243,8 +243,8 @@ def score_frontal_desk_metrics(neck: float, shoulders: float, lean_trend: float)
     """
     neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
     shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
-    forward_lean_penalty = min(35.0, max(0.0, lean_trend - 6.0) * 1.4)
-    backward_lean_penalty = min(20.0, max(0.0, -lean_trend - 18.0) * 0.8)
+    forward_lean_penalty = min(45.0, max(0.0, lean_trend - 5.0) * 2.0)
+    backward_lean_penalty = min(30.0, max(0.0, -lean_trend - 15.0) * 1.2)
     return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - forward_lean_penalty - backward_lean_penalty)), 1)
 
 
