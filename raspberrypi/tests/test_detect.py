@@ -49,6 +49,22 @@ def test_calibrated_lean_trend_lowers_the_frontal_desk_score_only_when_extreme()
     assert leaning_back_far < aligned
 
 
+def test_visible_hips_add_pelvic_tilt_and_sideways_trunk_lean_to_score():
+    aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0, hip_tilt=0, trunk_lean=0)
+    off_centre = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0, hip_tilt=24, trunk_lean=18)
+
+    assert aligned == 100.0
+    assert off_centre < aligned
+
+
+def test_hip_metrics_measure_level_pelvis_and_vertical_trunk_when_aligned():
+    metrics = detect.calculate_hip_metrics(
+        Point(0.4, 0.45), Point(0.6, 0.45), Point(0.4, 0.75), Point(0.6, 0.75)
+    )
+
+    assert metrics == {"hip_tilt": 0.0, "trunk_lean": 0.0}
+
+
 def test_forward_lean_proxy_uses_a_personal_neutral_depth_baseline():
     detector = object.__new__(detect.MediaPipePoseDetector)
     detector._forward_lean_baseline = None

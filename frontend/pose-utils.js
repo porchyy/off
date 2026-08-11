@@ -48,12 +48,33 @@ export function scorePose(landmarks) {
   // The Pi adds a calibrated signed lean trend to this value. Browser-only
   // analysis has no shared per-person baseline, so it intentionally reports 0.
   const torso = 0;
+  const leftHip = landmarks[23];
+  const rightHip = landmarks[24];
+  const hipsVisible = [leftHip, rightHip].every(point => point && point.visibility > 0.45);
+  let hipTilt = null;
+  let trunkLean = null;
+  if (hipsVisible) {
+    hipTilt = Math.atan2(
+      Math.abs(leftHip.y - rightHip.y),
+      Math.max(0.001, Math.abs(leftHip.x - rightHip.x))
+    ) * degrees;
+    const midHip = {
+      x: (leftHip.x + rightHip.x) / 2,
+      y: (leftHip.y + rightHip.y) / 2
+    };
+    trunkLean = Math.atan2(
+      Math.abs(midShoulder.x - midHip.x),
+      Math.max(0.001, Math.abs(midHip.y - midShoulder.y))
+    ) * degrees;
+  }
 
   const neckPenalty = Math.min(30, Math.max(0, neck - 12) * 1.2);
   const shoulderPenalty = Math.min(30, Math.max(0, shoulders - 10) * 1.0);
   const forwardLeanPenalty = Math.min(45, Math.max(0, torso - 5) * 2.0);
   const backwardLeanPenalty = Math.min(30, Math.max(0, -torso - 15) * 1.2);
-  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - forwardLeanPenalty - backwardLeanPenalty));
+  const hipTiltPenalty = hipTilt === null ? 0 : Math.min(15, Math.max(0, hipTilt - 10) * 1.0);
+  const trunkLeanPenalty = trunkLean === null ? 0 : Math.min(25, Math.max(0, trunkLean - 8) * 1.5);
+  const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - forwardLeanPenalty - backwardLeanPenalty - hipTiltPenalty - trunkLeanPenalty));
 
-  return { neck, shoulders, torso, score };
+  return { neck, shoulders, torso, hipTilt, trunkLean, score };
 }

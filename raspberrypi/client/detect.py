@@ -234,7 +234,34 @@ def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_
     }
 
 
-def score_frontal_desk_metrics(neck: float, shoulders: float, lean_trend: float) -> float:
+def calculate_hip_metrics(left_shoulder: Any, right_shoulder: Any, left_hip: Any, right_hip: Any) -> dict[str, float]:
+    """Return optional pelvis and trunk-alignment metrics for a frontal view.
+
+    Hips are often hidden by a desk, so callers must use these values only
+    when *both* hip landmarks are confidently visible.  They measure image
+    plane asymmetry (pelvic tilt and sideways trunk lean), not spinal
+    curvature or absolute depth.
+    """
+    degrees = 180.0 / math.pi
+    hip_tilt = math.atan2(
+        abs(float(left_hip.y) - float(right_hip.y)),
+        max(0.001, abs(float(left_hip.x) - float(right_hip.x))),
+    ) * degrees
+    mid_shoulder_x = (float(left_shoulder.x) + float(right_shoulder.x)) / 2
+    mid_shoulder_y = (float(left_shoulder.y) + float(right_shoulder.y)) / 2
+    mid_hip_x = (float(left_hip.x) + float(right_hip.x)) / 2
+    mid_hip_y = (float(left_hip.y) + float(right_hip.y)) / 2
+    trunk_lean = math.atan2(abs(mid_shoulder_x - mid_hip_x), max(0.001, abs(mid_hip_y - mid_shoulder_y))) * degrees
+    return {"hip_tilt": round(hip_tilt, 1), "trunk_lean": round(trunk_lean, 1)}
+
+
+def score_frontal_desk_metrics(
+    neck: float,
+    shoulders: float,
+    lean_trend: float,
+    hip_tilt: float | None = None,
+    trunk_lean: float | None = None,
+) -> float:
     """Score a frontal desk pose with a signed calibrated lean trend.
 
     Positive degrees mean the upper body moved toward the camera; negative
@@ -245,7 +272,9 @@ def score_frontal_desk_metrics(neck: float, shoulders: float, lean_trend: float)
     shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
     forward_lean_penalty = min(45.0, max(0.0, lean_trend - 5.0) * 2.0)
     backward_lean_penalty = min(30.0, max(0.0, -lean_trend - 15.0) * 1.2)
-    return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - forward_lean_penalty - backward_lean_penalty)), 1)
+    hip_tilt_penalty = 0.0 if hip_tilt is None else min(15.0, max(0.0, hip_tilt - 10.0) * 1.0)
+    trunk_lean_penalty = 0.0 if trunk_lean is None else min(25.0, max(0.0, trunk_lean - 8.0) * 1.5)
+    return round(max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - forward_lean_penalty - backward_lean_penalty - hip_tilt_penalty - trunk_lean_penalty)), 1)
 
 
 class MediaPipePoseDetector:
@@ -330,7 +359,16 @@ class MediaPipePoseDetector:
                 return {"landmarks": overlay_landmarks}
         metrics = calculate_upper_body_metrics(nose, le, re, ls, rs)
         metrics["torso"] = self._forward_lean_proxy(metrics, nose, le, re, ls, rs)
-        metrics["score"] = score_frontal_desk_metrics(metrics["neck"], metrics["shoulders"], metrics["torso"])
+        hip_metrics: dict[str, float] = {}
+        left_hip, right_hip = landmarks[23], landmarks[24]
+        if getattr(left_hip, "visibility", 1.0) >= 0.45 and getattr(right_hip, "visibility", 1.0) >= 0.45:
+            hip_metrics = calculate_hip_metrics(ls, rs, left_hip, right_hip)
+            metrics.update(hip_metrics)
+        metrics["score"] = score_frontal_desk_metrics(
+            metrics["neck"], metrics["shoulders"], metrics["torso"],
+            hip_tilt=hip_metrics.get("hip_tilt"),
+            trunk_lean=hip_metrics.get("trunk_lean"),
+        )
         return {
             **metrics,
             "landmarks": overlay_landmarks,

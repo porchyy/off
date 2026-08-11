@@ -79,3 +79,21 @@ test('scorePose deducts points for forward neck tilt and uneven shoulders', () =
   assert.ok(result.neck > 10, 'Neck angle should be non-zero');
   assert.ok(result.shoulders > 0, 'Shoulders tilt should be non-zero');
 });
+
+test('scorePose uses visible hips to deduct for pelvic tilt and sideways trunk lean', () => {
+  const landmarks = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
+  landmarks[0] = { x: 0.5, y: 0.2, z: 0, visibility: 0.9 };
+  landmarks[7] = { x: 0.45, y: 0.28, z: 0, visibility: 0.9 };
+  landmarks[8] = { x: 0.55, y: 0.28, z: 0, visibility: 0.9 };
+  landmarks[11] = { x: 0.4, y: 0.45, z: 0, visibility: 0.9 };
+  landmarks[12] = { x: 0.6, y: 0.45, z: 0, visibility: 0.9 };
+  landmarks[23] = { x: 0.25, y: 0.7, z: 0, visibility: 0.9 };
+  landmarks[24] = { x: 0.55, y: 0.82, z: 0, visibility: 0.9 };
+
+  const result = scorePose(landmarks);
+
+  assert.notEqual(result, null);
+  assert.ok(result.hipTilt > 10);
+  assert.ok(result.trunkLean > 8);
+  assert.ok(result.score < 100);
+});
