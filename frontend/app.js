@@ -4,6 +4,8 @@ import { isPostureRisk } from './pose-utils.js';
 const $ = id => document.getElementById(id);
 const start = $('start');
 const stop = $('stop');
+const detectionOverlay = $('detectionOverlay');
+const detectionContext = detectionOverlay.getContext('2d');
 
 let storage;
 let lastSave = 0;
@@ -96,6 +98,61 @@ function updateLcdPreview(score) {
       : 'ADJUST POSTURE';
 }
 
+function clearDetectionBox() {
+  detectionContext.clearRect(0, 0, detectionOverlay.width, detectionOverlay.height);
+  detectionOverlay.hidden = true;
+}
+
+function drawDetectionBox(metrics) {
+  const box = metrics?.bbox;
+  const preview = $('piCamera');
+  const sourceWidth = Number(metrics?.frame_width) || preview.videoWidth;
+  const sourceHeight = Number(metrics?.frame_height) || preview.videoHeight;
+  if (!box || !Number.isFinite(sourceWidth) || !Number.isFinite(sourceHeight) || sourceWidth <= 0 || sourceHeight <= 0) {
+    clearDetectionBox();
+    return;
+  }
+
+  const x1 = Number(box.x1), y1 = Number(box.y1);
+  const x2 = Number(box.x2), y2 = Number(box.y2);
+  if (![x1, y1, x2, y2].every(Number.isFinite) || x2 <= x1 || y2 <= y1) {
+    clearDetectionBox();
+    return;
+  }
+
+  detectionOverlay.width = sourceWidth;
+  detectionOverlay.height = sourceHeight;
+  detectionOverlay.hidden = false;
+  detectionContext.clearRect(0, 0, sourceWidth, sourceHeight);
+
+  // The video is mirrored in CSS. Mirror only the box X coordinate so text
+  // remains readable while its location still follows the person.
+  const x = sourceWidth - x2;
+  const y = Math.max(0, y1);
+  const width = x2 - x1;
+  const height = y2 - y1;
+  const good = metrics.posture === 'sitting_good';
+  const color = good ? '#22e58d' : '#ff4d6d';
+  const label = `${metrics.posture || 'posture'} ${Math.round(Number(metrics.confidence || 0) * 100)}%`;
+  const fontSize = Math.max(14, Math.round(sourceWidth / 40));
+  const padding = Math.max(5, Math.round(sourceWidth / 128));
+
+  detectionContext.lineWidth = Math.max(3, Math.round(sourceWidth / 220));
+  detectionContext.strokeStyle = color;
+  detectionContext.shadowColor = color;
+  detectionContext.shadowBlur = 10;
+  detectionContext.strokeRect(x, y, width, height);
+  detectionContext.shadowBlur = 0;
+  detectionContext.font = `700 ${fontSize}px system-ui, sans-serif`;
+  const labelWidth = Math.ceil(detectionContext.measureText(label).width) + padding * 2;
+  const labelHeight = fontSize + padding * 2;
+  const labelY = Math.max(0, y - labelHeight);
+  detectionContext.fillStyle = color;
+  detectionContext.fillRect(x, labelY, Math.min(labelWidth, sourceWidth - x), labelHeight);
+  detectionContext.fillStyle = '#06110d';
+  detectionContext.fillText(label, x + padding, labelY + fontSize + padding - 1);
+}
+
 function updateRoboflowResult(result) {
   const el = $('roboflowResult');
   const label = String(result?.label || '');
@@ -155,6 +212,7 @@ function endPiCamera() {
   piPeer = undefined;
   const piVideo = $('piCamera');
   if (piVideo) piVideo.srcObject = null;
+  clearDetectionBox();
   piRoboflowResult = null;
   $('roboflowResult').hidden = true;
   $('cameraHelp').hidden = false;
@@ -233,6 +291,7 @@ function connectPiCamera() {
       });
     } else if (message.type === 'posture_update') {
       const metrics = message.metrics;
+      drawDetectionBox(metrics);
       if (['score', 'neck', 'shoulders', 'torso'].every(key => Number.isFinite(metrics?.[key]))) {
         update(metrics);
       }

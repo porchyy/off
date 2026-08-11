@@ -110,7 +110,14 @@ class YoloV5PostureDetector:
             image = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         results = self.model(image)
         rows = results.pandas().xyxy[0].to_dict(orient="records")
-        return self._select_prediction(rows)
+        metrics = self._select_prediction(rows)
+        if metrics is not None:
+            height, width = frame.shape[:2]
+            # The dashboard needs the original frame dimensions to draw this
+            # upstream YOLOv5 bounding box over its mirrored WebRTC preview.
+            metrics["frame_width"] = int(width)
+            metrics["frame_height"] = int(height)
+        return metrics
 
 
 def get_detector(model_path: str | Path, config: dict[str, Any]) -> YoloV5PostureDetector:
