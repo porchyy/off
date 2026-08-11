@@ -87,7 +87,7 @@ class SoundPlayer:
 
 
 class AlertController:
-    """Trigger delayed alerts and an immediate, independently-thresholded LED."""
+    """Trigger delayed alerts and a separately delayed posture LED."""
 
     def __init__(
         self,
@@ -104,6 +104,7 @@ class AlertController:
         self.cooldown = max(0.0, float(risk.get("cooldown", 30)))
         indicator_config = config.get("indicator", {})
         self.indicator_threshold = min(100.0, max(0.0, float(indicator_config.get("threshold", 50))))
+        self.indicator_delay_seconds = min(60.0, max(0.0, float(indicator_config.get("delay_seconds", 5))))
         buzzer_config = config.get("buzzer", {})
         self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
         self.uploader = uploader
@@ -112,6 +113,7 @@ class AlertController:
         self.buzzer = buzzer
         self.clock = clock
         self.low_since: float | None = None
+        self.indicator_low_since: float | None = None
         self.last_alert: float | None = None
         self._indicator_is_on = False
         self._buzzer_is_on = False
@@ -142,9 +144,15 @@ class AlertController:
         now = self.clock()
         score = float(metrics["score"])
 
-        # The LED is a live posture cue: it is intentionally independent from
-        # the dashboard-owned alert delay and changes state immediately.
-        should_light_indicator = score < self.indicator_threshold
+        # A brief low score is normal while someone moves. Require it to last
+        # for the LED's own delay; sound/alerts continue using risk.seconds.
+        if score < self.indicator_threshold:
+            if self.indicator_low_since is None:
+                self.indicator_low_since = now
+            should_light_indicator = now - self.indicator_low_since >= self.indicator_delay_seconds
+        else:
+            self.indicator_low_since = None
+            should_light_indicator = False
         if self.indicator is not None and should_light_indicator != self._indicator_is_on:
             if should_light_indicator:
                 self.indicator.on()
@@ -184,6 +192,7 @@ class AlertController:
     def clear_posture(self) -> None:
         """Clear posture warnings when no person has a measurable pose."""
         self.low_since = None
+        self.indicator_low_since = None
         if self.indicator is not None and self._indicator_is_on:
             self.indicator.off()
         self._indicator_is_on = False

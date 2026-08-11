@@ -128,6 +128,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
         raise ValueError("indicator.pin must be a BCM GPIO number from 0 to 27")
     indicator["active_high"] = bool(indicator.get("active_high", True))
     indicator["threshold"] = min(100.0, max(0.0, float(indicator.get("threshold", 50))))
+    indicator["delay_seconds"] = min(60.0, max(0.0, float(indicator.get("delay_seconds", 5))))
     chip = indicator.get("chip")
     if chip is not None:
         indicator["chip"] = int(chip)

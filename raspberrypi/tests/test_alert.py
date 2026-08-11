@@ -49,10 +49,7 @@ def test_alert_waits_for_risk_duration_and_respects_cooldown():
     uploader = FakeUploader()
     sound = FakeSound()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 10, "cooldown": 30}},
-        uploader,
-        sound,
-        clock=lambda: now[0],
+        {"risk": {"threshold": 60, "seconds": 10, "cooldown": 30}}, uploader, sound, clock=lambda: now[0]
     )
 
     assert controller.update({"score": 50}) is False
@@ -75,10 +72,7 @@ def test_zero_risk_duration_alerts_immediately_and_respects_cooldown():
     uploader = FakeUploader()
     sound = FakeSound()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 0, "cooldown": 30}},
-        uploader,
-        sound,
-        clock=lambda: now[0],
+        {"risk": {"threshold": 60, "seconds": 0, "cooldown": 30}}, uploader, sound, clock=lambda: now[0]
     )
 
     assert controller.update({"score": 50}) is True
@@ -93,10 +87,7 @@ def test_zero_risk_duration_alerts_immediately_and_respects_cooldown():
 def test_good_posture_resets_low_score_timer():
     now = [0.0]
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 5}},
-        FakeUploader(),
-        FakeSound(),
-        clock=lambda: now[0],
+        {"risk": {"threshold": 60, "seconds": 5}}, FakeUploader(), FakeSound(), clock=lambda: now[0]
     )
 
     assert controller.update({"score": 50}) is False
@@ -108,11 +99,11 @@ def test_good_posture_resets_low_score_timer():
     assert controller.update({"score": 50}) is True
 
 
-def test_led_turns_on_immediately_below_its_threshold_and_off_when_score_recovers():
+def test_led_waits_for_a_sustained_low_score_and_turns_off_when_score_recovers():
     now = [0.0]
     indicator = FakeIndicator()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50}},
+        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50, "delay_seconds": 5}},
         FakeUploader(),
         FakeSound(),
         indicator,
@@ -120,10 +111,13 @@ def test_led_turns_on_immediately_below_its_threshold_and_off_when_score_recover
     )
 
     controller.update({"score": 49})
-    assert indicator.on_count == 1
+    assert indicator.on_count == 0
+    now[0] = 4.9
     assert controller.update({"score": 49}) is False
+    assert indicator.on_count == 0
     now[0] = 5.0
     assert controller.update({"score": 49}) is True
+    assert indicator.on_count == 1
     controller.update({"score": 50})
     assert indicator.off_count == 1
 
@@ -131,7 +125,7 @@ def test_led_turns_on_immediately_below_its_threshold_and_off_when_score_recover
 def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
     indicator = FakeIndicator()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50}},
+        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50, "delay_seconds": 5}},
         FakeUploader(),
         FakeSound(),
         indicator,
@@ -140,18 +134,15 @@ def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
     controller.update({"score": 49})
     controller.clear_posture()
 
-    assert indicator.off_count == 1
+    assert indicator.off_count == 0
     assert controller.low_since is None
+    assert controller.indicator_low_since is None
 
 
 def test_dashboard_settings_apply_without_restarting_client():
     sound = FakeSound()
     sound.enabled = True
-    controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 45}},
-        FakeUploader(),
-        sound,
-    )
+    controller = AlertController({"risk": {"threshold": 60, "seconds": 45}}, FakeUploader(), sound)
 
     assert controller.apply_runtime_settings({"riskThreshold": 72, "riskSeconds": 20, "soundEnabled": False}) is True
     assert controller.threshold == 72
