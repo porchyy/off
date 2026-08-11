@@ -2,7 +2,7 @@
 
 Main loop ที่:
   1. เปิดกล้อง
-  2. จำแนกท่านั่งด้วย YOLOv5
+  2. วิเคราะห์ท่านั่งมุมหน้าด้วย YOLOv8-Pose
   3. ส่งคะแนน + ผลจำแนกไป backend
   4. แจ้ง alert ถ้าคะแนนตกต่อเนื่องเกิน threshold
 """
@@ -60,29 +60,26 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
 
     detection = config["detection"]
     detection["enabled"] = bool(detection.get("enabled", True))
-    mode = str(detection.get("mode", "yolov5")).lower()
-    # Existing installations used ``mediapipe`` here.  Switch them to the
-    # local YOLOv5 model on their first update instead of leaving the service
-    # unable to start because of an old config.yaml.
-    if mode == "mediapipe":
-        mode = "yolov5"
-    if mode != "yolov5":
-        raise ValueError("detection.mode currently supports only yolov5")
+    mode = str(detection.get("mode", "yolov8_pose")).lower()
+    # Migrate older MediaPipe/YOLOv5 installs to the front-view pose pipeline.
+    if mode in {"mediapipe", "yolov5"}:
+        mode = "yolov8_pose"
+    if mode != "yolov8_pose":
+        raise ValueError("detection.mode currently supports only yolov8_pose")
     detection["mode"] = mode
     detection["interval"] = max(0.2, float(detection.get("interval", 0.5)))
-    detection["confidence"] = min(1.0, max(0.05, float(detection.get("confidence", 0.5))))
+    detection["confidence"] = min(1.0, max(0.05, float(detection.get("confidence", 0.35))))
     detection["iou"] = min(1.0, max(0.05, float(detection.get("iou", 0.5))))
-    configured_model = str(detection.get("model", "models/small640.pt"))
-    if configured_model.endswith(".task"):
-        configured_model = "models/small640.pt"
+    configured_model = str(detection.get("model", "models/yolov8n-pose.pt"))
+    if configured_model.endswith(".task") or Path(configured_model).name == "small640.pt":
+        configured_model = "models/yolov8n-pose.pt"
     model_path = Path(configured_model)
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
     detection["model"] = str(model_path)
     detection["model_url"] = str(detection.get(
         "model_url",
-        "https://raw.githubusercontent.com/itakurah/Sitting-Posture-Detection-YOLOv5/"
-        "main/data/inference_models/small640.pt",
+        "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n-pose.pt",
     )).strip()
     if not detection["model_url"].startswith("https://"):
         raise ValueError("detection.model_url must use https://")
@@ -162,7 +159,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--test-buzzer", action="store_true", help="Beep the configured buzzer 3 times and exit")
     parser.add_argument("--test-lcd", action="store_true", help="Show a sample score on the configured LCD 1602 and exit")
     parser.add_argument("--test-camera", action="store_true", help="Capture one frame without backend or pose detection")
-    parser.add_argument("--check", action="store_true", help="Check YOLOv5, camera, and backend connectivity, then exit")
+    parser.add_argument("--check", action="store_true", help="Check YOLOv8-Pose, camera, and backend connectivity, then exit")
     parser.add_argument("--verbose", "-v", action="store_true")
     return parser
 
@@ -221,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             import requests
 
             if config["detection"]["enabled"]:
-                from client.yolov5_detector import close_detector, get_detector
+                from client.yolov8_pose_detector import close_detector, get_detector
 
                 get_detector(config["detection"]["model"], config["detection"])
             camera = open_camera(config["camera"])
@@ -233,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
             if not response.ok:
                 logger.error("backend health check returned %s", response.status_code)
                 return 1
-            detector_name = "YOLOv5, " if config["detection"]["enabled"] else ""
+            detector_name = "YOLOv8-Pose, " if config["detection"]["enabled"] else ""
             logger.info("self-check OK: %s%s camera, and backend are ready", detector_name, camera.backend)
             return 0
         except Exception as exc:
@@ -269,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
 
     detection_enabled = config["detection"]["enabled"]
     if detection_enabled:
-        from client.yolov5_detector import close_detector, process_live_frame
+        from client.yolov8_pose_detector import close_detector, process_live_frame
     else:
         close_detector = lambda: None
 
@@ -293,12 +290,12 @@ def main(argv: list[str] | None = None) -> int:
         producer = CameraProducer(camera, config["video"]["fps"])
 
         if detection_enabled:
-            # YOLOv5 returns a whole-posture class. Keep the Pi camera stream
-            # clean; class and score are sent over WebRTC for the dashboard.
+            # YOLOv8-Pose sends keypoints, score and class over WebRTC. Keep
+            # the Pi stream clean; the browser draws its own mirrored overlay.
             update_stream_overlay = None
         else:
             update_stream_overlay = None
-            logger.info("YOLOv5 is disabled; running optional Roboflow classification only")
+            logger.info("YOLOv8-Pose is disabled; running optional Roboflow classification only")
 
         producer.start()
         if config["video"]["enabled"]:

@@ -18,18 +18,18 @@ def test_config_resolves_buffer_relative_to_config_file(tmp_path):
 
 
 def test_config_rejects_unimplemented_remote_detection_mode(tmp_path):
-    with pytest.raises(ValueError, match="only yolov5"):
+    with pytest.raises(ValueError, match="only yolov8_pose"):
         validate_config({"detection": {"mode": "remote"}}, tmp_path / "config.yaml")
 
 
-def test_config_migrates_existing_mediapipe_settings_to_yolov5(tmp_path):
+def test_config_migrates_older_detection_settings_to_yolov8_pose(tmp_path):
     config = validate_config(
-        {"detection": {"mode": "mediapipe", "model": "../frontend/public/models/pose_landmarker_full.task"}},
+        {"detection": {"mode": "yolov5", "model": "models/small640.pt"}},
         tmp_path / "config.yaml",
     )
 
-    assert config["detection"]["mode"] == "yolov5"
-    assert Path(config["detection"]["model"]).name == "small640.pt"
+    assert config["detection"]["mode"] == "yolov8_pose"
+    assert Path(config["detection"]["model"]).name == "yolov8n-pose.pt"
 
 
 def test_config_validates_led_pin_as_bcm_gpio(tmp_path):
@@ -65,10 +65,10 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     assert config["video"] == {"enabled": True, "width": 640, "height": 360, "fps": 12.0}
     assert config["detection"]["interval"] == 0.5
     assert config["detection"]["enabled"] is True
-    assert config["detection"]["mode"] == "yolov5"
-    assert config["detection"]["confidence"] == 0.5
+    assert config["detection"]["mode"] == "yolov8_pose"
+    assert config["detection"]["confidence"] == 0.35
     assert config["detection"]["iou"] == 0.5
-    assert Path(config["detection"]["model"]).name == "small640.pt"
+    assert Path(config["detection"]["model"]).name == "yolov8n-pose.pt"
     assert Path(config["detection"]["model"]).parent.name == "models"
     assert config["roboflow"] == {
         "enabled": False,
@@ -81,7 +81,7 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     }
 
 
-def test_config_clamps_yolov5_confidence_options(tmp_path):
+def test_config_clamps_yolov8_pose_confidence_options(tmp_path):
     config = validate_config(
         {"detection": {"confidence": 4, "iou": -3}},
         tmp_path / "config.yaml",
@@ -91,7 +91,7 @@ def test_config_clamps_yolov5_confidence_options(tmp_path):
     assert config["detection"]["iou"] == 0.05
 
 
-def test_config_can_disable_yolov5_without_disabling_roboflow(tmp_path):
+def test_config_can_disable_yolov8_pose_without_disabling_roboflow(tmp_path):
     config = validate_config(
         {"detection": {"enabled": False}, "roboflow": {"enabled": True}},
         tmp_path / "config.yaml",

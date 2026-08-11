@@ -22,15 +22,15 @@ camera:
   flip: 0
 
 detection:
-  # false = ไม่เรียก YOLOv5 (ใช้ Roboflow เพียงตัวเดียว)
+  # false = ไม่เรียก YOLOv8-Pose (ใช้ Roboflow เพียงตัวเดียว)
   enabled: true
   # ความถี่การวิเคราะห์และบันทึกคะแนน (วินาที)
   interval: 0.5
-  # โหมด local AI: YOLOv5 sitting_good / sitting_bad
-  mode: yolov5
-  model: models/small640.pt
-  model_url: https://raw.githubusercontent.com/itakurah/Sitting-Posture-Detection-YOLOv5/main/data/inference_models/small640.pt
-  confidence: 0.5
+  # โหมด local AI: YOLOv8-Pose สำหรับกล้องมุมหน้าตรง
+  mode: yolov8_pose
+  model: models/yolov8n-pose.pt
+  model_url: https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n-pose.pt
+  confidence: 0.35
   iou: 0.5
 
 # AI เสริมจาก Roboflow: ใช้ผล Good/Slouch/Leaning บนหน้าเว็บ

@@ -73,19 +73,20 @@ fi
 echo "[2/6] Granting camera/audio/I2C access to $INSTALL_USER..."
 sudo usermod -aG docker,video,audio,gpio,i2c "$INSTALL_USER"
 
-echo "[3/6] Creating the Pi YOLOv5 posture environment..."
+echo "[3/6] Creating the Pi YOLOv8-Pose front-view environment..."
 cd "$SCRIPT_DIR"
 python3 -m venv --system-site-packages .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m pip uninstall -y mediapipe
-.venv/bin/python -m pip install -r requirements-yolov5.txt
-MODEL_PATH="$SCRIPT_DIR/models/small640.pt"
+.venv/bin/python -m pip uninstall -y mediapipe yolov5 huggingface-hub
+.venv/bin/python -m pip install -r requirements-yolov8-pose.txt
+rm -f "$SCRIPT_DIR/models/small640.pt"
+MODEL_PATH="$SCRIPT_DIR/models/yolov8n-pose.pt"
 if [ ! -s "$MODEL_PATH" ]; then
-    echo "Downloading upstream YOLOv5 sitting-posture model..."
+    echo "Downloading YOLOv8-Pose front-view model..."
     mkdir -p "$(dirname "$MODEL_PATH")"
     curl -fL --retry 3 -o "$MODEL_PATH" \
-        https://raw.githubusercontent.com/itakurah/Sitting-Posture-Detection-YOLOv5/main/data/inference_models/small640.pt
+        https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n-pose.pt
 fi
 if [ ! -f config.yaml ]; then
     cp config.example.yaml config.yaml
@@ -108,7 +109,7 @@ for attempt in $(seq 1 30); do
     sleep 2
 done
 
-# Register the environmental sensor publisher before camera/YOLOv5 checks.
+# Register the environmental sensor publisher before camera/YOLOv8-Pose checks.
 # A camera failure must not prevent BH1750 from starting automatically.
 echo "Registering the persistent BH1750 service..."
 sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
@@ -137,7 +138,7 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now postureai-sensors.service
 
-echo "[5/6] Verifying YOLOv5, Pi Camera, and backend..."
+echo "[5/6] Verifying YOLOv8-Pose, Pi Camera, and backend..."
 cd "$SCRIPT_DIR"
 .venv/bin/python posture_client.py --config config.yaml --check
 

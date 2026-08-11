@@ -35,7 +35,7 @@
   <h2>สิ่งที่ต้องดาวน์โหลด</h2>
   <ol>
     <li><strong>Raspberry Pi Imager</strong> ลงบนคอมพิวเตอร์: <code>https://www.raspberrypi.com/software/</code></li>
-    <li>ไม่ต้องดาวน์โหลด Docker, Python, MediaPipe หรือไฟล์โมเดลเอง — สคริปต์ของโปรเจกต์จะติดตั้งให้หลังเปิด Pi แล้ว</li>
+    <li>ไม่ต้องดาวน์โหลด Docker, Python, YOLOv8-Pose หรือไฟล์โมเดลเอง — สคริปต์ของโปรเจกต์จะติดตั้งให้หลังเปิด Pi แล้ว</li>
   </ol>
 
   <h2>1. สำรองข้อมูล (ถ้าต้องการ)</h2>
@@ -81,7 +81,7 @@ git clone https://github.com/porchyy/off.git
 cd off
 chmod +x raspberrypi/setup-pi5.sh
 ./raspberrypi/setup-pi5.sh</pre>
-  <div class="box">คำสั่งสุดท้ายใช้เวลาหลายนาที เพราะติดตั้ง Docker, ไลบรารีกล้อง, MediaPipe, ไฟล์โมเดล และสร้างบริการให้เริ่มเองหลัง reboot</div>
+  <div class="box">คำสั่งสุดท้ายใช้เวลาหลายนาที เพราะติดตั้ง Docker, ไลบรารีกล้อง, YOLOv8-Pose, ไฟล์โมเดล และสร้างบริการให้เริ่มเองหลัง reboot</div>
 
   <h2>5. เปิดใช้งาน</h2>
   <p>ดู IP ของ Pi:</p>
@@ -92,7 +92,7 @@ chmod +x raspberrypi/setup-pi5.sh
   <h2>ตรวจสอบหากมีปัญหา</h2>
   <pre>sudo systemctl status postureai-stack postureai-client
 sudo journalctl -u postureai-client -f</pre>
-  <p>ทดสอบกล้องและ MediaPipe:</p>
+  <p>ทดสอบกล้องและ YOLOv8-Pose:</p>
   <pre>cd ~/off/raspberrypi
 .venv/bin/python posture_client.py --config config.yaml --check</pre>
 

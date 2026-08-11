@@ -56,7 +56,7 @@ class PiWebRtcSender:
         self._thread.join(timeout=5)
 
     def publish_detection(self, metrics: dict[str, Any]) -> None:
-        """Store the newest YOLOv5 result for the dashboard."""
+        """Store the newest YOLOv8-Pose result for the dashboard."""
         with self._pose_lock:
             self._pose_revision += 1
             self._latest_pose = {

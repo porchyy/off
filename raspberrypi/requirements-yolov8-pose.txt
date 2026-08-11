@@ -1,0 +1,6 @@
+# Front-view pose runtime adapted from aaron888hacker/-yolov8-.
+# Keep NumPy 1.x because Picamera2 from Raspberry Pi OS is compiled for it.
+numpy<2
+torch==2.2.0
+torchvision==0.17.0
+ultralytics==8.3.101

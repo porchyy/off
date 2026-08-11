@@ -67,17 +67,17 @@ function updateRisk(m) {
 
 function update(m) {
   const s = Math.round(m.score);
-  const yoloPosture = m.detector === 'yolov5';
+  const yoloPose = m.detector === 'yolov8_pose';
   const cls = s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk';
   $('score').value = s;
   $('score').textContent = s;
   $('score').style.color = `var(--status-${cls})`;
   $('status').textContent = s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่';
   $('advice').textContent = s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
-  if (yoloPosture) {
-    $('neck').textContent = 'YOLOv5';
-    $('shoulders').textContent = `${Math.round((m.confidence || 0) * 100)}%`;
-    $('torso').textContent = m.posture === 'sitting_good' ? 'นั่งดี' : 'ควรปรับท่า';
+  if (yoloPose) {
+    $('neck').textContent = `${m.neck.toFixed(0)}°`;
+    $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
+    $('torso').textContent = `${m.torso.toFixed(0)}°`;
   } else {
     $('neck').textContent = `${m.neck.toFixed(0)}°`;
     $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
@@ -131,12 +131,34 @@ function drawDetectionBox(metrics) {
   const y = Math.max(0, y1);
   const width = x2 - x1;
   const height = y2 - y1;
-  const good = metrics.posture === 'sitting_good';
-  const color = good ? '#22e58d' : '#ff4d6d';
+  const color = metrics.posture === 'bad' ? '#ff4d6d' : metrics.posture === 'good' ? '#ffd166' : '#22e58d';
   const label = `${metrics.posture || 'posture'} ${Math.round(Number(metrics.confidence || 0) * 100)}%`;
   const fontSize = Math.max(14, Math.round(sourceWidth / 40));
   const padding = Math.max(5, Math.round(sourceWidth / 128));
 
+  const posePoints = new Map((metrics.keypoints || [])
+    .filter(point => Number(point.visibility) >= 0.35)
+    .map(point => [Number(point.index), { x: sourceWidth - Number(point.x), y: Number(point.y) }]));
+  const connections = [[0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 6], [5, 11], [6, 12], [11, 12]];
+  detectionContext.lineWidth = Math.max(2, Math.round(sourceWidth / 320));
+  detectionContext.strokeStyle = color;
+  detectionContext.globalAlpha = 0.85;
+  for (const [from, to] of connections) {
+    const start = posePoints.get(from);
+    const end = posePoints.get(to);
+    if (!start || !end) continue;
+    detectionContext.beginPath();
+    detectionContext.moveTo(start.x, start.y);
+    detectionContext.lineTo(end.x, end.y);
+    detectionContext.stroke();
+  }
+  detectionContext.fillStyle = color;
+  for (const point of posePoints.values()) {
+    detectionContext.beginPath();
+    detectionContext.arc(point.x, point.y, Math.max(3, Math.round(sourceWidth / 180)), 0, Math.PI * 2);
+    detectionContext.fill();
+  }
+  detectionContext.globalAlpha = 1;
   detectionContext.lineWidth = Math.max(3, Math.round(sourceWidth / 220));
   detectionContext.strokeStyle = color;
   detectionContext.shadowColor = color;
