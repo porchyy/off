@@ -1,5 +1,8 @@
 # Runtime required by itakurah/Sitting-Posture-Detection-YOLOv5's small640.pt.
 # PyQt is intentionally omitted because PostureAI uses the existing web UI.
+# Picamera2 comes from Raspberry Pi OS and is compiled against NumPy 1.x.
+# NumPy 2.x causes ``numpy.dtype size changed`` when the camera opens.
+numpy<2
 torch==2.2.0
 torchvision==0.17.0
 yolov5==7.0.11
