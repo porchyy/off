@@ -139,7 +139,13 @@ function drawDetectionBox(metrics) {
   const posePoints = new Map((metrics.keypoints || [])
     .filter(point => Number(point.visibility) >= 0.35)
     .map(point => [Number(point.index), { x: sourceWidth - Number(point.x), y: Number(point.y) }]));
-  const connections = [[0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6], [5, 6], [5, 11], [6, 12], [11, 12]];
+  // COCO's 17 YOLOv8-Pose points, connected as a full-body skeleton in the
+  // same visual order users expect from MediaPipe Pose.
+  const connections = [
+    [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6],
+    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+    [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
+  ];
   detectionContext.lineWidth = Math.max(2, Math.round(sourceWidth / 320));
   detectionContext.strokeStyle = color;
   detectionContext.globalAlpha = 0.85;
