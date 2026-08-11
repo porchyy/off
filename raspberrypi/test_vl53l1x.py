@@ -12,7 +12,7 @@ from sensor_readers import SensorReadError, VL53L1X_DEFAULT_ADDRESS, Vl53l1xRead
 def main() -> int:
     parser = argparse.ArgumentParser(description="ทดสอบ TOF400C / VL53L1X")
     parser.add_argument("--address", type=parse_i2c_address, default=VL53L1X_DEFAULT_ADDRESS)
-    parser.add_argument("--mode", choices=("short", "long"), default="long")
+    parser.add_argument("--mode", choices=("short", "long"), default="short")
     parser.add_argument("--timing-budget", type=int, default=50, choices=(15, 20, 33, 50, 100, 200, 500))
     parser.add_argument("--interval", type=float, default=0.5)
     args = parser.parse_args()

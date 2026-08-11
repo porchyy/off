@@ -120,7 +120,7 @@ class Vl53l1xReader:
         self,
         *,
         address: int = VL53L1X_DEFAULT_ADDRESS,
-        distance_mode: int = 2,
+        distance_mode: int = 1,
         timing_budget: int = 50,
         read_timeout_seconds: float = 0.5,
     ) -> None:
