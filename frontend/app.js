@@ -693,9 +693,10 @@ async function checkHealth() {
 
 async function loadSensorReadings() {
   const lux = $('sensorLux');
+  const distance = $('sensorDistance');
   const status = $('sensorDataState');
   const updatedAt = $('sensorUpdatedAt');
-  if (!lux || !status || !updatedAt) return;
+  if (!lux || !distance || !status || !updatedAt) return;
 
   try {
     const response = await fetch('/api/sensors/latest', { cache: 'no-store' });
@@ -703,8 +704,9 @@ async function loadSensorReadings() {
     const data = await response.json();
     const updated = data.updatedAt ? new Date(data.updatedAt) : null;
     const stale = !updated || Date.now() - updated.getTime() > 10_000;
-    const online = data.bh1750Ok;
+    const online = data.bh1750Ok || data.vl53l1xOk;
     lux.textContent = data.bh1750Ok && Number.isFinite(data.lux) ? Number(data.lux).toFixed(1) : '--';
+    distance.textContent = data.vl53l1xOk && Number.isFinite(data.distanceCm) ? Number(data.distanceCm).toFixed(1) : '--';
     status.textContent = stale ? 'กำลังรอข้อมูลใหม่' : online ? 'ออนไลน์' : 'Sensor error';
     status.className = 'badge ' + (stale ? 'neutral' : online ? 'good' : 'risk');
     updatedAt.textContent = updated
@@ -712,6 +714,7 @@ async function loadSensorReadings() {
       : 'รอ Raspberry Pi sensor client ส่งข้อมูล';
   } catch {
     lux.textContent = '--';
+    distance.textContent = '--';
     status.textContent = 'ไม่พบข้อมูล';
     status.className = 'badge neutral';
     updatedAt.textContent = 'ยังเชื่อมต่อกับ sensor API ไม่ได้';

@@ -7,6 +7,7 @@ import pytest
 from sensor_readers import (
     Bh1750Reader,
     SensorReadError,
+    Vl53l1xReader,
 )
 
 
@@ -85,3 +86,43 @@ def test_bh1750_read_error_clears_cached_address(fake_smbus: None) -> None:
         reader.read_lux()
 
     assert reader.address is None
+
+
+def test_vl53l1x_reads_centimetres_and_clears_the_measurement_interrupt(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeVl53l1x:
+        instance = None
+
+        def __init__(self, _i2c, *, address: int) -> None:
+            self.address = address
+            self.distance_mode = None
+            self.timing_budget = None
+            self.started = False
+            self.interrupts_cleared = 0
+            FakeVl53l1x.instance = self
+
+        @property
+        def data_ready(self) -> bool:
+            return True
+
+        @property
+        def distance(self) -> float:
+            return 123.45
+
+        def start_ranging(self) -> None:
+            self.started = True
+
+        def clear_interrupt(self) -> None:
+            self.interrupts_cleared += 1
+
+        def stop_ranging(self) -> None:
+            self.started = False
+
+    monkeypatch.setitem(sys.modules, "board", SimpleNamespace(I2C=lambda: object()))
+    monkeypatch.setitem(sys.modules, "adafruit_vl53l1x", SimpleNamespace(VL53L1X=FakeVl53l1x))
+    reader = Vl53l1xReader(address=0x29, distance_mode=2, timing_budget=50)
+
+    assert reader.read_distance_cm() == 123.5
+    assert FakeVl53l1x.instance.address == 0x29
+    assert FakeVl53l1x.instance.distance_mode == 2
+    assert FakeVl53l1x.instance.timing_budget == 50
+    assert FakeVl53l1x.instance.interrupts_cleared == 1

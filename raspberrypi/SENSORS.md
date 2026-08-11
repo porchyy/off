@@ -1,6 +1,6 @@
-# OfficeGuardian AI: BH1750
+# OfficeGuardian AI: BH1750 + TOF400C (VL53L1X)
 
-คู่มือนี้ครอบคลุมเซนเซอร์ I2C BH1750 สำหรับวัดความสว่างเป็น Lux ไม่มีการเปิดใช้กล้อง, AI, เว็บ, database หรือระบบแจ้งเตือน
+คู่มือนี้ครอบคลุม BH1750 สำหรับวัดความสว่างเป็น Lux และ TOF400C ที่ใช้ชิป VL53L1X สำหรับวัดระยะเป็นเซนติเมตร ทั้งสองใช้ I2C bus 1 ของ Pi 5
 
 ## Wiring
 
@@ -14,6 +14,8 @@
 | SCL | Pin 5 (GPIO 3 / SCL1) |
 
 โดยปกติ BH1750 อยู่ที่ I2C address `0x23` หรือ `0x5C`
+
+TOF400C / VL53L1X ใช้สายเดียวกัน: VCC ไป Pin 1 (3.3V), GND ไป Pin 6, SDA ไป Pin 3 และ SCL ไป Pin 5 โดยปกติอยู่ที่ I2C address `0x29`.
 
 ## Setup
 
@@ -37,6 +39,7 @@ sudo i2cdetect -y 1
 ~~~
 
 ตาราง I2C ควรแสดง `23` หรือ `5c` สำหรับ BH1750
+และ `29` สำหรับ VL53L1X
 
 ## Run
 
@@ -44,6 +47,7 @@ sudo i2cdetect -y 1
 cd ~/off/raspberrypi
 .venv/bin/python test_bh1750.py
 .venv/bin/python test_sensors.py
+.venv/bin/python test_vl53l1x.py
 ~~~
 
 ทุก script อ่านค่าทุก 1 วินาทีและหยุดด้วย Ctrl+C. หากใช้ address อื่น:
@@ -71,6 +75,7 @@ cd ~/off/raspberrypi
 ~~~
 
 หน้า dashboard จะแสดงค่า BH1750 จาก endpoint `/api/sensors/latest` โดยข้อมูลอยู่ใน memory
+และจะแสดงระยะของ TOF400C / VL53L1X เป็นเซนติเมตรในกล่องเดียวกัน
 ของ backend เท่านั้นและไม่บันทึกลง database. หาก backend อยู่คนละเครื่อง ให้เปลี่ยน backend URL เป็น
 `http://IP-ของ-backend:8000`
 

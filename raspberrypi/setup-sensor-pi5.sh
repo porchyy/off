@@ -18,6 +18,7 @@ sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 als
 python3 -m venv --system-site-packages .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-sensors.txt
 # This client no longer uses the previous YOLO runtime.  Remove it from this
 # project venv so the Pi cannot accidentally load an old detector.
 .venv/bin/python -m pip uninstall -y yolov5 ultralytics huggingface-hub torch torchvision || true

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the BH1750 publisher as a persistent systemd service.
+# Install the BH1750 + VL53L1X publisher as a persistent systemd service.
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,7 +30,7 @@ python3 -m venv --system-site-packages "$SCRIPT_DIR/.venv"
 echo "[3/4] Registering postureai-sensors.service..."
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
-Description=PostureAI BH1750 sensor client
+Description=PostureAI BH1750 and VL53L1X sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
 StartLimitIntervalSec=0

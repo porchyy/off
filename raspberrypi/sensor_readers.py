@@ -11,6 +11,7 @@ I2C_BUS = 1
 BH1750_ADDRESSES = (0x23, 0x5C)
 BH1750_POWER_ON = 0x01
 BH1750_CONTINUOUS_HIGH_RES = 0x10
+VL53L1X_DEFAULT_ADDRESS = 0x29
 
 
 class SensorReadError(RuntimeError):
@@ -105,3 +106,78 @@ class Bh1750Reader:
         except (OSError, FileNotFoundError, TypeError, ValueError) as error:
             self.address = None
             raise SensorReadError(str(error) or "I2C read failed") from error
+
+
+class Vl53l1xReader:
+    """Read a VL53L1X / TOF400C distance sensor in centimetres.
+
+    The CircuitPython driver uses the Pi's default I2C bus (SDA pin 3 / SCL
+    pin 5).  It is imported only when the sensor is used, keeping BH1750
+    operation available if the optional TOF package or hardware is absent.
+    """
+
+    def __init__(
+        self,
+        *,
+        address: int = VL53L1X_DEFAULT_ADDRESS,
+        distance_mode: int = 2,
+        timing_budget: int = 50,
+        read_timeout_seconds: float = 0.5,
+    ) -> None:
+        if distance_mode not in (1, 2):
+            raise ValueError("distance_mode must be 1 (short) or 2 (long)")
+        if timing_budget not in (15, 20, 33, 50, 100, 200, 500):
+            raise ValueError("unsupported VL53L1X timing budget")
+        if not math.isfinite(read_timeout_seconds) or read_timeout_seconds <= 0:
+            raise ValueError("read_timeout_seconds must be positive")
+        self.address = address
+        self.distance_mode = distance_mode
+        self.timing_budget = timing_budget
+        self.read_timeout_seconds = read_timeout_seconds
+        self._sensor: object | None = None
+
+    def _connect(self) -> object:
+        if self._sensor is not None:
+            return self._sensor
+        try:
+            import adafruit_vl53l1x  # type: ignore
+            import board  # type: ignore
+        except ImportError as error:
+            raise SensorReadError("ไม่พบ package adafruit-circuitpython-vl53l1x") from error
+        try:
+            sensor = adafruit_vl53l1x.VL53L1X(board.I2C(), address=self.address)
+            sensor.distance_mode = self.distance_mode
+            sensor.timing_budget = self.timing_budget
+            sensor.start_ranging()
+            self._sensor = sensor
+            return sensor
+        except (OSError, RuntimeError, ValueError) as error:
+            self._sensor = None
+            raise SensorReadError(str(error) or "VL53L1X I2C initialization failed") from error
+
+    def read_distance_cm(self) -> float:
+        """Return a fresh TOF distance in centimetres and recover after errors."""
+        try:
+            sensor = self._connect()
+            deadline = time.monotonic() + self.read_timeout_seconds
+            while not bool(sensor.data_ready):
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("VL53L1X measurement timed out")
+                time.sleep(0.01)
+            distance = sensor.distance
+            sensor.clear_interrupt()
+            if distance is None or not math.isfinite(float(distance)) or float(distance) < 0:
+                raise ValueError("VL53L1X returned an invalid distance")
+            return round(float(distance), 1)
+        except (OSError, RuntimeError, ValueError, TimeoutError, TypeError) as error:
+            self.close()
+            raise SensorReadError(str(error) or "VL53L1X read failed") from error
+
+    def close(self) -> None:
+        sensor, self._sensor = self._sensor, None
+        if sensor is None:
+            return
+        try:
+            sensor.stop_ranging()
+        except (OSError, RuntimeError, ValueError):
+            pass
