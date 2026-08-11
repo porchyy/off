@@ -252,6 +252,25 @@ class MediaPipePoseDetector:
             }
             for index in OVERLAY_LANDMARK_INDICES
         ]
+        visible_points = [
+            point
+            for point in landmarks
+            if getattr(point, "visibility", 1.0) >= 0.45 and 0.0 <= point.x <= 1.0 and 0.0 <= point.y <= 1.0
+        ]
+        person_box: dict[str, float] | None = None
+        if len(visible_points) >= 5:
+            min_x = min(point.x for point in visible_points)
+            max_x = max(point.x for point in visible_points)
+            min_y = min(point.y for point in visible_points)
+            max_y = max(point.y for point in visible_points)
+            margin_x = max(0.04, (max_x - min_x) * 0.12)
+            margin_y = max(0.04, (max_y - min_y) * 0.12)
+            person_box = {
+                "left": max(0.0, min_x - margin_x),
+                "top": max(0.0, min_y - margin_y),
+                "right": min(1.0, max_x + margin_x),
+                "bottom": min(1.0, max_y + margin_y),
+            }
 
         nose = landmarks[0]
         le = landmarks[7]
@@ -327,6 +346,7 @@ class MediaPipePoseDetector:
             "shoulders": round(shoulders, 1),
             "torso": round(torso, 1),
             "landmarks": overlay_landmarks,
+            "person_box": person_box,
         }
 
     def close(self) -> None:
@@ -448,6 +468,7 @@ def process_live_frame(
             if pose_callback is not None:
                 pose_callback({}, landmarks)
             return
+        person_box = result.pop("person_box", None)
         classifier = get_posture_classifier(config)
         if classifier is not None:
             try:
@@ -455,6 +476,7 @@ def process_live_frame(
                     frame,
                     color_space,
                     interval=float(config.get("posture_classifier", {}).get("interval", 0.5)),
+                    person_box=person_box,
                 )
                 result.update(classification)
                 confidence = float(classification["posture_confidence"])

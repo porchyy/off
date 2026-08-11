@@ -80,7 +80,8 @@ def test_kanden_classifier_replaces_the_score_but_keeps_mediapipe_measurements(m
             }
 
     class FakeClassifier:
-        def classify(self, frame, color_space, *, interval):
+        def classify(self, frame, color_space, *, interval, person_box):
+            assert person_box is None
             return {"posture_label": "slouch", "posture_confidence": 0.9}
 
     class FakeUploader:

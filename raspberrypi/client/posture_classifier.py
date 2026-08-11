@@ -53,12 +53,21 @@ class OnnxPostureClassifier:
         self._last_result: dict[str, Any] | None = None
 
     @staticmethod
-    def _preprocess(frame: Any, color_space: str) -> Any:
+    def _preprocess(frame: Any, color_space: str, person_box: dict[str, float] | None = None) -> Any:
         import cv2  # type: ignore
         import numpy as np  # type: ignore
 
         if color_space not in {"bgr", "rgb"}:
             raise ValueError(f"unsupported camera color space: {color_space}")
+        if person_box:
+            height, width = frame.shape[:2]
+            left = max(0, min(width - 1, round(float(person_box["left"]) * width)))
+            top = max(0, min(height - 1, round(float(person_box["top"]) * height)))
+            right = max(left + 1, min(width, round(float(person_box["right"]) * width)))
+            bottom = max(top + 1, min(height, round(float(person_box["bottom"]) * height)))
+            cropped = frame[top:bottom, left:right]
+            if cropped.shape[0] >= 64 and cropped.shape[1] >= 64:
+                frame = cropped
         rgb = frame if color_space == "rgb" else cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = cv2.resize(rgb, (224, 224), interpolation=cv2.INTER_AREA)
         tensor = image.astype(np.float32) / 255.0
@@ -67,7 +76,14 @@ class OnnxPostureClassifier:
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(3, 1, 1)
         return ((tensor - mean) / std)[np.newaxis, ...]
 
-    def classify(self, frame: Any, color_space: str, *, interval: float) -> dict[str, Any]:
+    def classify(
+        self,
+        frame: Any,
+        color_space: str,
+        *,
+        interval: float,
+        person_box: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Return a cached result between inference runs to protect Pi FPS."""
         now = time.monotonic()
         if self._last_result is not None and now - self._last_run_at < interval:
@@ -75,7 +91,9 @@ class OnnxPostureClassifier:
 
         import numpy as np  # type: ignore
 
-        logits = self._session.run([self._output_name], {self._input_name: self._preprocess(frame, color_space)})[0]
+        logits = self._session.run(
+            [self._output_name], {self._input_name: self._preprocess(frame, color_space, person_box)}
+        )[0]
         values = np.asarray(logits, dtype=np.float32).reshape(-1)
         if values.size != len(CLASS_LABELS):
             raise RuntimeError(f"unexpected posture classifier output length: {values.size}")

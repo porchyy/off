@@ -83,18 +83,25 @@ function updateRisk(m) {
 
 function update(m) {
   const s = Math.round(m.score);
-  const cls = s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk';
+  const aiUsed = m.posture_ai_used === true;
+  const aiState = aiUsed ? {
+    good: { cls: 'good', status: 'ท่านั่งดี', advice: 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' },
+    slouch: { cls: 'risk', status: 'หลังค่อม', advice: 'ยืดหลังและดึงคางเข้าเล็กน้อย' },
+    chin_rest: { cls: 'risk', status: 'เท้าคาง', advice: 'วางมือลงและจัดศีรษะให้อยู่เหนือไหล่' },
+    stretch: { cls: 'good', status: 'กำลังยืดตัว', advice: 'ยืดเสร็จแล้วกลับสู่ท่านั่งหลังตรง' }
+  }[m.posture_label] : null;
+  const cls = aiState?.cls || (s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk');
   $('score').value = s;
   $('score').textContent = s;
   $('score').style.color = `var(--status-${cls})`;
-  $('status').textContent = s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่';
-  $('advice').textContent = s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
+  $('status').textContent = aiState?.status || (s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่');
+  $('advice').textContent = aiState?.advice || (s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง');
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
   updatePostureModelResult(m);
-  updateLcdPreview(s);
-  state(s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่', cls);
+  updateLcdPreview(m);
+  state(aiState?.status || (s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่'), cls);
   updateRisk(m);
 }
 
@@ -114,14 +121,21 @@ function updatePostureModelResult(metrics) {
   el.textContent = `${labels[label] || `AI: ${label}`} (${Math.round(confidence * 100)}%)${used ? '' : ' · รอยืนยัน'}`;
 }
 
-function updateLcdPreview(score) {
-  const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+function updateLcdPreview(metrics) {
+  const safeScore = Math.max(0, Math.min(100, Math.round(metrics.score)));
+  const aiLabel = metrics.posture_ai_used === true ? metrics.posture_label : '';
+  const aiStatus = {
+    good: 'GOOD POSTURE',
+    slouch: 'SLOUCH DETECT',
+    chin_rest: 'CHIN REST',
+    stretch: 'STRETCH BREAK'
+  }[aiLabel];
   $('lcdLine1').textContent = `SCORE: ${String(safeScore).padStart(3, ' ')}/100`;
-  $('lcdLine2').textContent = safeScore >= 70
+  $('lcdLine2').textContent = aiStatus || (safeScore >= 70
     ? 'GOOD POSTURE'
     : safeScore >= 40
       ? 'CHECK POSTURE'
-      : 'ADJUST POSTURE';
+      : 'ADJUST POSTURE');
 }
 
 function updateRoboflowResult(result) {
