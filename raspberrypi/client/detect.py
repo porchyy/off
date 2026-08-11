@@ -268,7 +268,10 @@ def score_frontal_desk_metrics(
     degrees mean it moved away. A small recline is acceptable, so it has a
     broader penalty threshold than forward leaning.
     """
-    neck_penalty = min(30.0, max(0.0, neck - 12.0) * 1.2)
+    # A frontal desk camera can reliably see the head drifting left or right
+    # from the shoulder midpoint. Make this more sensitive than before: the
+    # previous 12-degree threshold only removed ~2 points at 14 degrees.
+    neck_penalty = min(40.0, max(0.0, neck - 6.0) * 2.5)
     shoulder_penalty = min(30.0, max(0.0, shoulders - 10.0) * 1.0)
     forward_lean_penalty = min(45.0, max(0.0, lean_trend - 5.0) * 2.0)
     backward_lean_penalty = min(30.0, max(0.0, -lean_trend - 15.0) * 1.2)

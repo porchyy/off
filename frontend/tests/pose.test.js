@@ -80,6 +80,21 @@ test('scorePose deducts points for forward neck tilt and uneven shoulders', () =
   assert.ok(result.shoulders > 0, 'Shoulders tilt should be non-zero');
 });
 
+test('scorePose strongly deducts for a head shifted sideways from the shoulders', () => {
+  const landmarks = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
+  landmarks[0] = { x: 0.68, y: 0.2, z: 0, visibility: 0.9 };
+  landmarks[7] = { x: 0.63, y: 0.28, z: 0, visibility: 0.9 };
+  landmarks[8] = { x: 0.73, y: 0.28, z: 0, visibility: 0.9 };
+  landmarks[11] = { x: 0.4, y: 0.45, z: 0, visibility: 0.9 };
+  landmarks[12] = { x: 0.6, y: 0.45, z: 0, visibility: 0.9 };
+
+  const result = scorePose(landmarks);
+
+  assert.notEqual(result, null);
+  assert.ok(result.neck > 14);
+  assert.ok(result.score < 80);
+});
+
 test('scorePose uses visible hips to deduct for pelvic tilt and sideways trunk lean', () => {
   const landmarks = new Array(33).fill({ x: 0.5, y: 0.5, z: 0, visibility: 0.9 });
   landmarks[0] = { x: 0.5, y: 0.2, z: 0, visibility: 0.9 };

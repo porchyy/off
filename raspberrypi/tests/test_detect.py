@@ -49,6 +49,14 @@ def test_calibrated_lean_trend_lowers_the_frontal_desk_score_only_when_extreme()
     assert leaning_back_far < aligned
 
 
+def test_head_drift_from_shoulders_is_penalized_at_the_visible_14_degree_range():
+    aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0)
+    head_to_side = detect.score_frontal_desk_metrics(neck=14, shoulders=3, lean_trend=0)
+
+    assert aligned == 100.0
+    assert head_to_side == 80.0
+
+
 def test_visible_hips_add_pelvic_tilt_and_sideways_trunk_lean_to_score():
     aligned = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0, hip_tilt=0, trunk_lean=0)
     off_centre = detect.score_frontal_desk_metrics(neck=4, shoulders=3, lean_trend=0, hip_tilt=24, trunk_lean=18)
