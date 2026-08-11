@@ -38,13 +38,15 @@ detection:
   metric_smoothing_alpha: 0.35
   # โหมดที่รองรับในรุ่นนี้: mediapipe (ประมวลผลบน Pi เท่านั้น)
   mode: mediapipe
+  # upper_body = ใช้คอและไหล่เท่านั้น (ไม่ใช้สะโพก/ขา); image_classifier = ใช้ ONNX ด้านล่างแทนคะแนน
+  score_source: upper_body
   # โมเดลเดียวกับหน้าเว็บ: Pose Landmarker Full สำหรับความแม่นยำสูงขึ้น
   model: ../frontend/public/models/pose_landmarker_full.task
 
-# AI จำแนกท่านั่งที่เทรนแล้ว: ใช้ MediaPipe หา skeleton ก่อน แล้ว Kanden ONNX
-# ตัดสิน Good / Slouch / Chin rest / Stretch จากภาพกล้องจริง
+# ตัวเลือก: AI จำแนกท่านั่งที่เทรนแล้ว (ใช้เมื่อ detection.score_source: image_classifier)
+# ค่า default ปิดไว้ เพื่อให้คะแนนหลักใช้คอ/ไหล่ ไม่ขึ้นกับภาพทั้งเฟรม
 posture_classifier:
-  enabled: true
+  enabled: false
   model: models/kanden_posture_classifier.onnx
   # วิเคราะห์ภาพทุก 0.5 วินาที แล้วใช้ผลล่าสุดระหว่างนั้นเพื่อให้ Pi ลื่น
   interval: 0.5

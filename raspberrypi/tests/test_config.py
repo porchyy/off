@@ -59,8 +59,9 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     assert config["detection"]["overlay_hold_seconds"] == 0.2
     assert config["detection"]["overlay_min_visibility"] == 0.35
     assert config["detection"]["metric_smoothing_alpha"] == 0.35
+    assert config["detection"]["score_source"] == "upper_body"
     assert config["posture_classifier"] == {
-        "enabled": True,
+        "enabled": False,
         "model": str(tmp_path / "models/kanden_posture_classifier.onnx"),
         "interval": 0.5,
         "min_confidence": 0.65,
@@ -100,11 +101,18 @@ def test_config_resolves_and_clamps_the_kanden_classifier_options(tmp_path):
     )
 
     assert config["posture_classifier"] == {
-        "enabled": True,
+        "enabled": False,
         "model": str(tmp_path / "models/custom.onnx"),
         "interval": 5.0,
         "min_confidence": 0.0,
     }
+
+
+def test_config_accepts_only_supported_score_sources(tmp_path):
+    assert validate_config({"detection": {"score_source": "image_classifier"}}, tmp_path / "config.yaml")["detection"]["score_source"] == "image_classifier"
+
+    with pytest.raises(ValueError, match="score_source"):
+        validate_config({"detection": {"score_source": "hips"}}, tmp_path / "config.yaml")
 
 
 def test_config_can_disable_mediapipe_without_disabling_roboflow(tmp_path):

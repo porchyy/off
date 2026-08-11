@@ -77,13 +77,17 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     detection["metric_smoothing_alpha"] = min(
         0.95, max(0.05, float(detection.get("metric_smoothing_alpha", 0.35)))
     )
+    score_source = str(detection.get("score_source", "upper_body")).lower()
+    if score_source not in {"upper_body", "image_classifier"}:
+        raise ValueError("detection.score_source must be upper_body or image_classifier")
+    detection["score_source"] = score_source
     model_path = Path(str(detection.get("model", "../frontend/public/models/pose_landmarker_full.task")))
     if not model_path.is_absolute():
         model_path = config_path.parent / model_path
     detection["model"] = str(model_path)
 
     posture_classifier = config["posture_classifier"]
-    posture_classifier["enabled"] = bool(posture_classifier.get("enabled", True))
+    posture_classifier["enabled"] = bool(posture_classifier.get("enabled", False))
     classifier_model = Path(str(posture_classifier.get("model", "models/kanden_posture_classifier.onnx")))
     if not classifier_model.is_absolute():
         classifier_model = config_path.parent / classifier_model
@@ -232,7 +236,11 @@ def main(argv: list[str] | None = None) -> int:
                 get_detector(config["detection"]["model"])
                 from client.detect import get_posture_classifier
 
-                if config["posture_classifier"]["enabled"] and get_posture_classifier(config) is None:
+                if (
+                    config["detection"]["score_source"] == "image_classifier"
+                    and config["posture_classifier"]["enabled"]
+                    and get_posture_classifier(config) is None
+                ):
                     raise RuntimeError("Kanden ONNX posture classifier is not ready")
             camera = open_camera(config["camera"])
             ok, frame = camera.read()
@@ -243,7 +251,9 @@ def main(argv: list[str] | None = None) -> int:
             if not response.ok:
                 logger.error("backend health check returned %s", response.status_code)
                 return 1
-            detector_name = "MediaPipe + Kanden classifier, " if config["detection"]["enabled"] else ""
+            detector_name = "MediaPipe upper-body scoring, " if config["detection"]["enabled"] else ""
+            if config["detection"]["score_source"] == "image_classifier":
+                detector_name = "MediaPipe + Kanden classifier, "
             logger.info("self-check OK: %s%s camera, and backend are ready", detector_name, camera.backend)
             return 0
         except Exception as exc:

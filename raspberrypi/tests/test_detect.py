@@ -10,6 +10,35 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from client import detect
 
 
+class Point:
+    def __init__(self, x, y, z=0.0, visibility=0.9):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.visibility = visibility
+
+
+def test_upper_body_metrics_do_not_need_hips_or_legs():
+    metrics = detect.calculate_upper_body_metrics(
+        Point(0.5, 0.2), Point(0.45, 0.28), Point(0.55, 0.28), Point(0.4, 0.45), Point(0.6, 0.45)
+    )
+
+    assert metrics == {"neck": 0.0, "shoulders": 0.0, "torso": 0.0, "score": 100.0}
+
+
+def test_upper_body_metrics_penalize_forward_head_and_dropped_shoulder():
+    upright = detect.calculate_upper_body_metrics(
+        Point(0.5, 0.2), Point(0.45, 0.28), Point(0.55, 0.28), Point(0.4, 0.45), Point(0.6, 0.45)
+    )
+    slouched = detect.calculate_upper_body_metrics(
+        Point(0.68, 0.25), Point(0.62, 0.30, -0.18), Point(0.72, 0.30, -0.18), Point(0.4, 0.45), Point(0.6, 0.53)
+    )
+
+    assert slouched["score"] < upright["score"]
+    assert slouched["neck"] > 15
+    assert slouched["shoulders"] > 7
+
+
 def test_overlay_uses_anatomical_head_to_shoulder_connections():
     assert (7, 11) in detect.OVERLAY_CONNECTIONS
     assert (8, 12) in detect.OVERLAY_CONNECTIONS
@@ -97,7 +126,7 @@ def test_kanden_classifier_replaces_the_score_but_keeps_mediapipe_measurements(m
 
     detect.process_live_frame(
         "picamera-frame",
-        {"posture_classifier": {"min_confidence": 0.65, "interval": 0.5}},
+        {"detection": {"score_source": "image_classifier"}, "posture_classifier": {"min_confidence": 0.65, "interval": 0.5}},
         uploader,
         pose_callback=lambda metrics, landmarks: sent.append(metrics),
     )
@@ -106,6 +135,26 @@ def test_kanden_classifier_replaces_the_score_but_keeps_mediapipe_measurements(m
     assert sent[0]["posture_label"] == "slouch"
     assert sent[0]["posture_ai_used"] is True
     assert sent[0]["neck"] == 2.0
+
+
+def test_upper_body_score_does_not_call_the_optional_image_classifier(monkeypatch):
+    class FakeDetector:
+        def calculate_metrics(self, frame, color_space):
+            return {"score": 88.0, "neck": 4.0, "shoulders": 2.0, "torso": 3.0}
+
+    class FakeUploader:
+        def send_sample(self, metrics):
+            self.metrics = metrics
+
+    monkeypatch.setattr(detect, "get_detector", lambda: FakeDetector())
+    monkeypatch.setattr(detect, "get_posture_classifier", lambda config: pytest.fail("image classifier must stay optional"))
+    monkeypatch.setattr(detect, "_last_analysis_at", 0.0)
+    detect._metric_smoother.reset()
+    uploader = FakeUploader()
+
+    detect.process_live_frame("picamera-frame", {"posture_classifier": {"enabled": True}}, uploader)
+
+    assert uploader.metrics["score"] == 88.0
 
 
 def test_live_detection_shows_overlay_before_a_full_torso_score(monkeypatch):

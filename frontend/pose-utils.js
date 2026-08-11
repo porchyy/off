@@ -9,19 +9,14 @@ export function isPostureRisk(score, threshold, poorPostureMs, riskSeconds) {
   return score < threshold - 10 || poorPostureMs >= delayMs;
 }
 
-// MediaPipe hip joints are slightly below a natural seated waistline.  Move
-// the reference a little toward the shoulders before calculating torso angle.
-const WAIST_LIFT_RATIO = 0.18;
-
 export function scorePose(landmarks) {
-  if (!landmarks || landmarks.length < 25) return null;
+  if (!landmarks || landmarks.length < 13) return null;
 
   const nose = landmarks[0];
   const le = landmarks[7] || nose, re = landmarks[8] || nose; // Fallback to nose if ears missing
   const ls = landmarks[11], rs = landmarks[12];
-  const lh = landmarks[23], rh = landmarks[24];
 
-  if (![nose, le, re, ls, rs, lh, rh].every(x => x && x.visibility > 0.45)) return null;
+  if (![nose, le, re, ls, rs].every(x => x && x.visibility > 0.45)) return null;
 
   // Midpoints (x, y, z)
   const midEar = {
@@ -34,56 +29,30 @@ export function scorePose(landmarks) {
     y: (ls.y + rs.y) / 2,
     z: ((ls.z || 0) + (rs.z || 0)) / 2
   };
-  const midHip = {
-    x: (lh.x + rh.x) / 2,
-    y: (lh.y + rh.y) / 2,
-    z: ((lh.z || 0) + (rh.z || 0)) / 2
-  };
-  const midWaist = {
-    x: midHip.x + (midShoulder.x - midHip.x) * WAIST_LIFT_RATIO,
-    y: midHip.y + (midShoulder.y - midHip.y) * WAIST_LIFT_RATIO,
-    z: midHip.z + (midShoulder.z - midHip.z) * WAIST_LIFT_RATIO
-  };
+  // This is intentionally upper-body only: desks hide hips and legs in a
+  // front-facing seated camera. "torso" is a hunch/rotation proxy, not a
+  // measurement of physical spinal curvature from a single RGB camera.
+  const vertical = Math.max(0.001, midShoulder.y - midEar.y);
+  const shoulderWidth = Math.max(0.001, Math.hypot(ls.x - rs.x, ls.y - rs.y));
+  const degrees = 180 / Math.PI;
+  const neckForward = Math.atan2(Math.abs(midEar.z - midShoulder.z), vertical) * degrees;
+  const neckSideTilt = Math.atan2(Math.abs(midEar.x - midShoulder.x), vertical) * degrees;
+  let neck = Math.hypot(neckForward, neckSideTilt);
+  const shoulderTilt = Math.atan2(Math.abs(ls.y - rs.y), Math.max(0.001, Math.abs(ls.x - rs.x))) * degrees;
+  const shoulderDepth = Math.atan2(Math.abs((ls.z || 0) - (rs.z || 0)), shoulderWidth) * degrees;
+  let shoulders = Math.hypot(shoulderTilt, shoulderDepth);
+  let torso = neckForward * 0.7 + shoulderDepth * 0.3;
 
-  // 1. Neck metric (Forward Head Posture & 2D Tilt)
-  const dxNeck = midEar.x - midShoulder.x;
-  const dyNeck = midShoulder.y - midEar.y;
-  // MediaPipe Z is relative to hips. If head is forward, Z is significantly smaller (more negative)
-  const dzNeck = midEar.z - midShoulder.z;
-
-  const neckPitch = Math.atan2(Math.abs(dzNeck), Math.max(0.001, dyNeck)) * 180 / Math.PI;
-  const neckRoll = Math.atan2(Math.abs(dxNeck), Math.max(0.001, dyNeck)) * 180 / Math.PI;
-  // Combine 3D pitch and 2D tilt for comprehensive neck score
-  let neck = Math.sqrt(neckPitch * neckPitch + neckRoll * neckRoll);
-
-  // 2. Shoulders metric (Imbalance and Rounding)
-  const shoulderRoll = Math.abs(ls.y - rs.y) * 100; // Y imbalance (0-10)
-  const dzShoulders = midShoulder.z - midWaist.z;
-  const dyShoulders = midWaist.y - midShoulder.y;
-  // Shoulder pitch detects slouching forward
-  const shoulderPitch = Math.atan2(Math.abs(dzShoulders), Math.max(0.001, dyShoulders)) * 180 / Math.PI;
-  let shoulders = shoulderRoll * 1.2 + shoulderPitch * 0.8;
-
-  // 3. Torso metric (Leaning back/forward or sideways)
-  const dxTorso = midShoulder.x - midWaist.x;
-  const dyTorso = midWaist.y - midShoulder.y;
-  const dzTorso = midShoulder.z - midWaist.z;
-
-  const torsoRoll = Math.atan2(Math.abs(dxTorso), Math.max(0.001, dyTorso)) * 180 / Math.PI;
-  const torsoPitch = Math.atan2(Math.abs(dzTorso), Math.max(0.001, dyTorso)) * 180 / Math.PI;
-  let torso = Math.sqrt(torsoRoll * torsoRoll + torsoPitch * torsoPitch);
-
-  // To maintain backward compatibility with tests/models if Z is 0 (2D only)
-  if (Math.abs(dzNeck) < 0.0001 && Math.abs(dzShoulders) < 0.0001) {
-      neck = Math.abs(Math.atan2(nose.x - midShoulder.x, Math.max(0.001, midShoulder.y - nose.y)) * 180 / Math.PI);
-      shoulders = Math.abs(ls.y - rs.y) * 100;
-      torso = Math.abs(Math.atan2(midShoulder.x - midWaist.x, Math.max(0.001, midWaist.y - midShoulder.y)) * 180 / Math.PI);
+  // Graceful 2-D fallback for a webcam or test landmarks without depth.
+  if (Math.abs(midEar.z - midShoulder.z) < 0.0001 && Math.abs((ls.z || 0) - (rs.z || 0)) < 0.0001) {
+    neck = Math.abs(Math.atan2(nose.x - midShoulder.x, Math.max(0.001, midShoulder.y - nose.y)) * degrees);
+    shoulders = shoulderTilt;
+    torso = neck * 0.7 + shoulders * 0.3;
   }
 
-  // Strict Scoring
-  const neckPenalty = Math.max(0, neck - 10) * 2.5;
-  const shoulderPenalty = Math.max(0, shoulders - 5) * 2.0;
-  const torsoPenalty = Math.max(0, torso - 8) * 1.8;
+  const neckPenalty = Math.max(0, neck - 15) * 1.6;
+  const shoulderPenalty = Math.max(0, shoulders - 7) * 2.2;
+  const torsoPenalty = Math.max(0, torso - 18) * 1.8;
 
   const score = Math.max(0, Math.min(100, 100 - neckPenalty - shoulderPenalty - torsoPenalty));
 

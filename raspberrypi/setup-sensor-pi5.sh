@@ -61,11 +61,12 @@ detection.update({
     "overlay_min_visibility": 0.35,
     "metric_smoothing_alpha": 0.35,
     "mode": "mediapipe",
+    "score_source": "upper_body",
     "model": "../frontend/public/models/pose_landmarker_full.task",
 })
 classifier = config.setdefault("posture_classifier", {})
 classifier.update({
-    "enabled": True,
+    "enabled": False,
     "model": "models/kanden_posture_classifier.onnx",
     "interval": 0.5,
     "min_confidence": 0.65,

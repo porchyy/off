@@ -7,8 +7,8 @@ PostureAI คือระบบติดตามท่านั่งสำห�
 ## สิ่งที่ระบบทำได้
 
 - รับภาพสดจาก Pi Camera ผ่าน WebRTC ในเครือข่ายภายใน
-- วิเคราะห์ landmark ของร่างกายด้วย MediaPipe Pose และจำแนก `good`, `slouch`, `chin_rest`, `stretch` ด้วย Kanden ONNX บน Raspberry Pi
-- แสดงคะแนนท่านั่ง, คอเอียง, ไหล่ไม่สมดุล และแนวลำตัวบน dashboard
+- วิเคราะห์คอและไหล่ด้วย MediaPipe Pose บน Raspberry Pi โดยไม่ใช้สะโพกหรือขาในการให้คะแนน
+- แสดงคะแนนท่านั่ง, คอเอียง, ไหล่ไม่สมดุล และตัวบ่งชี้การค่อม/บิดของช่วงบนบน dashboard
 - แจ้งเตือนผ่านเสียงบน Pi, ไฟ LED และการแจ้งเตือนบนหน้าเว็บตามค่าที่ตั้งไว้
 - บันทึกเฉพาะคะแนน ตัวชี้วัด เวลา และเหตุการณ์แจ้งเตือนลง SQLite
 - ดูสถิติย้อนหลัง ปรับค่าเกณฑ์ความเสี่ยง และ export ข้อมูลเป็น CSV หรือ JSON (เก็บสูงสุด 30 วัน)
@@ -22,7 +22,7 @@ Pi Camera
    │
    ▼
 Raspberry Pi 5
-  ├─ MediaPipe Pose หา skeleton + Kanden ONNX จำแนกท่านั่งภายในอุปกรณ์
+  ├─ MediaPipe Pose หา skeleton + ประเมินคอ/ไหล่/ช่วงบนภายในอุปกรณ์
   ├─ แจ้งเตือนเสียง / LED
   ├─ ส่ง video stream ตรงไปยัง Dashboard ผ่าน WebRTC
   └─ ส่งคะแนนและเหตุการณ์ไปยัง Backend
@@ -107,7 +107,7 @@ npm run dev
 
 ## ตั้งค่า Raspberry Pi 5
 
-Pi client ต้องติดตั้ง Python dependencies, MediaPipe model, Kanden ONNX classifier และตั้งค่าการเชื่อมต่อกับ backend ก่อนเริ่มใช้จริง
+Pi client ต้องติดตั้ง Python dependencies, MediaPipe model และตั้งค่าการเชื่อมต่อกับ backend ก่อนเริ่มใช้จริง (Kanden ONNX เป็นตัวเลือกเสริม)
 
 ```bash
 cd raspberrypi

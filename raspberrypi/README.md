@@ -1,8 +1,8 @@
 # PostureAI — Raspberry Pi Client
 
 Lightweight Python client ที่รันบน Raspberry Pi เพื่อตรวจจับท่านั่งผ่านกล้อง USB หรือ Pi Camera
-โดยใช้ **MediaPipe Pose Landmarker Full** วาด skeleton และใช้ **Kanden ResNet18 ONNX**
-จำแนก `good`, `slouch`, `chin_rest`, `stretch` ก่อนส่งคะแนนไปเก็บที่ backend
+โดยใช้ **MediaPipe Pose Landmarker Full** วาด skeleton และประเมินคอ ไหล่ และการค่อม/บิดของช่วงบน
+โดยไม่ใช้สะโพกหรือขาในการให้คะแนน ก่อนส่งผลไปเก็บที่ backend
 
 ## โครงสร้าง
 
@@ -24,8 +24,8 @@ chmod +x raspberrypi/setup-pi5.sh
 ./raspberrypi/setup-pi5.sh
 ```
 
-สคริปต์จะดาวน์โหลด MediaPipe model และ Kanden ONNX classifier จาก Hugging Face,
-ตรวจ MediaPipe, classifier, กล้อง และ backend ก่อนจบงาน แล้วแสดง URL สำหรับเปิด
+สคริปต์จะดาวน์โหลด MediaPipe model (และ Kanden ONNX ตัวเลือกเสริม),
+ตรวจ MediaPipe, กล้อง และ backend ก่อนจบงาน แล้วแสดง URL สำหรับเปิด
 จากอุปกรณ์ในเครือข่ายเดียวกัน เช่น `http://192.168.x.x:3000` พร้อมสร้างรหัสผู้ดูแล
 แบบสุ่มไว้ที่ `<project>/.env` (permission `600`) สำหรับใช้เมื่อบันทึกการตั้งค่าหรือลบข้อมูล
 บน dashboard; ดูค่าเมื่อต้องใช้ด้วย `grep POSTUREAI_ADMIN_TOKEN ../.env` จากโฟลเดอร์ `raspberrypi/`
@@ -151,20 +151,21 @@ python posture_client.py --config config.yaml
 .venv/bin/python posture_client.py --config config.yaml --check
 ```
 
-## Kanden ONNX posture classifier
+## คะแนนจากช่วงบนของร่างกาย
 
-ค่าเริ่มต้นของ `posture_classifier` เปิดอยู่ ระบบจะใช้ MediaPipe ตรวจว่ามีคนและวาด
-skeleton ก่อน จากนั้นให้โมเดล Kanden ตัดสินภาพทุก 0.5 วินาที ผลที่มั่นใจอย่างน้อย 65%
-จะกำหนดคะแนน, LED, LCD และการแจ้งเตือนดังนี้: `good=100`, `stretch=80`,
-`slouch=30`, `chin_rest=15` หากความมั่นใจต่ำ ระบบจะใช้คะแนน landmark ของ MediaPipe
-ชั่วคราวเพื่อหลีกเลี่ยงการเตือนผิดพลาด.
+ค่าเริ่มต้น `detection.score_source: upper_body` ใช้เพียงจมูก/หู/ไหล่: คอที่โน้มหรือเอียง,
+ไหล่สูงต่ำหรือมีความลึกต่างกัน และตัวบ่งชี้การค่อม/บิดของช่วงบน จึงยังทำงานได้เมื่อโต๊ะบัง
+สะโพกและขา. กล้อง RGB ด้านหน้าไม่สามารถวัดความโค้งกระดูกสันหลังจริงได้ ค่านี้จึงใช้ช่วย
+ปรับพฤติกรรม ไม่ใช่การวินิจฉัย.
 
-โมเดลเทรนจากภาพสังเคราะห์ จึงควรวางกล้องไว้ด้านหน้า/สูงกว่าระดับสายตาเล็กน้อยและทดสอบ
-กับสภาพแสงจริงก่อนใช้งานต่อเนื่อง สามารถปิดเพื่อกลับไปใช้ MediaPipe score เดิมได้:
+Kanden ONNX ยังคงเป็นทางเลือกสำหรับทดลองจำแนกภาพทั้งเฟรม แต่ไม่เปิดใช้และไม่ทับคะแนน
+ตามค่าเริ่มต้น. หากต้องการใช้เอง ให้เปิดทั้งสองค่า:
 
 ```yaml
+detection:
+  score_source: image_classifier
 posture_classifier:
-  enabled: false
+  enabled: true
 ```
 
 ## โหมดทำงาน
@@ -174,8 +175,8 @@ posture_classifier:
    Pi client ขอภาพใน byte order `RGB` จาก Picamera2 แล้วส่งต่อเป็น `RGB3`
    (24-bit RGB) เข้า MediaPipe และหน้าเว็บตั้งแต่ต้นทาง จึงไม่สลับสีแดง/น้ำเงิน.
 2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.1 วินาที
-   (10 FPS) เพื่อหา skeleton และ Kanden ONNX วิเคราะห์ภาพทุก 0.5 วินาทีเพื่อเลือก
-   class ท่านั่ง → POST เฉพาะคะแนนไป backend และส่งเฉพาะพิกัด landmark สำคัญไปวาด
+   (10 FPS) เพื่อหา skeleton แล้วคำนวณจากศีรษะและไหล่เท่านั้น → POST เฉพาะคะแนนไป backend
+   และส่งเฉพาะพิกัด landmark สำคัญไปวาด
    เส้นทับบน dashboard (ไม่ส่งหรือบันทึกภาพเพิ่ม)
 3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
    จะเล่นเสียงและ POST `/api/alerts` ทันทีเมื่อ `risk.seconds` เป็น `0` โดยเว้นช่วง

@@ -29,10 +29,6 @@ DEFAULT_OVERLAY_MIN_VISIBILITY = 0.35
 # numbers readable without making the posture state feel delayed.
 DEFAULT_METRIC_SMOOTHING_ALPHA = 0.35
 METRIC_KEYS = ("score", "neck", "shoulders", "torso")
-# MediaPipe's hip joints sit slightly below the natural waistline.  Lift the
-# torso reference modestly toward the shoulders so the score better reflects
-# the waist position visible in a seated camera view.
-WAIST_LIFT_RATIO = 0.18
 
 # Keep the live overlay small: these are the points rendered by the dashboard
 # skeleton, rather than all 33 MediaPipe landmarks.
@@ -200,6 +196,65 @@ def draw_pose_overlay(
     # dashboard sidebar and LCD show the current class and score normally.
 
 
+def calculate_upper_body_metrics(nose: Any, left_ear: Any, right_ear: Any, left_shoulder: Any, right_shoulder: Any) -> dict[str, float]:
+    """Score seated posture from head and shoulder landmarks only.
+
+    A frontal RGB camera cannot measure the spine's physical curvature.  The
+    ``torso`` value is therefore an upper-body hunch/rotation *proxy*: forward
+    head displacement plus left/right shoulder depth mismatch.  Hips and legs
+    are intentionally excluded because a desk commonly occludes them.
+    """
+    mid_ear_x = (float(left_ear.x) + float(right_ear.x)) / 2
+    mid_ear_y = (float(left_ear.y) + float(right_ear.y)) / 2
+    mid_ear_z = (float(getattr(left_ear, "z", 0.0)) + float(getattr(right_ear, "z", 0.0))) / 2
+    mid_shoulder_x = (float(left_shoulder.x) + float(right_shoulder.x)) / 2
+    mid_shoulder_y = (float(left_shoulder.y) + float(right_shoulder.y)) / 2
+    mid_shoulder_z = (float(getattr(left_shoulder, "z", 0.0)) + float(getattr(right_shoulder, "z", 0.0))) / 2
+
+    vertical = max(0.001, mid_shoulder_y - mid_ear_y)
+    shoulder_width = max(
+        0.001,
+        math.hypot(float(left_shoulder.x) - float(right_shoulder.x), float(left_shoulder.y) - float(right_shoulder.y)),
+    )
+    degrees = 180.0 / math.pi
+
+    # Head forward/back and side tilt relative to the shoulder midpoint.
+    neck_forward = math.atan2(abs(mid_ear_z - mid_shoulder_z), vertical) * degrees
+    neck_side_tilt = math.atan2(abs(mid_ear_x - mid_shoulder_x), vertical) * degrees
+    neck = math.hypot(neck_forward, neck_side_tilt)
+
+    # Shoulder height difference and depth mismatch flag a dropped shoulder
+    # or upper-body rotation without needing the hip landmarks.
+    shoulder_tilt = math.atan2(abs(float(left_shoulder.y) - float(right_shoulder.y)), max(0.001, abs(float(left_shoulder.x) - float(right_shoulder.x)))) * degrees
+    shoulder_depth = math.atan2(
+        abs(float(getattr(left_shoulder, "z", 0.0)) - float(getattr(right_shoulder, "z", 0.0))),
+        shoulder_width,
+    ) * degrees
+    shoulders = math.hypot(shoulder_tilt, shoulder_depth)
+    torso = neck_forward * 0.7 + shoulder_depth * 0.3
+
+    # A 2-D webcam / mock landmark set has no useful depth.  Preserve a
+    # useful, conservative front-view estimate rather than fabricating 3-D.
+    if abs(mid_ear_z - mid_shoulder_z) < 0.0001 and abs(float(getattr(left_shoulder, "z", 0.0)) - float(getattr(right_shoulder, "z", 0.0))) < 0.0001:
+        neck = abs(math.atan2(float(nose.x) - mid_shoulder_x, max(0.001, mid_shoulder_y - float(nose.y))) * degrees)
+        shoulders = shoulder_tilt
+        torso = neck * 0.7 + shoulders * 0.3
+
+    # Calibrated for an approximately eye-level, front-facing seated camera.
+    # Small natural asymmetries do not reduce the score; sustained upper-body
+    # lean, forward head position, or a dropped shoulder does.
+    neck_penalty = max(0.0, neck - 15.0) * 1.6
+    shoulder_penalty = max(0.0, shoulders - 7.0) * 2.2
+    torso_penalty = max(0.0, torso - 18.0) * 1.8
+    score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
+    return {
+        "neck": round(neck, 1),
+        "shoulders": round(shoulders, 1),
+        "torso": round(torso, 1),
+        "score": round(score, 1),
+    }
+
+
 class MediaPipePoseDetector:
     """Wrapper for MediaPipe Pose landmarker matching frontend posture scoring."""
 
@@ -272,74 +327,14 @@ class MediaPipePoseDetector:
         re = landmarks[8]
         ls = landmarks[11]
         rs = landmarks[12]
-        lh = landmarks[23]
-        rh = landmarks[24]
 
-        # Ensure key landmarks are visible enough
-        for pt in [nose, le, re, ls, rs, lh, rh]:
+        # Upper-body scoring deliberately does not require hips or legs: a
+        # desk often blocks them in a front-facing sitting camera view.
+        for pt in [nose, le, re, ls, rs]:
             if getattr(pt, "visibility", 1.0) < 0.45:
-                # The dashboard can still prove that Pose is working by
-                # drawing the visible upper-body landmarks. Scoring waits for
-                # hips as it needs the full torso to be meaningful.
                 return {"landmarks": overlay_landmarks}
-
-        mid_ear_x = (le.x + re.x) / 2.0
-        mid_ear_y = (le.y + re.y) / 2.0
-        mid_ear_z = (getattr(le, "z", 0.0) + getattr(re, "z", 0.0)) / 2.0
-
-        mid_sh_x = (ls.x + rs.x) / 2.0
-        mid_sh_y = (ls.y + rs.y) / 2.0
-        mid_sh_z = (getattr(ls, "z", 0.0) + getattr(rs, "z", 0.0)) / 2.0
-
-        mid_hip_x = (lh.x + rh.x) / 2.0
-        mid_hip_y = (lh.y + rh.y) / 2.0
-        mid_hip_z = (getattr(lh, "z", 0.0) + getattr(rh, "z", 0.0)) / 2.0
-        mid_waist_x = mid_hip_x + (mid_sh_x - mid_hip_x) * WAIST_LIFT_RATIO
-        mid_waist_y = mid_hip_y + (mid_sh_y - mid_hip_y) * WAIST_LIFT_RATIO
-        mid_waist_z = mid_hip_z + (mid_sh_z - mid_hip_z) * WAIST_LIFT_RATIO
-
-        # 1. Neck metric
-        dx_neck = mid_ear_x - mid_sh_x
-        dy_neck = mid_sh_y - mid_ear_y
-        dz_neck = mid_ear_z - mid_sh_z
-
-        neck_pitch = math.atan2(abs(dz_neck), max(0.001, dy_neck)) * 180.0 / math.pi
-        neck_roll = math.atan2(abs(dx_neck), max(0.001, dy_neck)) * 180.0 / math.pi
-        neck = math.sqrt(neck_pitch * neck_pitch + neck_roll * neck_roll)
-
-        # 2. Shoulders metric
-        shoulder_roll = abs(ls.y - rs.y) * 100.0
-        dz_sh = mid_sh_z - mid_waist_z
-        dy_sh = mid_waist_y - mid_sh_y
-        shoulder_pitch = math.atan2(abs(dz_sh), max(0.001, dy_sh)) * 180.0 / math.pi
-        shoulders = shoulder_roll * 1.2 + shoulder_pitch * 0.8
-
-        # 3. Torso metric
-        dx_torso = mid_sh_x - mid_waist_x
-        dy_torso = mid_waist_y - mid_sh_y
-        dz_torso = mid_sh_z - mid_waist_z
-
-        torso_roll = math.atan2(abs(dx_torso), max(0.001, dy_torso)) * 180.0 / math.pi
-        torso_pitch = math.atan2(abs(dz_torso), max(0.001, dy_torso)) * 180.0 / math.pi
-        torso = math.sqrt(torso_roll * torso_roll + torso_pitch * torso_pitch)
-
-        # Fallback 2D if no Z
-        if abs(dz_neck) < 0.0001 and abs(dz_sh) < 0.0001:
-            neck = abs(math.atan2(nose.x - mid_sh_x, max(0.001, mid_sh_y - nose.y)) * 180.0 / math.pi)
-            shoulders = abs(ls.y - rs.y) * 100.0
-            torso = abs(math.atan2(mid_sh_x - mid_waist_x, max(0.001, mid_waist_y - mid_sh_y)) * 180.0 / math.pi)
-
-        neck_penalty = max(0.0, neck - 10.0) * 2.5
-        shoulder_penalty = max(0.0, shoulders - 5.0) * 2.0
-        torso_penalty = max(0.0, torso - 8.0) * 1.8
-
-        score = max(0.0, min(100.0, 100.0 - neck_penalty - shoulder_penalty - torso_penalty))
-
         return {
-            "score": round(score, 1),
-            "neck": round(neck, 1),
-            "shoulders": round(shoulders, 1),
-            "torso": round(torso, 1),
+            **calculate_upper_body_metrics(nose, le, re, ls, rs),
             "landmarks": overlay_landmarks,
             "person_box": person_box,
         }
@@ -455,7 +450,7 @@ def process_live_frame(
                 alert_controller.clear_posture()
             if lcd_display is not None:
                 lcd_display.show_incomplete_pose()
-            logger.debug("pose detected but hips are not visible yet; sending overlay without a score")
+            logger.debug("pose detected but required head/shoulder landmarks are not visible; sending overlay without a score")
             if frame_overlay_callback is not None:
                 frame_overlay_callback(landmarks, None)
             else:
@@ -464,7 +459,8 @@ def process_live_frame(
                 pose_callback({}, landmarks)
             return
         person_box = result.pop("person_box", None)
-        classifier = get_posture_classifier(config)
+        score_source = str(detection.get("score_source", "upper_body")).lower()
+        classifier = get_posture_classifier(config) if score_source == "image_classifier" else None
         if classifier is not None:
             try:
                 classification = classifier.classify(
