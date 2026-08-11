@@ -75,6 +75,8 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
         "input_width": 640,
         "api_key_env": "ROBOFLOW_API_KEY",
     }
+    assert config["tof400c"]["enabled"] is True
+    assert config["tof400c"]["calibration_samples"] == 6
 
 
 def test_config_clamps_overlay_smoothing_options(tmp_path):

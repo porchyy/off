@@ -142,7 +142,10 @@ class PoseMetricSmoother:
                 key: self._metrics[key] + alpha * (medians[key] - self._metrics[key])
                 for key in METRIC_KEYS
             }
-        return {key: round(self._metrics[key], 1) for key in METRIC_KEYS}
+        return {
+            **metrics,
+            **{key: round(self._metrics[key], 1) for key in METRIC_KEYS},
+        }
 
 
 _overlay_smoother = PoseOverlaySmoother()
@@ -483,6 +486,7 @@ def process_live_frame(
     pose_callback: Any | None = None,
     frame_overlay_callback: Any | None = None,
     lcd_display: Any | None = None,
+    metric_transformer: Any | None = None,
 ) -> None:
     """Run throttled posture inference on one in-memory live camera frame."""
     global _last_analysis_at, _pose_visible
@@ -512,6 +516,8 @@ def process_live_frame(
         )
         if "score" not in result:
             _metric_smoother.reset()
+            if metric_transformer is not None:
+                metric_transformer.pose_missing()
             if alert_controller is not None:
                 alert_controller.clear_posture()
             if lcd_display is not None:
@@ -553,6 +559,12 @@ def process_live_frame(
             except Exception as exc:
                 logger.warning("Kanden posture classifier failed for this frame; using MediaPipe score fallback: %s", exc)
 
+        if metric_transformer is not None:
+            try:
+                result = metric_transformer.apply(result)
+            except Exception as exc:
+                logger.warning("TOF400C score fusion failed; using camera score: %s", exc)
+
         metrics = _metric_smoother.update(result, metric_alpha)
         for key in ("posture_label", "posture_confidence", "posture_ai_used"):
             if key in result:
@@ -574,6 +586,8 @@ def process_live_frame(
             pose_callback(metrics, landmarks)
     else:
         _metric_smoother.reset()
+        if metric_transformer is not None:
+            metric_transformer.pose_missing()
         if alert_controller is not None:
             alert_controller.clear_posture()
         if lcd_display is not None:

@@ -118,6 +118,20 @@ function update(m) {
   $('neck').textContent = `${m.neck.toFixed(0)}°`;
   $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
   $('torso').textContent = `${m.torso.toFixed(0)}°`;
+  const tofTrend = $('tofTrend');
+  const tofCalibration = $('tofCalibration');
+  if (tofTrend && tofCalibration) {
+    const delta = typeof m.tof_delta_cm === 'number' ? m.tof_delta_cm : NaN;
+    const distance = typeof m.tof_distance_cm === 'number' ? m.tof_distance_cm : NaN;
+    if (Number.isFinite(delta) && Number.isFinite(distance)) {
+      const direction = delta > 0 ? 'โน้มเข้า' : delta < 0 ? 'เอนออก' : 'ปกติ';
+      tofTrend.textContent = `${direction} ${Math.abs(delta).toFixed(1)} cm`;
+      tofCalibration.textContent = `TOF400C: ${distance.toFixed(1)} cm · ${m.tof_status || 'พร้อมใช้งาน'}`;
+    } else {
+      tofTrend.textContent = '--';
+      tofCalibration.textContent = `TOF400C: ${m.tof_status || 'รอข้อมูลจากเซนเซอร์'}`;
+    }
+  }
   updatePostureModelResult(m);
   updateLcdPreview(m);
   state(band.state, cls);

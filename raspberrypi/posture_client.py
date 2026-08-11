@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "posture_classifier", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "posture_classifier", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video", "tof400c"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -120,6 +120,19 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     # Capture only once: the camera dimensions drive both AI and WebRTC.
     camera["width"] = video["width"]
     camera["height"] = video["height"]
+
+    tof400c = config["tof400c"]
+    tof400c["enabled"] = bool(tof400c.get("enabled", True))
+    tof400c["poll_seconds"] = min(5.0, max(0.1, float(tof400c.get("poll_seconds", 0.5))))
+    tof400c["stale_seconds"] = min(30.0, max(1.0, float(tof400c.get("stale_seconds", 3.0))))
+    tof400c["calibration_samples"] = min(30, max(3, int(tof400c.get("calibration_samples", 6))))
+    tof400c["absence_reset_seconds"] = min(60.0, max(2.0, float(tof400c.get("absence_reset_seconds", 8.0))))
+    for key, default, maximum in (
+        ("forward_start_cm", 8.0, 100.0), ("recline_start_cm", 10.0, 100.0),
+        ("forward_points_per_cm", 2.0, 10.0), ("recline_points_per_cm", 1.5, 10.0),
+        ("max_forward_penalty", 35.0, 60.0), ("max_recline_penalty", 25.0, 60.0),
+    ):
+        tof400c[key] = min(maximum, max(0.0 if "points" not in key else 0.1, float(tof400c.get(key, default))))
 
     indicator = config["indicator"]
     indicator["enabled"] = bool(indicator.get("enabled", False))
@@ -302,6 +315,9 @@ def main(argv: list[str] | None = None) -> int:
         timeout=config["backend"].get("timeout", 5),
         buffer_path=config["buffer"]["path"],
     )
+    from client.tof_fusion import Tof400cFusion
+
+    tof_fusion = Tof400cFusion(backend_url, config["tof400c"])
     alert_controller = AlertController(config, uploader, sound_player, indicator, buzzer)
     roboflow = RoboflowInferenceWorker(config["roboflow"])
 
@@ -363,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
                             webrtc.publish_pose if webrtc else None,
                             update_stream_overlay,
                             lcd,
+                            tof_fusion,
                         )
                     roboflow.submit_if_due(frame, producer.color_space)
                     classification = roboflow.take_result()
