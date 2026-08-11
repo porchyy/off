@@ -13,7 +13,7 @@ class CharacterLcd:
     """Show the current posture score on a HD44780-compatible I2C LCD.
 
     The display is intentionally best-effort: a disconnected LCD must never
-    stop the camera, YOLOv8-Pose, dashboard, or alert loop.
+    stop the camera, MediaPipe, dashboard, or alert loop.
     """
 
     def __init__(self, config: dict[str, Any], clock: Callable[[], float] = time.monotonic) -> None:

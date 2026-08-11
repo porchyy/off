@@ -1,13 +1,13 @@
 # PostureAI Frontend
 
-Static HTML/JS/CSS สำหรับ dashboard ที่รับผล YOLOv8-Pose จาก Raspberry Pi
+Static HTML/JS/CSS ที่ใช้ MediaPipe Pose ใน browser — ปรับแค่ path ให้ทำงาน
 ภายใต้ Vite (build tool) โดยไม่เปลี่ยน logic เดิม
 
 ## โครงสร้าง
 
 - `index.html` — entry point (ใช้ relative path กับ Vite)
-- `app.js` — Pi camera stream, UI bindings, alerts
-- `pose-utils.js` — risk threshold helper สำหรับผล YOLOv8-Pose
+- `app.js` — camera, MediaPipe, UI bindings, alerts
+- `pose-utils.js` — scoring algorithm, posture metric calculations
 - `storage.js` — backend (HTTP) vs demo (localStorage) abstraction
 - `app.css` / `risk.css` — UI styling
 - `tests/` — unit test suite (`pose.test.js`, `storage.test.js`)
@@ -31,7 +31,8 @@ npm test
 ```
 
 รัน unit tests ทั้งหมดด้วย Node.js Native Test Runner (`node --test`) ครอบคลุม:
-- การรับคะแนน, keypoint, กรอบ และผล `perfect` / `good` / `bad` จาก YOLOv8-Pose บน Pi
+- การคำนวณคะแนน MediaPipe Pose (Score, Neck, Shoulders, Torso)
+- การคัดกรอง Landmark ความชัดเจนต่ำ (Visibility threshold)
 - LocalStorage fallback storage (Demo mode)
 - การบันทึก/อ่านตั้งค่า, Samples, Alerts, Summary, Stats, Export (CSV/JSON) และ Clear data
 

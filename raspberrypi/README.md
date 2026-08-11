@@ -1,14 +1,13 @@
 # PostureAI — Raspberry Pi Client
 
-Lightweight Python client ที่รันบน Raspberry Pi เพื่อตรวจจับท่านั่งมุมหน้าตรงด้วย
-**YOLOv8-Pose** ผ่านกล้อง USB หรือ Pi Camera แล้วส่งคะแนนและผล `perfect` / `good` / `bad` ไปยัง backend
+Lightweight Python client ที่รันบน Raspberry Pi เพื่อตรวจจับท่านั่ง (pose)
+ด้วย **MediaPipe Pose Landmarker Full** ผ่านกล้อง USB หรือ Pi Camera แล้วส่งคะแนนไปเก็บที่ backend
 
 ## โครงสร้าง
 
 - `posture_client.py` — main loop: เปิดกล้อง, ประมวลผล pose, ส่ง
   `POST /api/samples` ไป backend
-- `requirements.txt` — OpenCV, requests และ dependencies พื้นฐาน
-- `requirements-yolov8-pose.txt` — PyTorch, Ultralytics และ YOLOv8-Pose runtime
+- `requirements.txt` — OpenCV, MediaPipe (Python), requests
 - `config.example.yaml` — backend URL, camera/video settings, AI rate, risk
   thresholds
 
@@ -24,7 +23,7 @@ chmod +x raspberrypi/setup-pi5.sh
 ./raspberrypi/setup-pi5.sh
 ```
 
-สคริปต์จะติดตั้ง YOLOv8-Pose, ดาวน์โหลดโมเดล, ตรวจกล้อง และ backend ก่อนจบงาน แล้วแสดง URL สำหรับเปิด
+สคริปต์จะตรวจ MediaPipe, กล้อง และ backend ก่อนจบงาน แล้วแสดง URL สำหรับเปิด
 จากอุปกรณ์ในเครือข่ายเดียวกัน เช่น `http://192.168.x.x:3000` พร้อมสร้างรหัสผู้ดูแล
 แบบสุ่มไว้ที่ `<project>/.env` (permission `600`) สำหรับใช้เมื่อบันทึกการตั้งค่าหรือลบข้อมูล
 บน dashboard; ดูค่าเมื่อต้องใช้ด้วย `grep POSTUREAI_ADMIN_TOKEN ../.env` จากโฟลเดอร์ `raspberrypi/`
@@ -144,7 +143,7 @@ LED จะติดทันทีเมื่อคะแนนต่ำกว�
 python posture_client.py --config config.yaml
 ```
 
-ตรวจทั้ง YOLOv8-Pose, กล้อง และ backend โดยไม่ส่ง sample:
+ตรวจทั้ง MediaPipe, กล้อง และ backend โดยไม่ส่ง sample:
 
 ```bash
 .venv/bin/python posture_client.py --config config.yaml --check
@@ -155,10 +154,10 @@ python posture_client.py --config config.yaml
 1. **Live camera pipeline**: Pi Camera จับภาพต่อเนื่องหนึ่งชุดที่ 640×360 / 12 FPS
    ในหน่วยความจำเท่านั้น แล้วส่งเป็น WebRTC ไปยัง dashboard ใน LAN (ไม่มีการบันทึกภาพลงดิสก์)
    Pi client ขอภาพใน byte order `RGB` จาก Picamera2 แล้วส่งต่อเป็น `RGB3`
-   (24-bit RGB) เข้า YOLOv8-Pose โดยไม่สลับสีแดง/น้ำเงิน.
-2. **Local detection**: YOLOv8n-Pose `yolov8n-pose.pt` วิเคราะห์ frame ล่าสุดทุก 0.5 วินาที
-   แล้วใช้ keypoint หู, ไหล่ และสะโพกประเมินแนวศีรษะ, ไหล่ และลำตัวสำหรับกล้องมุมหน้าตรง
-   (ไม่ส่งภาพออกอินเทอร์เน็ต).
+   (24-bit RGB) เข้า MediaPipe และหน้าเว็บตั้งแต่ต้นทาง จึงไม่สลับสีแดง/น้ำเงิน.
+2. **Local detection**: MediaPipe Pose Landmarker Full วิเคราะห์ frame ล่าสุดทุก 0.1 วินาที
+   (10 FPS) → POST เฉพาะคะแนนไป backend และส่งเฉพาะพิกัด landmark สำคัญไปวาด
+   เส้นทับบน dashboard (ไม่ส่งหรือบันทึกภาพเพิ่ม)
 3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
    จะเล่นเสียงและ POST `/api/alerts` ทันทีเมื่อ `risk.seconds` เป็น `0` โดยเว้นช่วง
    การแจ้งซ้ำตาม `risk.cooldown` (ตั้งค่าเวลาหน่วงได้จากหน้าเว็บ)
@@ -172,8 +171,8 @@ python posture_client.py --config config.yaml
 
 ## AI เสริมจาก Roboflow (ทางเลือก)
 
-ระบบหลักใช้ **YOLOv8-Pose บน Pi** เพื่อประเมินท่านั่งมุมหน้าและแจ้งเตือน
-โดยไม่ต้องใช้อินเทอร์เน็ต. หากต้องการให้หน้าเว็บแสดง
+ระบบหลักยังคงใช้ **MediaPipe Pose Landmarker Full บน Pi** เพื่อวาด skeleton,
+คำนวณคะแนน และแจ้งเตือนโดยไม่ต้องใช้อินเทอร์เน็ต. หากต้องการให้หน้าเว็บแสดง
 ผลจำแนกท่านั่งจากโมเดล Roboflow เพิ่มเติม ให้เปิด `roboflow.enabled: true` ใน
 `config.yaml` และเก็บ API key ไว้นอก repository:
 
@@ -208,9 +207,9 @@ Pi ออกอินเทอร์เน็ตได้ และไม่ค�
 
 ## หมายเหตุ
 
-- `detection.mode` รองรับ `yolov8_pose` เท่านั้น และประมวลผลภาพบน Pi
+- `detection.mode` รองรับ `mediapipe` เท่านั้น และประมวลผลภาพบน Pi
 - WebRTC รองรับ dashboard หนึ่งเครื่องใน LAN พร้อมกัน; หากสตรีมขาด หน้าเว็บจะเชื่อมต่อใหม่อัตโนมัติ
-- ถ้า YOLOv8-Pose เปิดไม่ได้ ระบบจะรายงาน error และไม่สร้างคะแนนจำลอง
+- ถ้า MediaPipe เปิดไม่ได้ ระบบจะรายงาน error และไม่สร้างคะแนนจำลอง
 
 ## ดูภาพจาก Pi Camera บนอุปกรณ์อื่น
 

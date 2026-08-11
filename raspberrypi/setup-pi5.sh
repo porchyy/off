@@ -73,24 +73,50 @@ fi
 echo "[2/6] Granting camera/audio/I2C access to $INSTALL_USER..."
 sudo usermod -aG docker,video,audio,gpio,i2c "$INSTALL_USER"
 
-echo "[3/6] Creating the Pi YOLOv8-Pose front-view environment..."
+echo "[3/6] Creating the Pi sensor environment..."
 cd "$SCRIPT_DIR"
 python3 -m venv --system-site-packages .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m pip uninstall -y mediapipe yolov5 huggingface-hub
-.venv/bin/python -m pip install -r requirements-yolov8-pose.txt
-rm -f "$SCRIPT_DIR/models/small640.pt"
-MODEL_PATH="$SCRIPT_DIR/models/yolov8n-pose.pt"
+# This client no longer uses the previous YOLO runtime.  Remove it from this
+# project venv so the Pi cannot accidentally load an old detector.
+.venv/bin/python -m pip uninstall -y yolov5 ultralytics huggingface-hub torch torchvision || true
+rm -f models/small640.pt models/yolov8n-pose.pt
+MODEL_PATH="$PROJECT_DIR/frontend/public/models/pose_landmarker_full.task"
 if [ ! -s "$MODEL_PATH" ]; then
-    echo "Downloading YOLOv8-Pose front-view model..."
+    echo "Downloading MediaPipe Pose Landmarker Full model..."
     mkdir -p "$(dirname "$MODEL_PATH")"
-    curl -fL --retry 3 -o "$MODEL_PATH" \
-        https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n-pose.pt
+    curl -fL --retry 2 -o "$MODEL_PATH" \
+        https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
 fi
 if [ ! -f config.yaml ]; then
     cp config.example.yaml config.yaml
 fi
+
+# Keep existing hardware/network settings, but switch an existing installation
+# back to the original MediaPipe Pose settings.
+.venv/bin/python - config.yaml <<'PY'
+from pathlib import Path
+import sys
+import yaml
+
+path = Path(sys.argv[1])
+config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+detection = config.setdefault("detection", {})
+for key in ("confidence", "iou", "image_size", "model_url"):
+    detection.pop(key, None)
+detection.update({
+    "enabled": True,
+    "interval": 0.1,
+    "overlay_smoothing_alpha": 0.65,
+    "overlay_hold_seconds": 0.2,
+    "overlay_min_visibility": 0.35,
+    "metric_smoothing_alpha": 0.35,
+    "mode": "mediapipe",
+    "model": "../frontend/public/models/pose_landmarker_full.task",
+})
+path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+PY
 
 echo "[4/6] Building and starting the web/backend containers..."
 cd "$PROJECT_DIR"
@@ -109,7 +135,7 @@ for attempt in $(seq 1 30); do
     sleep 2
 done
 
-# Register the environmental sensor publisher before camera/YOLOv8-Pose checks.
+# Register the environmental sensor publisher before camera/MediaPipe checks.
 # A camera failure must not prevent BH1750 from starting automatically.
 echo "Registering the persistent BH1750 service..."
 sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
@@ -138,7 +164,7 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now postureai-sensors.service
 
-echo "[5/6] Verifying YOLOv8-Pose, Pi Camera, and backend..."
+echo "[5/6] Verifying MediaPipe, Pi Camera, and backend..."
 cd "$SCRIPT_DIR"
 .venv/bin/python posture_client.py --config config.yaml --check
 

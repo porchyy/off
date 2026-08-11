@@ -1,23 +1,39 @@
 import { createStorage, defaultSettings } from './storage.js';
-import { isPostureRisk } from './pose-utils.js';
+import { isPostureRisk, scorePose } from './pose-utils.js';
 
 const $ = id => document.getElementById(id);
+const video = $('video');
+const canvas = $('overlay');
+const ctx = canvas.getContext('2d');
 const start = $('start');
 const stop = $('stop');
-const detectionOverlay = $('detectionOverlay');
-const detectionContext = detectionOverlay.getContext('2d');
+
+// This file is copied to public/ during npm install. Keep it as a runtime
+// import so Vite serves the local MediaPipe runtime without bundling it.
+const visionTasksUrl = '/vision_bundle.js';
+const loadVisionTasks = () => import(/* @vite-ignore */ visionTasksUrl);
 
 let storage;
+let landmarker;
+let stream;
+let running = false;
+let frame;
+let lastVideoTime = -1;
+let analysisVideo = video;
+let saveAnalysisResults = true;
 let lastSave = 0;
 let lastAlert = 0;
 let lastMetricAt = 0;
 let poorPostureMs = 0;
 let detectionSignal = 'neutral';
 let settings = { ...defaultSettings };
+let latestMetrics = null;
 let piPeer;
 let piSignal;
 let piReconnectTimer;
 let piManualStop = false;
+let piLandmarks = [];
+let piMetrics = null;
 let piRoboflowResult = null;
 
 const toast = msg => {
@@ -67,22 +83,15 @@ function updateRisk(m) {
 
 function update(m) {
   const s = Math.round(m.score);
-  const yoloPose = m.detector === 'yolov8_pose';
   const cls = s >= 70 ? 'good' : s >= 40 ? 'caution' : 'risk';
   $('score').value = s;
   $('score').textContent = s;
   $('score').style.color = `var(--status-${cls})`;
   $('status').textContent = s >= 70 ? 'ท่านั่งดี' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่';
   $('advice').textContent = s >= 70 ? 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย' : s >= 40 ? 'ลองยืดหลังและดึงคางเข้าเล็กน้อย' : 'พักสั้น ๆ แล้วจัดหลังให้ตรง';
-  if (yoloPose) {
-    $('neck').textContent = `${m.neck.toFixed(0)}°`;
-    $('shoulders').textContent = `${m.shoulders.toFixed(0)}°`;
-    $('torso').textContent = `${m.torso.toFixed(0)}°`;
-  } else {
-    $('neck').textContent = `${m.neck.toFixed(0)}°`;
-    $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
-    $('torso').textContent = `${m.torso.toFixed(0)}°`;
-  }
+  $('neck').textContent = `${m.neck.toFixed(0)}°`;
+  $('shoulders').textContent = `${m.shoulders.toFixed(1)}%`;
+  $('torso').textContent = `${m.torso.toFixed(0)}°`;
   updateLcdPreview(s);
   state(s >= 70 ? 'กำลังติดตาม' : s >= 40 ? 'ปรับพฤติกรรม' : 'ท่านั่งแย่', cls);
   updateRisk(m);
@@ -96,89 +105,6 @@ function updateLcdPreview(score) {
     : safeScore >= 40
       ? 'CHECK POSTURE'
       : 'ADJUST POSTURE';
-}
-
-function clearDetectionBox() {
-  detectionContext.clearRect(0, 0, detectionOverlay.width, detectionOverlay.height);
-  detectionOverlay.hidden = true;
-}
-
-function drawDetectionBox(metrics) {
-  const box = metrics?.bbox;
-  const preview = $('piCamera');
-  const sourceWidth = Number(metrics?.frame_width) || preview.videoWidth;
-  const sourceHeight = Number(metrics?.frame_height) || preview.videoHeight;
-  if (!box || !Number.isFinite(sourceWidth) || !Number.isFinite(sourceHeight) || sourceWidth <= 0 || sourceHeight <= 0) {
-    clearDetectionBox();
-    return;
-  }
-
-  const x1 = Number(box.x1), y1 = Number(box.y1);
-  const x2 = Number(box.x2), y2 = Number(box.y2);
-  if (![x1, y1, x2, y2].every(Number.isFinite) || x2 <= x1 || y2 <= y1) {
-    clearDetectionBox();
-    return;
-  }
-
-  detectionOverlay.width = sourceWidth;
-  detectionOverlay.height = sourceHeight;
-  detectionOverlay.hidden = false;
-  detectionContext.clearRect(0, 0, sourceWidth, sourceHeight);
-
-  // The video is mirrored in CSS. Mirror only the box X coordinate so text
-  // remains readable while its location still follows the person.
-  const x = sourceWidth - x2;
-  const y = Math.max(0, y1);
-  const width = x2 - x1;
-  const height = y2 - y1;
-  const color = metrics.posture === 'bad' ? '#ff4d6d' : metrics.posture === 'good' ? '#ffd166' : metrics.posture === 'perfect' ? '#22e58d' : '#7aa7ff';
-  const label = `${metrics.posture || 'posture'} ${Math.round(Number(metrics.confidence || 0) * 100)}%`;
-  const fontSize = Math.max(14, Math.round(sourceWidth / 40));
-  const padding = Math.max(5, Math.round(sourceWidth / 128));
-
-  const posePoints = new Map((metrics.keypoints || [])
-    .filter(point => Number(point.visibility) >= 0.35)
-    .map(point => [Number(point.index), { x: sourceWidth - Number(point.x), y: Number(point.y) }]));
-  // COCO's 17 YOLOv8-Pose points, connected as a full-body skeleton in the
-  // same visual order users expect from MediaPipe Pose.
-  const connections = [
-    [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6],
-    [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
-    [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
-  ];
-  detectionContext.lineWidth = Math.max(2, Math.round(sourceWidth / 320));
-  detectionContext.strokeStyle = color;
-  detectionContext.globalAlpha = 0.85;
-  for (const [from, to] of connections) {
-    const start = posePoints.get(from);
-    const end = posePoints.get(to);
-    if (!start || !end) continue;
-    detectionContext.beginPath();
-    detectionContext.moveTo(start.x, start.y);
-    detectionContext.lineTo(end.x, end.y);
-    detectionContext.stroke();
-  }
-  detectionContext.fillStyle = color;
-  for (const point of posePoints.values()) {
-    detectionContext.beginPath();
-    detectionContext.arc(point.x, point.y, Math.max(3, Math.round(sourceWidth / 180)), 0, Math.PI * 2);
-    detectionContext.fill();
-  }
-  detectionContext.globalAlpha = 1;
-  detectionContext.lineWidth = Math.max(3, Math.round(sourceWidth / 220));
-  detectionContext.strokeStyle = color;
-  detectionContext.shadowColor = color;
-  detectionContext.shadowBlur = 10;
-  detectionContext.strokeRect(x, y, width, height);
-  detectionContext.shadowBlur = 0;
-  detectionContext.font = `700 ${fontSize}px system-ui, sans-serif`;
-  const labelWidth = Math.ceil(detectionContext.measureText(label).width) + padding * 2;
-  const labelHeight = fontSize + padding * 2;
-  const labelY = Math.max(0, y - labelHeight);
-  detectionContext.fillStyle = color;
-  detectionContext.fillRect(x, labelY, Math.min(labelWidth, sourceWidth - x), labelHeight);
-  detectionContext.fillStyle = '#06110d';
-  detectionContext.fillText(label, x + padding, labelY + fontSize + padding - 1);
 }
 
 function updateRoboflowResult(result) {
@@ -218,6 +144,258 @@ async function save(m) {
   }
 }
 
+function drawSleekSkeleton(ctx, landmarks, signal, metrics) {
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (!landmarks || landmarks.length === 0) return;
+
+  const isRisk = signal === 'risk';
+  const mainColor = isRisk ? '#ff4d6d' : '#00e5c7';
+  const glowColor = isRisk ? 'rgba(255, 77, 109, 0.7)' : 'rgba(0, 229, 199, 0.7)';
+  const secondaryColor = isRisk ? '#ff9aaa' : '#80f5e5';
+
+  const lm = landmarks;
+  const getPt = idx => (lm[idx] && (lm[idx].visibility === undefined || lm[idx].visibility > 0.35))
+    ? { x: lm[idx].x * w, y: lm[idx].y * h }
+    : null;
+
+  const nose = getPt(0);
+  const lEar = getPt(7);
+  const rEar = getPt(8);
+  const lShoulder = getPt(11);
+  const rShoulder = getPt(12);
+  const lElbow = getPt(13);
+  const rElbow = getPt(14);
+  const lWrist = getPt(15);
+  const rWrist = getPt(16);
+  const rawLWaist = getPt(23);
+  const rawRWaist = getPt(24);
+  // Landmark 23/24 is pelvis-level.  Display the calculated waist reference
+  // slightly higher so the skeleton matches the scoring reference.
+  const liftWaist = (waist, shoulder) => waist && shoulder
+    ? { x: waist.x + (shoulder.x - waist.x) * 0.18, y: waist.y + (shoulder.y - waist.y) * 0.18 }
+    : waist;
+  const lWaist = liftWaist(rawLWaist, lShoulder);
+  const rWaist = liftWaist(rawRWaist, rShoulder);
+
+  // Helper: Draw Glowing Neon Line
+  function drawLine(p1, p2, width = 3.5, dashed = false) {
+    if (!p1 || !p2) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = mainColor;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 12;
+    ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([6, 6]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Helper: Draw Glowing Node Ring
+  function drawNode(pt, radius = 5.5) {
+    if (!pt) return;
+    ctx.save();
+    // Outer aura
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius + 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = isRisk ? 'rgba(255, 77, 109, 0.25)' : 'rgba(0, 229, 199, 0.25)';
+    ctx.fill();
+
+    // Node core
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#080c18';
+    ctx.strokeStyle = secondaryColor;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 1. Draw Upper Body Connections (No facial detail clutter!)
+  drawLine(lShoulder, rShoulder, 4.5);
+
+  if (lShoulder && rShoulder) {
+    const sCenter = { x: (lShoulder.x + rShoulder.x) / 2, y: (lShoulder.y + rShoulder.y) / 2 };
+    if (nose) drawLine(nose, sCenter, 2.5);
+    if (lEar) drawLine(lEar, lShoulder, 2);
+    if (rEar) drawLine(rEar, rShoulder, 2);
+
+    if (lWaist && rWaist) {
+      const waistCenter = { x: (lWaist.x + rWaist.x) / 2, y: (lWaist.y + rWaist.y) / 2 };
+      drawLine(sCenter, waistCenter, 3.5);
+    }
+  }
+
+  // Arms
+  drawLine(lShoulder, lElbow, 3.5);
+  drawLine(lElbow, lWrist, 3.5);
+  drawLine(rShoulder, rElbow, 3.5);
+  drawLine(rElbow, rWrist, 3.5);
+
+  // Torso sides and calculated waist reference
+  drawLine(lShoulder, lWaist, 3);
+  drawLine(rShoulder, rWaist, 3);
+  drawLine(lWaist, rWaist, 3.5);
+
+  // 2. Horizontal Level Reference Line across Shoulders (HUD Guide)
+  if (lShoulder && rShoulder) {
+    const minX = Math.min(lShoulder.x, rShoulder.x) - 50;
+    const maxX = Math.max(lShoulder.x, rShoulder.x) + 50;
+    const avgY = (lShoulder.y + rShoulder.y) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(minX, avgY);
+    ctx.lineTo(maxX, avgY);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Draw Clean Joint Nodes
+  [nose, lEar, rEar, lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist, lWaist, rWaist].forEach(pt => {
+    drawNode(pt, 5.5);
+  });
+
+  // 4. Futuristic HUD Overlay Card on Canvas (Top-Left)
+  if (metrics) {
+    ctx.save();
+    const hudW = 200;
+    const hudH = 56;
+    ctx.fillStyle = 'rgba(8, 12, 24, 0.82)';
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(16, 16, hudW, hudH, 8);
+    else ctx.rect(16, 16, hudW, hudH);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`คะแนนท่านั่ง: ${metrics.score ?? '--'}/100`, 28, 38);
+    ctx.fillStyle = mainColor;
+    ctx.fillText(`มุมคอ: ${metrics.neck ?? '--'}° | ไหล่: ${metrics.shoulders ?? '--'}°`, 28, 58);
+    ctx.restore();
+  }
+}
+
+function loop() {
+  if (!running || !landmarker || !analysisVideo) return;
+  if (analysisVideo.currentTime !== lastVideoTime) {
+    lastVideoTime = analysisVideo.currentTime;
+    const result = landmarker.detectForVideo(analysisVideo, performance.now());
+    const calculated = result.landmarks?.[0] && scorePose(result.landmarks[0]);
+    if (calculated) {
+      latestMetrics = calculated;
+      update(calculated);
+      if (saveAnalysisResults) save(calculated);
+    }
+    drawSleekSkeleton(ctx, result.landmarks?.[0], detectionSignal, latestMetrics);
+  }
+  frame = requestAnimationFrame(loop);
+}
+
+async function loadPoseLandmarker() {
+  if (landmarker) return;
+  try {
+    const { FilesetResolver, PoseLandmarker } = await loadVisionTasks();
+    const vision = await FilesetResolver.forVisionTasks('./wasm');
+    const modelPath = './models/pose_landmarker_full.task';
+    try {
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+    } catch {
+      // GPU delegates are not available in every browser. CPU keeps the
+      // application usable without sending camera frames to a remote service.
+      landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: modelPath, delegate: 'CPU' },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+    }
+  } catch (error) {
+    landmarker?.close();
+    landmarker = null;
+    throw error;
+  }
+}
+
+function startPoseTracking(source, { saveResults = false } = {}) {
+  analysisVideo = source;
+  saveAnalysisResults = saveResults;
+  lastVideoTime = -1;
+  canvas.width = source.videoWidth;
+  canvas.height = source.videoHeight;
+  canvas.hidden = false;
+  running = true;
+  cancelAnimationFrame(frame);
+  loop();
+}
+
+async function begin() {
+  if (!window.isSecureContext) {
+    toast('กรุณาเปิดผ่าน HTTPS หรือ http://localhost:3000');
+    return;
+  }
+  start.disabled = true;
+  try {
+    await loadPoseLandmarker();
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+    startPoseTracking(video, { saveResults: true });
+    $('cameraHelp').hidden = true;
+    start.disabled = true;
+    stop.disabled = false;
+    state('กำลังติดตาม', 'good');
+  } catch (e) {
+    console.error(e);
+    state('เริ่มไม่ได้', 'risk');
+    start.disabled = false;
+    toast('เปิดกล้องหรือ AI ไม่สำเร็จ โปรดอนุญาตกล้องแล้วลองใหม่');
+    $('cameraHelp').textContent = 'ตรวจสอบว่าไฟล์ AI ในเครื่องถูกติดตั้งครบ แล้วอนุญาตการใช้กล้อง';
+  }
+}
+
+function end() {
+  running = false;
+  cancelAnimationFrame(frame);
+  stream?.getTracks().forEach(t => t.stop());
+  stream = null;
+  landmarker?.close();
+  landmarker = null;
+  video.srcObject = null;
+  analysisVideo = video;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  detectionSignal = 'neutral';
+  $('cameraSignal').className = 'camera-signal neutral';
+  $('cameraSignal').textContent = 'รอเริ่มตรวจจับ';
+  start.disabled = false;
+  stop.disabled = true;
+  $('cameraHelp').hidden = false;
+  lastMetricAt = 0;
+  state('หยุดแล้ว');
+}
+
 function beginPiCamera() {
   piManualStop = false;
   clearTimeout(piReconnectTimer);
@@ -239,10 +417,19 @@ function endPiCamera() {
   piPeer?.close();
   piPeer = undefined;
   const piVideo = $('piCamera');
+  running = false;
+  cancelAnimationFrame(frame);
+  landmarker?.close();
+  landmarker = null;
+  analysisVideo = video;
+  lastVideoTime = -1;
   if (piVideo) piVideo.srcObject = null;
-  clearDetectionBox();
+  piLandmarks = [];
+  piMetrics = null;
   piRoboflowResult = null;
   $('roboflowResult').hidden = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.hidden = true;
   $('cameraHelp').hidden = false;
   $('cameraSignal').className = 'camera-signal neutral';
   $('cameraSignal').textContent = 'หยุดแสดงภาพ';
@@ -279,6 +466,30 @@ function reconnectPiCamera() {
   state('กำลังเชื่อมต่อใหม่', 'neutral');
 }
 
+function piOverlayLandmarks(points) {
+  const landmarks = Array(33).fill(null);
+  if (!Array.isArray(points)) return landmarks;
+  for (const point of points) {
+    const index = Number(point?.index);
+    if (!Number.isInteger(index) || index < 0 || index >= landmarks.length) continue;
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) continue;
+    landmarks[index] = {
+      x: point.x,
+      y: point.y,
+      visibility: Number.isFinite(point.visibility) ? point.visibility : 1
+    };
+  }
+  return landmarks;
+}
+
+function drawPiOverlay() {
+  // The Pi already burns the current MediaPipe skeleton into its WebRTC
+  // frame. Drawing the same landmarks in the browser creates a second,
+  // misaligned cyan skeleton, so keep the dashboard canvas off for Pi video.
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.hidden = true;
+}
+
 function connectPiCamera() {
   if (piManualStop || piSignal?.readyState === WebSocket.OPEN) return;
   piPeer?.close();
@@ -287,6 +498,9 @@ function connectPiCamera() {
   piPeer.addEventListener('track', event => {
     const preview = $('piCamera');
     preview.srcObject = event.streams[0];
+    preview.onloadedmetadata = () => {
+      drawPiOverlay();
+    };
     console.log('[PostureAI] WebRTC stream color mode: RGB', {
       track: event.track.getSettings?.(),
       streamId: event.streams[0]?.id
@@ -317,12 +531,15 @@ function connectPiCamera() {
         displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
       });
-    } else if (message.type === 'posture_update') {
+    } else if (message.type === 'pose_update') {
+      piLandmarks = piOverlayLandmarks(message.landmarks);
       const metrics = message.metrics;
-      drawDetectionBox(metrics);
       if (['score', 'neck', 'shoulders', 'torso'].every(key => Number.isFinite(metrics?.[key]))) {
+        piMetrics = metrics;
+        latestMetrics = metrics;
         update(metrics);
       }
+      if (!running || analysisVideo !== $('piCamera')) drawPiOverlay();
     } else if (message.type === 'roboflow_update') {
       updateRoboflowResult(message.result);
     } else if (message.type === 'error') {

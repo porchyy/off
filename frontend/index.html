@@ -90,7 +90,8 @@
           </div>
           <div class="video-wrap">
             <video id="piCamera" class="pi-camera" autoplay muted playsinline aria-label="ภาพสดจาก Raspberry Pi Camera"></video>
-            <canvas id="detectionOverlay" class="detection-overlay" aria-label="กรอบและจุดข้อต่อ YOLOv8-Pose" hidden></canvas>
+            <video id="video" autoplay muted playsinline hidden></video>
+            <canvas id="overlay" aria-hidden="true" hidden></canvas>
             <div id="cameraSignal" class="camera-signal neutral" aria-live="polite">กำลังเชื่อมต่อ Pi Camera</div>
             <p id="cameraHelp">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -145,9 +146,9 @@
           <!-- Detail Metrics -->
           <article class="card details">
             <h3>ตัวชี้วัดเชิงลึก</h3>
-            <div class="detail-row"><span>คอเอียง / AI</span><b id="neck">--</b></div>
-            <div class="detail-row"><span>ไหล่ไม่สมดุล / ความมั่นใจ</span><b id="shoulders">--</b></div>
-            <div class="detail-row"><span>การโน้มลำตัว / ผล AI</span><b id="torso">--</b></div>
+            <div class="detail-row"><span>คอเอียง</span><b id="neck">--</b></div>
+            <div class="detail-row"><span>ไหล่ไม่สมดุล</span><b id="shoulders">--</b></div>
+            <div class="detail-row"><span>การโน้มลำตัว</span><b id="torso">--</b></div>
             <p class="disclaimer">ข้อมูลเพื่อช่วยปรับพฤติกรรม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
           </article>
 
@@ -338,7 +339,7 @@
 
   <!-- ── Footer ── -->
   <footer class="site-footer">
-    <p>PostureAI — ระบบติดตามท่านั่งแบบส่วนตัว · ตรวจจับด้วย YOLOv8-Pose บน Raspberry Pi</p>
+    <p>PostureAI — ระบบติดตามท่านั่งแบบส่วนตัว · พัฒนาด้วย MediaPipe + JavaScript</p>
   </footer>
 
   <script type="module" src="app.js"></script>
