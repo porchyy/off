@@ -126,3 +126,7 @@ def test_vl53l1x_reads_centimetres_and_clears_the_measurement_interrupt(monkeypa
     assert FakeVl53l1x.instance.distance_mode == 2
     assert FakeVl53l1x.instance.timing_budget == 50
     assert FakeVl53l1x.instance.interrupts_cleared == 1
+
+
+def test_vl53l1x_defaults_to_short_mode() -> None:
+    assert Vl53l1xReader().distance_mode == 1

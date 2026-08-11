@@ -83,7 +83,9 @@ def main() -> int:
     parser.add_argument("--bh1750-address", type=parse_i2c_address, action="append")
     parser.add_argument("--disable-vl53l1x", action="store_true", help="ไม่อ่าน TOF400C / VL53L1X")
     parser.add_argument("--vl53l1x-address", type=parse_i2c_address, default=VL53L1X_DEFAULT_ADDRESS)
-    parser.add_argument("--vl53l1x-mode", choices=("short", "long"), default="long")
+    # ติดใกล้กล้องเพื่อติดตามผู้ที่นั่งหน้าเครื่อง: Short mode ลดผลของ
+    # วัตถุไกลและเหมาะกับช่วงระยะโต๊ะทำงานมากกว่า Long mode.
+    parser.add_argument("--vl53l1x-mode", choices=("short", "long"), default="short")
     parser.add_argument("--vl53l1x-timing-budget", type=int, default=50, choices=(15, 20, 33, 50, 100, 200, 500))
     parser.add_argument(
         "--lux-scale",
