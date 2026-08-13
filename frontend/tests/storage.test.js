@@ -71,21 +71,12 @@ test('LocalStorageStorage addSample, summary, and stats', async () => {
   assert.equal(stats.daily[0].average, 80);
 });
 
-test('LocalStorageStorage export and clear', async () => {
+test('LocalStorageStorage clear', async () => {
   localStorage.clear();
   const storage = await createStorage();
 
   await storage.addSample({ score: 85, neck: 10, shoulders: 2, torso: 1 });
   await storage.addAlert({ severity: 'caution', message: 'Watch out' });
-
-  const csv = await storage.export('csv');
-  assert.ok(csv.includes('type,id,score'));
-  assert.ok(csv.includes('Watch out'));
-
-  const jsonStr = await storage.export('json');
-  const jsonData = JSON.parse(jsonStr);
-  assert.equal(jsonData.mode, 'demo');
-  assert.equal(jsonData.rows.length, 2);
 
   await storage.clear();
   const summaryAfter = await storage.summary();

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -87,12 +86,6 @@ class WeeklyAlertStat(BaseModel):
 class StatsResponse(BaseModel):
     daily: list[DailyStat]
     weekly_alerts: list[WeeklyAlertStat]
-
-
-class ExportResponse(BaseModel):
-    exported_at: datetime
-    db_path: str
-    rows: list[dict]
 
 
 class OkResponse(BaseModel):

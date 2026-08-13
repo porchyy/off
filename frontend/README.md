@@ -34,7 +34,7 @@ npm test
 - การคำนวณคะแนน MediaPipe Pose (Score, Neck, Shoulders, Torso)
 - การคัดกรอง Landmark ความชัดเจนต่ำ (Visibility threshold)
 - LocalStorage fallback storage (Demo mode)
-- การบันทึก/อ่านตั้งค่า, Samples, Alerts, Summary, Stats, Export (CSV/JSON) และ Clear data
+- การบันทึก/อ่านตั้งค่า, Samples, Alerts, Summary, Stats, ดาวน์โหลดรายงาน Excel และ Clear data
 
 ## Build
 

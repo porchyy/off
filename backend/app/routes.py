@@ -7,10 +7,10 @@ from datetime import date, datetime, timedelta, timezone
 import hmac
 import json
 import logging
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
@@ -19,14 +19,12 @@ from .camera_store import camera_frames
 from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
 from .daily_report import build_daily_report, build_monthly_report, local_day_bounds, local_day_label, local_today
-from .export import rows_to_csv
 from .models import Alert, Base, MinuteSummary, Sample, Setting
 from .schemas import (
     AlertIn,
     AlertOut,
     ClientStatusIn,
     ClientStatusResponse,
-    ExportResponse,
     HealthResponse,
     OkResponse,
     SampleIn,
@@ -338,37 +336,6 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
     weekly_alerts = [{"label": label, "alerts": alert_totals[label]} for label in labels]
 
     return StatsResponse(daily=daily, weekly_alerts=weekly_alerts)
-
-
-@router.get("/api/export")
-def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = Depends(get_db)):
-    legacy_samples = db.execute(text(
-        "SELECT 'sample' AS type, id, score, neck, shoulders, torso, "
-        "NULL AS severity, NULL AS message, created_at FROM samples ORDER BY id"
-    )).mappings().all()
-    minute_samples = db.execute(text(
-        "SELECT 'sample' AS type, id, score_sum / measurements AS score, "
-        "neck_sum / measurements AS neck, shoulders_sum / measurements AS shoulders, "
-        "torso_sum / measurements AS torso, NULL AS severity, NULL AS message, "
-        "minute_start AS created_at FROM minute_summaries ORDER BY id"
-    )).mappings().all()
-    alerts = db.execute(text(
-        "SELECT 'alert' AS type, id, NULL AS score, NULL AS neck, NULL AS shoulders, NULL AS torso, "
-        "severity, message, created_at FROM alerts ORDER BY id"
-    )).mappings().all()
-    rows = sorted([*legacy_samples, *minute_samples, *alerts], key=lambda r: r["created_at"])
-    if format == "json":
-        return JSONResponse({
-            "exportedAt": datetime.now(timezone.utc).isoformat(),
-            "dbPath": str(settings.sqlite_path),
-            "rows": [dict(r) for r in rows],
-        })
-    csv_text = rows_to_csv([dict(r) for r in rows])
-    return PlainTextResponse(
-        csv_text,
-        media_type="text/csv; charset=utf-8",
-        headers={"content-disposition": 'attachment; filename="postureai-export.csv"'},
-    )
 
 
 @router.get("/api/reports/daily.xlsx")

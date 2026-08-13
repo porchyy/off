@@ -32,29 +32,10 @@ const writeJson = (key, value) => {
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const dayKey = value => value.slice(0, 10);
 
-const csvEscape = value => {
-  const text = value == null ? '' : String(value);
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-};
-
-function rowsToCsv(rows) {
-  const columns = ['type', 'id', 'score', 'neck', 'shoulders', 'torso', 'severity', 'message', 'created_at'];
-  return [
-    columns.join(','),
-    ...rows.map(row => columns.map(column => csvEscape(row[column])).join(','))
-  ].join('\n');
-}
-
 async function requestJson(url, options) {
   const response = await fetch(url, options);
   if (!response.ok) throw Error(`HTTP ${response.status}`);
   return response.json();
-}
-
-async function requestText(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw Error(`HTTP ${response.status}`);
-  return response.text();
 }
 
 function adminHeaders() {
@@ -112,11 +93,6 @@ class BackendStorage {
 
   async clientStatus() {
     return requestJson('/api/client/status');
-  }
-
-  async export(format) {
-    if (format === 'json') return JSON.stringify(await requestJson('/api/export?format=json'), null, 2);
-    return requestText('/api/export?format=csv');
   }
 
   async exportExcel(reportDate) {
@@ -222,12 +198,6 @@ class LocalStorageStorage {
     return { online: false, message: 'โหมดตัวอย่างไม่เชื่อมต่อ Raspberry Pi', retentionDays: null };
   }
 
-  async export(format) {
-    const rows = this.exportRows();
-    if (format === 'json') return JSON.stringify({ exportedAt: new Date().toISOString(), mode: 'demo', rows }, null, 2);
-    return rowsToCsv(rows);
-  }
-
   async exportExcel() {
     throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ PostureAI');
   }
@@ -240,32 +210,6 @@ class LocalStorageStorage {
     localStorage.removeItem(KEYS.samples);
     localStorage.removeItem(KEYS.alerts);
     return { ok: true };
-  }
-
-  exportRows() {
-    const samples = readJson(KEYS.samples, []).map(sample => ({
-      type: 'sample',
-      id: sample.id,
-      score: sample.score,
-      neck: sample.neck,
-      shoulders: sample.shoulders,
-      torso: sample.torso,
-      severity: null,
-      message: null,
-      created_at: sample.created_at
-    }));
-    const alerts = readJson(KEYS.alerts, []).map(alert => ({
-      type: 'alert',
-      id: alert.id,
-      score: null,
-      neck: null,
-      shoulders: null,
-      torso: null,
-      severity: alert.severity,
-      message: alert.message,
-      created_at: alert.created_at
-    }));
-    return [...samples, ...alerts].sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
 }
 

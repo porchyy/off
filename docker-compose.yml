@@ -27,7 +27,7 @@ services:
       POSTUREAI_PORT: 8000
       POSTUREAI_REQUIRE_ADMIN_TOKEN: "true"
       POSTUREAI_ADMIN_TOKEN: "${POSTUREAI_ADMIN_TOKEN:-}"
-      POSTUREAI_RETENTION_DAYS: "30"
+      POSTUREAI_RETENTION_DAYS: "35"
     volumes:
       - ./database:/app/database
     ports:

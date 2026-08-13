@@ -262,29 +262,6 @@ def test_compact_legacy_samples_moves_high_frequency_data_to_one_minute(tmp_path
     assert unrelated_file.exists()
 
 
-def test_export_csv_and_json():
-    client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
-    client.post("/api/alerts", json={"severity": "risk", "message": "Posture risk alert"})
-
-    # Test CSV export
-    csv_res = client.get("/api/export?format=csv")
-    assert csv_res.status_code == 200
-    assert "text/csv" in csv_res.headers["content-type"]
-    assert "sample,1,85.0" in csv_res.text
-    assert "Posture risk alert" in csv_res.text
-
-    # Test JSON export
-    json_res = client.get("/api/export?format=json")
-    assert json_res.status_code == 200
-    json_data = json_res.json()
-    assert "exportedAt" in json_data
-    assert len(json_data["rows"]) == 2
-
-    # Test Invalid export format validation
-    invalid_res = client.get("/api/export?format=xml")
-    assert invalid_res.status_code == 422
-
-
 def test_download_daily_excel_report():
     client.post("/api/samples", json={"score": 90.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
     client.post("/api/samples", json={"score": 70.0, "neck": 15.0, "shoulders": 8.0, "torso": 6.0})
@@ -365,4 +342,4 @@ def test_client_status_round_trip():
     assert get_res.status_code == 200
     assert get_res.json()["online"] is True
     assert get_res.json()["lastSyncAt"] == "2026-08-06T00:00:00+00:00"
-    assert get_res.json()["retentionDays"] == 30
+    assert get_res.json()["retentionDays"] == 35

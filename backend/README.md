@@ -2,7 +2,7 @@
 
 FastAPI replacement for the original `server.mjs`. Keeps the same HTTP contract
 (`/api/health`, `/api/settings`, `/api/samples`, `/api/alerts`, `/api/summary`,
-`/api/stats`, `/api/export`, `/api/data`) so the existing frontend works
+`/api/stats`, `/api/reports/daily.xlsx`, `/api/reports/monthly.xlsx`, `/api/data`) so the existing frontend works
 unchanged.
 
 ## Run locally
@@ -34,7 +34,7 @@ Tests cover:
 - Posture sample ingestion and score bounds validation
 - Alert recording and severity validation
 - Today's summary and 14-day stats aggregation
-- Export to CSV and JSON formats
+- Daily and monthly Excel report downloads
 - Complete database clearing
 
 ## Configuration
@@ -49,7 +49,7 @@ Environment variables (loaded via `pydantic-settings`, supports `.env`):
 | `POSTUREAI_PORT` | `8000` | HTTP port |
 | `POSTUREAI_REQUIRE_ADMIN_TOKEN` | `false` | Require an admin token for settings/data mutations |
 | `POSTUREAI_ADMIN_TOKEN` | empty | Secret sent as `X-PostureAI-Admin-Token` by the dashboard |
-| `POSTUREAI_RETENTION_DAYS` | `30` | Remove samples and alerts older than this at startup and then daily |
+| `POSTUREAI_RETENTION_DAYS` | `35` | Remove samples, alerts, and dated reports older than this at startup and then daily |
 
 The `dataDir` field returned by `/api/settings` always reflects the resolved
 absolute path the server is actually using. Changes via `PUT /api/settings`
