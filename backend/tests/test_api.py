@@ -271,6 +271,7 @@ def test_download_daily_excel_report():
     assert workbook.sheetnames == ["สรุปรายวัน", "รายละเอียดรายนาที", "เหตุการณ์แจ้งเตือน"]
     assert workbook["รายละเอียดรายนาที"]["B2"].value == 80
     assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Posture risk alert"
+    assert len(workbook["สรุปรายวัน"]._charts) == 1
 
 
 def test_clear_data():

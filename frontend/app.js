@@ -774,13 +774,22 @@ async function downloadExport(format) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+function bangkokDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date());
+  const get = type => parts.find(part => part.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
 async function downloadExcel() {
   try {
-    const blob = await storage.exportExcel();
+    const reportDate = $('reportDate')?.value || bangkokDate();
+    const blob = await storage.exportExcel(reportDate);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PostureAI_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.download = `PostureAI_${reportDate}.xlsx`;
     document.body.append(a);
     a.click();
     a.remove();
@@ -801,6 +810,8 @@ $('saveSettings')?.addEventListener('click', saveSettings);
 $('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
 $('exportJson')?.addEventListener('click', () => downloadExport('json'));
 $('exportExcel')?.addEventListener('click', downloadExcel);
+const reportDateInput = $('reportDate');
+if (reportDateInput) reportDateInput.value = bangkokDate();
 $('testAlert')?.addEventListener('click', () => notifyRisk(true));
 $('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
 $('clearData')?.addEventListener('click', async () => {

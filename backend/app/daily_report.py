@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from openpyxl import Workbook
+from openpyxl.chart import LineChart, Reference
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -115,14 +116,17 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     detail = workbook.create_sheet("รายละเอียดรายนาที")
     alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
 
-    summary.merge_cells("A1:B1")
+    summary.merge_cells("A1:H1")
     summary["A1"] = "PostureAI — รายงานท่านั่งรายวัน"
     summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
     summary["A1"].fill = HEADER_FILL
     summary["A1"].alignment = Alignment(horizontal="center")
-    summary["A2"] = "วันที่"
+    summary["A2"] = "วันที่รายงาน"
     summary["B2"] = report_date
     summary["B2"].number_format = "dd/mm/yyyy"
+    summary["A3"] = "หมายเหตุ"
+    summary["B3"] = "รายงานนี้เก็บเฉพาะคะแนนและเหตุการณ์แจ้งเตือน ไม่เก็บภาพหรือวิดีโอ"
+    summary["B3"].alignment = Alignment(wrap_text=True)
     if minute_rows:
         summary_rows = [
             ("คะแนนเฉลี่ย", "=IFERROR(AVERAGE('รายละเอียดรายนาที'!B2:B%d),0)" % (len(minute_rows) + 1)),
@@ -143,7 +147,7 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
         if row_index <= 7:
             summary.cell(row_index, 2).number_format = "0.0"
     summary.column_dimensions["A"].width = 28
-    summary.column_dimensions["B"].width = 20
+    summary.column_dimensions["B"].width = 44
 
     detail_headers = [
         "เวลา", "คะแนนเฉลี่ย", "คะแนนต่ำสุด", "คะแนนสูงสุด", "คอเฉลี่ย", "ไหล่เฉลี่ย",
@@ -169,6 +173,19 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     for column, width in enumerate((12, 14, 14, 14, 12, 12, 12, 16, 20, 12), start=1):
         detail.column_dimensions[get_column_letter(column)].width = width
     detail.freeze_panes = "A2"
+
+    if minute_rows:
+        trend_chart = LineChart()
+        trend_chart.title = "แนวโน้มคะแนนท่านั่งตลอดวัน"
+        trend_chart.y_axis.title = "คะแนน"
+        trend_chart.x_axis.title = "เวลา"
+        trend_chart.y_axis.scaling.min = 0
+        trend_chart.y_axis.scaling.max = 100
+        trend_chart.height = 8
+        trend_chart.width = 18
+        trend_chart.add_data(Reference(detail, min_col=2, min_row=1, max_row=len(minute_rows) + 1), titles_from_data=True)
+        trend_chart.set_categories(Reference(detail, min_col=1, min_row=2, max_row=len(minute_rows) + 1))
+        summary.add_chart(trend_chart, "D3")
 
     alert_sheet.append(["เวลา", "ระดับ", "ข้อความ"])
     for cell in alert_sheet[1]:

@@ -119,8 +119,9 @@ class BackendStorage {
     return requestText('/api/export?format=csv');
   }
 
-  async exportExcel() {
-    const response = await fetch('/api/reports/daily.xlsx');
+  async exportExcel(reportDate) {
+    const query = reportDate ? `?date=${encodeURIComponent(reportDate)}` : '';
+    const response = await fetch(`/api/reports/daily.xlsx${query}`);
     if (!response.ok) throw Error(`HTTP ${response.status}`);
     return response.blob();
   }
