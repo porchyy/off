@@ -57,7 +57,7 @@
         <div class="intro-copy">
           <p class="eyebrow">ระบบติดตามท่านั่งในเครือข่ายภายใน</p>
           <h1>ติดตามท่านั่ง<br><em>อย่างเป็นระบบ</em></h1>
-          <p class="intro-desc">ประมวลผลภาพจาก Pi Camera ภายในระบบ และบันทึกเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือน</p>
+          <p class="intro-desc">ประมวลผลภาพจาก Pi Camera ภายในระบบ บันทึกเฉพาะคะแนน เวลา และเหตุการณ์แจ้งเตือน พร้อมสร้างรายงาน Excel รายวันหรือรายเดือนได้</p>
         </div>
         <aside class="system-overview" aria-label="สรุปองค์ประกอบของระบบ">
           <p class="overview-title">องค์ประกอบของระบบ</p>
@@ -65,6 +65,7 @@
             <div><dt>อุปกรณ์</dt><dd>Raspberry Pi 5</dd></div>
             <div><dt>การประมวลผล</dt><dd>ภายในอุปกรณ์</dd></div>
             <div><dt>ข้อมูลที่จัดเก็บ</dt><dd>คะแนนและเหตุการณ์</dd></div>
+            <div><dt>ระยะเก็บข้อมูล</dt><dd id="retentionSummary">35 วัน</dd></div>
           </dl>
         </aside>
       </div>
@@ -173,7 +174,7 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <div>
-          <p class="eyebrow" id="historyEyebrow">ประวัติ (เก็บในเบราว์เซอร์)</p>
+          <p class="eyebrow" id="historyEyebrow">ฐานข้อมูล SQLite ในเครื่อง · เก็บข้อมูล 35 วัน</p>
           <h2 class="section-heading">สรุปของวันนี้</h2>
         </div>
         <div class="actions ml-auto report-actions">
@@ -194,7 +195,7 @@
           <b id="average" class="summary-value">--</b>
         </article>
         <article class="card summary-card">
-          <span class="summary-label">ช่วงเวลาที่บันทึก</span>
+          <span class="summary-label">นาทีที่บันทึก</span>
           <b id="samples" class="summary-value">0</b>
         </article>
         <article class="card summary-card">

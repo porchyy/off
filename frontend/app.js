@@ -54,7 +54,9 @@ function applyStorageMode() {
   if (demoBanner) demoBanner.hidden = !demo;
   $('dataDirField').hidden = demo;
   $('adminTokenField').hidden = demo;
-  $('historyEyebrow').textContent = demo ? 'DEMO · LOCALSTORAGE' : 'LOCAL SQLITE DATABASE';
+  $('historyEyebrow').textContent = demo
+    ? 'โหมดตัวอย่าง · เก็บข้อมูลในเบราว์เซอร์นี้'
+    : 'ฐานข้อมูล SQLite ในเครื่อง · กำลังตรวจระยะเก็บข้อมูล';
   $('settingsNote').textContent = demo
     ? 'โหมดตัวอย่างจะเก็บข้อมูลไว้ในเบราว์เซอร์นี้เท่านั้น ถ้าล้างข้อมูลเว็บหรือเปลี่ยนเบราว์เซอร์ ประวัติจะหาย'
     : 'การเปลี่ยน path ฐานข้อมูลจะมีผลหลังรีสตาร์ท server เพื่อย้ายไฟล์ SQLite ไปตำแหน่งใหม่';
@@ -634,6 +636,10 @@ async function loadPiStatus() {
     target.textContent = status.online
       ? `Pi ออนไลน์ · sync ตั้งค่าล่าสุด ${sync} · เก็บข้อมูล ${status.retentionDays} วัน`
       : `Pi ยังไม่รายงานตัว · ${status.message || 'กำลังรอ sensor client'}`;
+    if (Number.isFinite(status.retentionDays)) {
+      $('historyEyebrow').textContent = `ฐานข้อมูล SQLite ในเครื่อง · เก็บข้อมูล ${status.retentionDays} วัน`;
+      $('retentionSummary').textContent = `${status.retentionDays} วัน`;
+    }
   } catch {
     target.textContent = 'ไม่สามารถอ่านสถานะ Raspberry Pi ได้';
   }
@@ -701,8 +707,8 @@ async function loadDashboard() {
   try {
     await loadSummary();
     const stats = await storage.stats();
-    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#00e5c7');
-    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#ff4d6d');
+    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#1d5f99');
+    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#b45309');
   } catch {
     toast('โหลดข้อมูลไม่สำเร็จ');
   }
@@ -714,9 +720,9 @@ function drawBarChart(target, rows, field, maxValue, color) {
   const c = target.getContext('2d');
   const { width, height } = target;
   c.clearRect(0, 0, width, height);
-  c.fillStyle = '#0a0e1a';
+  c.fillStyle = '#f8fafc';
   c.fillRect(0, 0, width, height);
-  c.strokeStyle = '#1f2942';
+  c.strokeStyle = '#e2e8f0';
   for (let i = 1; i <= 4; i++) {
     const y = 24 + (height - 64) * i / 4;
     c.beginPath();
@@ -725,7 +731,7 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.stroke();
   }
   if (!rows.length) {
-    c.fillStyle = '#a8b3cf';
+    c.fillStyle = '#526174';
     c.font = '16px sans-serif';
     c.fillText('ยังไม่มีข้อมูล', 34, height / 2);
     return;
@@ -740,7 +746,7 @@ function drawBarChart(target, rows, field, maxValue, color) {
     const y = height - 38 - h;
     c.fillStyle = color;
     c.fillRect(x, y, barW, h);
-    c.fillStyle = '#a8b3cf';
+    c.fillStyle = '#526174';
     c.font = '12px sans-serif';
     c.fillText(String(value), x, y - 6);
     c.save();

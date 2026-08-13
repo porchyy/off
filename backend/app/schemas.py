@@ -85,7 +85,7 @@ class WeeklyAlertStat(BaseModel):
 
 class StatsResponse(BaseModel):
     daily: list[DailyStat]
-    weekly_alerts: list[WeeklyAlertStat]
+    weekly_alerts: list[WeeklyAlertStat] = Field(serialization_alias="weeklyAlerts")
 
 
 class OkResponse(BaseModel):
