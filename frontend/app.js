@@ -761,19 +761,6 @@ function notifyRisk(force = false, message = 'กรุณายืดหลั�
   }
 }
 
-async function downloadExport(format) {
-  const content = await storage.export(format);
-  const blob = new Blob([content], { type: format === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = format === 'json' ? 'postureai-export.json' : 'postureai-export.csv';
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
-
 function bangkokDate() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -828,8 +815,6 @@ start?.addEventListener('click', beginPiCamera);
 stop?.addEventListener('click', endPiCamera);
 $('refresh')?.addEventListener('click', loadDashboard);
 $('saveSettings')?.addEventListener('click', saveSettings);
-$('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
-$('exportJson')?.addEventListener('click', () => downloadExport('json'));
 $('exportExcel')?.addEventListener('click', downloadExcel);
 $('exportMonthlyExcel')?.addEventListener('click', downloadMonthlyExcel);
 const reportDateInput = $('reportDate');
