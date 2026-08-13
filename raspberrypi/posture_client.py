@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "posture_classifier", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "posture_classifier", "recording", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -95,6 +95,11 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     posture_classifier["interval"] = min(5.0, max(0.1, float(posture_classifier.get("interval", 0.5))))
     posture_classifier["min_confidence"] = min(
         1.0, max(0.0, float(posture_classifier.get("min_confidence", 0.65)))
+    )
+
+    recording = config["recording"]
+    recording["sample_interval_seconds"] = min(
+        300.0, max(30.0, float(recording.get("sample_interval_seconds", 60)))
     )
 
     video = config["video"]
@@ -285,6 +290,7 @@ def main(argv: list[str] | None = None) -> int:
         url=backend_url,
         timeout=config["backend"].get("timeout", 5),
         buffer_path=config["buffer"]["path"],
+        sample_interval_seconds=config["recording"]["sample_interval_seconds"],
     )
     alert_controller = AlertController(config, uploader, sound_player, indicator, buzzer)
 
@@ -381,6 +387,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             time.sleep(0.02)
     finally:
+        uploader.flush_sample()
         if webrtc:
             webrtc.stop()
         if producer:

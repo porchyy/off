@@ -21,12 +21,17 @@ class Settings(BaseSettings):
     admin_token: str = Field(default="", alias="POSTUREAI_ADMIN_TOKEN")
     require_admin_token: bool = Field(default=False, alias="POSTUREAI_REQUIRE_ADMIN_TOKEN")
     retention_days: int = Field(default=30, ge=1, le=365, alias="POSTUREAI_RETENTION_DAYS")
+    report_dir: Path | None = Field(default=None, alias="POSTUREAI_REPORT_DIR")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @property
     def sqlite_path(self) -> Path:
         return self.data_dir / "postureai.sqlite"
+
+    @property
+    def daily_report_dir(self) -> Path:
+        return self.report_dir or self.data_dir / "reports"
 
     @property
     def cors_origin_list(self) -> list[str]:

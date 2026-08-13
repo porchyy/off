@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import hmac
 import json
 import logging
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
 
@@ -17,8 +17,9 @@ from .config import settings
 from .camera_store import camera_frames
 from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
+from .daily_report import build_daily_report, local_today
 from .export import rows_to_csv
-from .models import Alert, Base, Sample, Setting
+from .models import Alert, Base, MinuteSummary, Sample, Setting
 from .schemas import (
     AlertIn,
     AlertOut,
@@ -255,12 +256,31 @@ def json_dumps(value: Any) -> str:
 
 @router.post("/api/samples", status_code=201, response_model=OkResponse)
 def add_sample(payload: SampleIn, db: Session = Depends(get_db)) -> OkResponse:
-    db.add(Sample(
-        score=payload.score,
-        neck=payload.neck,
-        shoulders=payload.shoulders,
-        torso=payload.torso,
-    ))
+    minute_start = datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat()
+    risk_threshold = get_all(db)["riskThreshold"]
+    row = db.scalar(select(MinuteSummary).where(MinuteSummary.minute_start == minute_start))
+    if row is None:
+        row = MinuteSummary(
+            minute_start=minute_start,
+            score_sum=payload.score,
+            score_min=payload.score,
+            score_max=payload.score,
+            neck_sum=payload.neck,
+            shoulders_sum=payload.shoulders,
+            torso_sum=payload.torso,
+            measurements=1,
+            risk_measurements=int(payload.score < risk_threshold),
+        )
+        db.add(row)
+    else:
+        row.score_sum += payload.score
+        row.score_min = min(row.score_min, payload.score)
+        row.score_max = max(row.score_max, payload.score)
+        row.neck_sum += payload.neck
+        row.shoulders_sum += payload.shoulders
+        row.torso_sum += payload.torso
+        row.measurements += 1
+        row.risk_measurements += int(payload.score < risk_threshold)
     db.commit()
     return OkResponse()
 
@@ -280,9 +300,17 @@ def _today_start_iso() -> str:
 @router.get("/api/summary", response_model=SummaryResponse)
 def summary(db: Session = Depends(get_db)) -> SummaryResponse:
     since = _today_start_iso()
-    samples_count, average = db.execute(
-        select(func.count(Sample.id), func.avg(Sample.score)).where(Sample.created_at >= since)
+    legacy_count, legacy_sum = db.execute(
+        select(func.count(Sample.id), func.coalesce(func.sum(Sample.score), 0)).where(Sample.created_at >= since)
     ).one()
+    minute_count, minute_sum = db.execute(
+        select(
+            func.coalesce(func.sum(MinuteSummary.measurements), 0),
+            func.coalesce(func.sum(MinuteSummary.score_sum), 0),
+        ).where(MinuteSummary.minute_start >= since)
+    ).one()
+    samples_count = int(legacy_count or 0) + int(minute_count or 0)
+    score_sum = float(legacy_sum or 0) + float(minute_sum or 0)
     alerts_rows = db.execute(
         select(Alert.id, Alert.severity, Alert.message, Alert.created_at)
         .where(Alert.created_at >= since)
@@ -290,8 +318,8 @@ def summary(db: Session = Depends(get_db)) -> SummaryResponse:
         .limit(10)
     ).all()
     return SummaryResponse(
-        samples=int(samples_count or 0),
-        average=int(round(average)) if average is not None else None,
+        samples=samples_count,
+        average=int(round(score_sum / samples_count)) if samples_count else None,
         alerts=[AlertOut(id=r[0], severity=r[1], message=r[2], created_at=r[3]) for r in alerts_rows],
     )
 
@@ -300,9 +328,12 @@ def summary(db: Session = Depends(get_db)) -> SummaryResponse:
 def stats(db: Session = Depends(get_db)) -> StatsResponse:
     daily_rows = db.execute(
         text(
-            "SELECT substr(created_at, 1, 10) AS label, "
-            "ROUND(AVG(score)) AS average, COUNT(*) AS samples "
-            "FROM samples GROUP BY label ORDER BY label DESC LIMIT 14"
+            "SELECT label, ROUND(SUM(score_total) / SUM(samples)) AS average, SUM(samples) AS samples "
+            "FROM ("
+            "SELECT substr(created_at, 1, 10) AS label, score AS score_total, 1 AS samples FROM samples "
+            "UNION ALL "
+            "SELECT substr(minute_start, 1, 10) AS label, score_sum AS score_total, measurements AS samples FROM minute_summaries"
+            ") GROUP BY label ORDER BY label DESC LIMIT 14"
         )
     ).all()
     daily = [{"label": r[0], "average": int(r[1] or 0), "samples": int(r[2] or 0)} for r in reversed(daily_rows)]
@@ -320,15 +351,21 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
 
 @router.get("/api/export")
 def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = Depends(get_db)):
-    samples = db.execute(text(
+    legacy_samples = db.execute(text(
         "SELECT 'sample' AS type, id, score, neck, shoulders, torso, "
         "NULL AS severity, NULL AS message, created_at FROM samples ORDER BY id"
+    )).mappings().all()
+    minute_samples = db.execute(text(
+        "SELECT 'sample' AS type, id, score_sum / measurements AS score, "
+        "neck_sum / measurements AS neck, shoulders_sum / measurements AS shoulders, "
+        "torso_sum / measurements AS torso, NULL AS severity, NULL AS message, "
+        "minute_start AS created_at FROM minute_summaries ORDER BY id"
     )).mappings().all()
     alerts = db.execute(text(
         "SELECT 'alert' AS type, id, NULL AS score, NULL AS neck, NULL AS shoulders, NULL AS torso, "
         "severity, message, created_at FROM alerts ORDER BY id"
     )).mappings().all()
-    rows = sorted([*samples, *alerts], key=lambda r: r["created_at"])
+    rows = sorted([*legacy_samples, *minute_samples, *alerts], key=lambda r: r["created_at"])
     if format == "json":
         return JSONResponse({
             "exportedAt": datetime.now(timezone.utc).isoformat(),
@@ -343,9 +380,27 @@ def export(format: Literal["csv", "json"] = Query(default="csv"), db: Session = 
     )
 
 
+@router.get("/api/reports/daily.xlsx")
+def download_daily_excel(
+    report_date: date | None = Query(default=None, alias="date"),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Create and download a daily report without exposing the SQLite file."""
+    selected_date = report_date or local_today()
+    risk_threshold = get_all(db)["riskThreshold"]
+    content = build_daily_report(db, selected_date, risk_threshold)
+    filename = f"PostureAI_{selected_date.isoformat()}.xlsx"
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.delete("/api/data", response_model=OkResponse)
 def clear_data(db: Session = Depends(get_db), _: None = Depends(require_admin_token)) -> OkResponse:
     db.execute(delete(Sample))
+    db.execute(delete(MinuteSummary))
     db.execute(delete(Alert))
     db.commit()
     return OkResponse()
@@ -354,12 +409,13 @@ def clear_data(db: Session = Depends(get_db), _: None = Depends(require_admin_to
 def prune_expired_data(db: Session, days: int) -> None:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     deleted_samples = db.execute(delete(Sample).where(Sample.created_at < cutoff)).rowcount
+    deleted_minutes = db.execute(delete(MinuteSummary).where(MinuteSummary.minute_start < cutoff)).rowcount
     deleted_alerts = db.execute(delete(Alert).where(Alert.created_at < cutoff)).rowcount
     db.commit()
     logger.info(
         "retention cleanup completed: days=%s samples=%s alerts=%s",
         days,
-        deleted_samples or 0,
+        (deleted_samples or 0) + (deleted_minutes or 0),
         deleted_alerts or 0,
     )
 

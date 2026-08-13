@@ -1,7 +1,9 @@
 """Unit tests for PostureAI FastAPI routes and API logic."""
 
 import pytest
+from io import BytesIO
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -253,6 +255,22 @@ def test_export_csv_and_json():
     # Test Invalid export format validation
     invalid_res = client.get("/api/export?format=xml")
     assert invalid_res.status_code == 422
+
+
+def test_download_daily_excel_report():
+    client.post("/api/samples", json={"score": 90.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
+    client.post("/api/samples", json={"score": 70.0, "neck": 15.0, "shoulders": 8.0, "torso": 6.0})
+    client.post("/api/alerts", json={"severity": "risk", "message": "Posture risk alert"})
+
+    response = client.get("/api/reports/daily.xlsx")
+
+    assert response.status_code == 200
+    assert "spreadsheetml.sheet" in response.headers["content-type"]
+    assert "PostureAI_" in response.headers["content-disposition"]
+    workbook = load_workbook(BytesIO(response.content), data_only=False)
+    assert workbook.sheetnames == ["สรุปรายวัน", "รายละเอียดรายนาที", "เหตุการณ์แจ้งเตือน"]
+    assert workbook["รายละเอียดรายนาที"]["B2"].value == 80
+    assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Posture risk alert"
 
 
 def test_clear_data():

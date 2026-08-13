@@ -774,6 +774,22 @@ async function downloadExport(format) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+async function downloadExcel() {
+  try {
+    const blob = await storage.exportExcel();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PostureAI_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (error) {
+    toast(error.message || 'ส่งออก Excel ไม่สำเร็จ');
+  }
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
@@ -784,6 +800,7 @@ $('refresh')?.addEventListener('click', loadDashboard);
 $('saveSettings')?.addEventListener('click', saveSettings);
 $('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
 $('exportJson')?.addEventListener('click', () => downloadExport('json'));
+$('exportExcel')?.addEventListener('click', downloadExcel);
 $('testAlert')?.addEventListener('click', () => notifyRisk(true));
 $('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
 $('clearData')?.addEventListener('click', async () => {

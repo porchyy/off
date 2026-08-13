@@ -60,6 +60,7 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
     assert config["detection"]["overlay_min_visibility"] == 0.35
     assert config["detection"]["metric_smoothing_alpha"] == 0.35
     assert config["detection"]["score_source"] == "upper_body"
+    assert config["recording"]["sample_interval_seconds"] == 60.0
     assert config["posture_classifier"] == {
         "enabled": False,
         "model": str(tmp_path / "models/kanden_posture_classifier.onnx"),

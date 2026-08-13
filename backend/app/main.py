@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, time, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,8 +15,9 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import Base, SessionLocal, engine
+from .daily_report import LOCAL_TZ, local_today, write_daily_report
 from .routes import prune_expired_data, router
-from .settings_store import ensure_defaults
+from .settings_store import ensure_defaults, get_all
 
 
 async def _retention_loop() -> None:
@@ -25,19 +28,37 @@ async def _retention_loop() -> None:
             prune_expired_data(db, settings.retention_days)
 
 
+async def _daily_report_loop() -> None:
+    """Write yesterday's report shortly after each Bangkok midnight."""
+    local_tz = ZoneInfo("Asia/Bangkok")
+    while True:
+        now = datetime.now(local_tz)
+        next_run = datetime.combine(now.date() + timedelta(days=1), time(hour=0, minute=5), tzinfo=local_tz)
+        await asyncio.sleep((next_run - now).total_seconds())
+        with SessionLocal() as db:
+            write_daily_report(db, (next_run - timedelta(days=1)).date(), get_all(db)["riskThreshold"], settings.daily_report_dir)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_defaults(db)
         prune_expired_data(db, settings.retention_days)
+        write_daily_report(db, local_today() - timedelta(days=1), get_all(db)["riskThreshold"], settings.daily_report_dir)
     retention_task = asyncio.create_task(_retention_loop())
+    report_task = asyncio.create_task(_daily_report_loop())
     try:
         yield
     finally:
         retention_task.cancel()
+        report_task.cancel()
         try:
             await retention_task
+        except asyncio.CancelledError:
+            pass
+        try:
+            await report_task
         except asyncio.CancelledError:
             pass
 

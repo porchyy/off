@@ -119,6 +119,12 @@ class BackendStorage {
     return requestText('/api/export?format=csv');
   }
 
+  async exportExcel() {
+    const response = await fetch('/api/reports/daily.xlsx');
+    if (!response.ok) throw Error(`HTTP ${response.status}`);
+    return response.blob();
+  }
+
   async clear() {
     return requestJson('/api/data', { method: 'DELETE', headers: adminHeaders() });
   }
@@ -212,6 +218,10 @@ class LocalStorageStorage {
     const rows = this.exportRows();
     if (format === 'json') return JSON.stringify({ exportedAt: new Date().toISOString(), mode: 'demo', rows }, null, 2);
     return rowsToCsv(rows);
+  }
+
+  async exportExcel() {
+    throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ PostureAI');
   }
 
   async clear() {

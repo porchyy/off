@@ -53,6 +53,11 @@ posture_classifier:
   # ความมั่นใจต่ำกว่านี้จะกลับไปใช้คะแนนจาก MediaPipe ชั่วคราว
   min_confidence: 0.65
 
+# วิเคราะห์ท่านั่งแบบทันที แต่รวมค่าเฉลี่ยก่อนบันทึกลงรายงาน Excel
+recording:
+  # เก็บหนึ่งแถวต่อช่วงเวลา; 60 วินาทีเหมาะกับรายงานรายวัน
+  sample_interval_seconds: 60
+
 video:
   # WebRTC preview อยู่ใน LAN โดยภาพไม่ถูกบันทึกลงดิสก์
   enabled: true
