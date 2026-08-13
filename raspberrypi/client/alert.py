@@ -86,6 +86,68 @@ class SoundPlayer:
         return path
 
 
+class SpeechPlayer:
+    """Speak a short Thai posture reminder through the configured ALSA device."""
+
+    def __init__(self, config: dict[str, Any], fallback_device: str = "plughw:CARD=MAX98357A,DEV=0") -> None:
+        self.enabled = bool(config.get("enabled", True))
+        self.device = str(config.get("device") or fallback_device)
+        self.language = str(config.get("language", "th")).strip() or "th"
+        self.rate = min(450, max(80, int(config.get("rate", 150))))
+        self.volume = min(1.0, max(0.0, float(config.get("volume", 0.8))))
+        self.message = str(config.get("message", "กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่"))
+
+    def speak(self, message: str | None = None) -> bool:
+        """Create a temporary WAV with eSpeak NG, then play it through ALSA."""
+        if not self.enabled:
+            logger.debug("voice alert is disabled")
+            return False
+        synthesizer = shutil.which("espeak-ng")
+        player = shutil.which("aplay")
+        if not synthesizer or not player:
+            logger.error("cannot speak alert: install espeak-ng and alsa-utils")
+            return False
+
+        temporary_path: Path | None = None
+        try:
+            handle = tempfile.NamedTemporaryFile(prefix="postureai-voice-", suffix=".wav", delete=False)
+            handle.close()
+            temporary_path = Path(handle.name)
+            text = (message or self.message).strip()
+            if not text:
+                return False
+            synthesis = subprocess.run(
+                [
+                    synthesizer,
+                    "-v", self.language,
+                    "-s", str(self.rate),
+                    "-a", str(round(self.volume * 100)),
+                    "-w", str(temporary_path),
+                    text,
+                ],
+                check=False,
+                timeout=15,
+            )
+            if synthesis.returncode != 0:
+                logger.error("espeak-ng exited with status %s", synthesis.returncode)
+                return False
+            playback = [player, "-q"]
+            if self.device:
+                playback.extend(["-D", self.device])
+            playback.append(str(temporary_path))
+            result = subprocess.run(playback, check=False, timeout=20)
+            if result.returncode != 0:
+                logger.error("voice playback exited with status %s (device=%s)", result.returncode, self.device)
+                return False
+            return True
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.error("failed to speak alert: %s", exc)
+            return False
+        finally:
+            if temporary_path:
+                temporary_path.unlink(missing_ok=True)
+
+
 class AlertController:
     """Trigger delayed alerts and a separately delayed posture LED."""
 
@@ -97,6 +159,7 @@ class AlertController:
         indicator: Any | None = None,
         buzzer: Any | None = None,
         clock: Callable[[], float] = time.monotonic,
+        speech_player: SpeechPlayer | None = None,
     ) -> None:
         risk = config.get("risk", {})
         self.threshold = float(risk.get("threshold", 60))
@@ -109,6 +172,7 @@ class AlertController:
         self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
         self.uploader = uploader
         self.sound_player = sound_player
+        self.speech_player = speech_player
         self.indicator = indicator
         self.buzzer = buzzer
         self.clock = clock
@@ -123,6 +187,7 @@ class AlertController:
         threshold = settings.get("riskThreshold")
         seconds = settings.get("riskSeconds")
         sound_enabled = settings.get("soundEnabled")
+        voice_enabled = settings.get("voiceEnabled")
         changed = False
         if isinstance(threshold, (int, float)):
             next_threshold = min(99.0, max(1.0, float(threshold)))
@@ -135,9 +200,18 @@ class AlertController:
         if isinstance(sound_enabled, bool):
             changed = changed or sound_enabled != self.sound_player.enabled
             self.sound_player.enabled = sound_enabled
+        if isinstance(voice_enabled, bool) and self.speech_player is not None:
+            changed = changed or voice_enabled != self.speech_player.enabled
+            self.speech_player.enabled = voice_enabled
         if changed:
             self.low_since = None
-            logger.info("applied dashboard settings: threshold=%s seconds=%s sound=%s", self.threshold, self.risk_seconds, self.sound_player.enabled)
+            logger.info(
+                "applied dashboard settings: threshold=%s seconds=%s sound=%s voice=%s",
+                self.threshold,
+                self.risk_seconds,
+                self.sound_player.enabled,
+                self.speech_player.enabled if self.speech_player is not None else False,
+            )
         return changed
 
     def update(self, metrics: dict[str, float]) -> bool:
@@ -183,6 +257,8 @@ class AlertController:
         self.last_alert = now
         logger.warning("posture risk persisted for %.1fs (score %.1f < %.1f)", now - self.low_since, score, self.threshold)
         self.sound_player.play()
+        if self.speech_player is not None:
+            self.speech_player.speak()
         self.uploader.send_alert({
             "severity": "risk",
             "message": f"ตรวจพบท่านั่งที่ควรปรับ (คะแนน {score:g})",

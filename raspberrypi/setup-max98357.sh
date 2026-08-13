@@ -23,9 +23,9 @@ if [[ "$MODEL" != *"Raspberry Pi 5"* ]]; then
     echo "WARNING: Expected Raspberry Pi 5, found: ${MODEL:-unknown model}"
 fi
 
-echo "[1/4] Installing ALSA playback tools..."
+echo "[1/4] Installing ALSA playback and Thai speech tools..."
 sudo apt-get update
-sudo apt-get install -y alsa-utils
+sudo apt-get install -y alsa-utils espeak-ng
 
 echo "[2/4] Enabling the official MAX98357A I2S overlay..."
 BOOT_BACKUP="${BOOT_CONFIG}.postureai-before-max98357"

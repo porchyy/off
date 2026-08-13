@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "posture_classifier", "recording", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "posture_classifier", "recording", "risk", "sound", "voice", "indicator", "buzzer", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -135,6 +135,15 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     buzzer["active_high"] = bool(buzzer.get("active_high", True))
     buzzer["threshold"] = min(100.0, max(0.0, float(buzzer.get("threshold", 50))))
 
+    voice = config["voice"]
+    voice["enabled"] = bool(voice.get("enabled", True))
+    voice["language"] = str(voice.get("language", "th")).strip() or "th"
+    voice["rate"] = min(450, max(80, int(voice.get("rate", 150))))
+    voice["volume"] = min(1.0, max(0.0, float(voice.get("volume", 0.8))))
+    voice["message"] = str(voice.get("message", "กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่")).strip()
+    if not voice["message"]:
+        raise ValueError("voice.message must not be empty")
+
     lcd = config["lcd"]
     lcd["enabled"] = bool(lcd.get("enabled", False))
     try:
@@ -161,6 +170,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, default=Path("config.yaml"))
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")
+    parser.add_argument("--test-voice", action="store_true", help="Speak the configured Thai posture reminder and exit")
     parser.add_argument("--test-led", action="store_true", help="Blink the configured red LED twice and exit")
     parser.add_argument("--test-buzzer", action="store_true", help="Beep the configured buzzer 3 times and exit")
     parser.add_argument("--test-lcd", action="store_true", help="Show a sample score on the configured LCD 1602 and exit")
@@ -189,18 +199,22 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("loaded config from %s", args.config)
 
     # Lazy imports so --help / config validation ไม่ต้องมี lib ติดตั้งครบ
-    from client.alert import AlertController, SoundPlayer
+    from client.alert import AlertController, SoundPlayer, SpeechPlayer
     from client.buzzer import GpioBuzzer
     from client.indicator import GpioLed
     from client.lcd import CharacterLcd
 
     sound_player = SoundPlayer(config.get("sound", {}))
+    speech_player = SpeechPlayer(config.get("voice", {}), fallback_device=sound_player.device)
     indicator = GpioLed(config.get("indicator", {}))
     buzzer = GpioBuzzer(config.get("buzzer", {}))
     lcd = CharacterLcd(config.get("lcd", {}))
     if args.test_sound:
         logger.info("testing alert sound...")
         return 0 if sound_player.play() else 1
+    if args.test_voice:
+        logger.info("testing Thai voice alert...")
+        return 0 if speech_player.speak() else 1
     if args.test_led:
         logger.info("testing red LED indicator: blinking twice...")
         return 0 if indicator.blink(times=2) else 1
@@ -292,7 +306,14 @@ def main(argv: list[str] | None = None) -> int:
         buffer_path=config["buffer"]["path"],
         sample_interval_seconds=config["recording"]["sample_interval_seconds"],
     )
-    alert_controller = AlertController(config, uploader, sound_player, indicator, buzzer)
+    alert_controller = AlertController(
+        config,
+        uploader,
+        sound_player,
+        indicator,
+        buzzer,
+        speech_player=speech_player,
+    )
 
     consecutive_failures = 0
     camera = None

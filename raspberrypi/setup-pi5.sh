@@ -37,7 +37,7 @@ echo "[1/6] Installing Pi, Docker, camera, and audio dependencies..."
 sudo apt-get update
 sudo apt-get install -y \
     docker.io python3-venv python3-picamera2 python3-opencv \
-    libgl1 alsa-utils python3-gpiozero i2c-tools raspi-config curl openssl
+    libgl1 alsa-utils espeak-ng python3-gpiozero i2c-tools raspi-config curl openssl
 
 echo "Enabling I2C for BH1750..."
 sudo raspi-config nonint do_i2c 0

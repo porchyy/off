@@ -72,10 +72,10 @@ pip install -r requirements.txt
 cp config.example.yaml config.yaml   # แล้วแก้ค่าให้ตรงกับเครื่อง
 ```
 
-ติดตั้งตัวเล่นเสียงของ Pi OS (สคริปต์ `setup-pi5.sh` ติดตั้งให้อัตโนมัติ):
+ติดตั้งตัวเล่นเสียงและเสียงพูดภาษาไทยของ Pi OS (สคริปต์ `setup-pi5.sh` ติดตั้งให้อัตโนมัติ):
 
 ```bash
-sudo apt-get install -y alsa-utils
+sudo apt-get install -y alsa-utils espeak-ng
 ```
 
 ## เสียงแจ้งเตือนผ่าน MAX98357A I2S เท่านั้น
@@ -115,6 +115,13 @@ cd ~/off/raspberrypi
 `dtoverlay=max98357a,sdmode-pin=4` และกำหนด
 `sound.device` เป็น `plughw:CARD=MAX98357A,DEV=0` จึงไม่อ้างอิงหมายเลข card
 ที่อาจเปลี่ยนหลัง reboot. เมื่อ `sound.file` ว่าง ระบบจะสร้างเสียง beep สองจังหวะให้เอง.
+เมื่อเปิด **เสียงพูดภาษาไทย** จาก dashboard ระบบใช้ `espeak-ng` พูดว่า
+“กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่” ผ่านลำโพงเดียวกันหลังเสียง beep. ทดสอบได้ด้วย:
+
+```bash
+cd ~/off/raspberrypi
+.venv/bin/python posture_client.py --config config.yaml --test-voice
+```
 
 ## ไฟ LED สีแดงแจ้งเตือน
 
@@ -180,8 +187,8 @@ posture_classifier:
    (10 FPS) เพื่อหา skeleton แล้วคำนวณจากศีรษะและไหล่เท่านั้น → POST เฉพาะคะแนนไป backend
    และส่งเฉพาะพิกัด landmark สำคัญไปวาด
    เส้นทับบน dashboard (ไม่ส่งหรือบันทึกภาพเพิ่ม)
-3. **Local sound + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
-   จะเล่นเสียงและ POST `/api/alerts` ทันทีเมื่อ `risk.seconds` เป็น `0` โดยเว้นช่วง
+3. **Local sound, Thai voice + alert forwarding**: เมื่อ score ต่ำกว่า `risk.threshold`
+   จะเล่นเสียง beep ตามด้วยเสียงพูดไทย และ POST `/api/alerts` ทันทีเมื่อ `risk.seconds` เป็น `0` โดยเว้นช่วง
    การแจ้งซ้ำตาม `risk.cooldown` (ตั้งค่าเวลาหน่วงได้จากหน้าเว็บ)
 4. **Offline buffer**: ถ้า backend ไม่ตอบ จะเก็บ samples ใน
    `buffer.sqlite` แล้วยิงใหม่เมื่อกลับมา online

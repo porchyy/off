@@ -606,6 +606,7 @@ async function loadSettings() {
   $('riskThreshold').value = settings.riskThreshold;
   $('riskSeconds').value = settings.riskSeconds;
   $('soundEnabled').checked = settings.soundEnabled;
+  $('voiceEnabled').checked = settings.voiceEnabled;
   $('desktopEnabled').checked = settings.desktopEnabled;
   if (!storage.isDemo) $('dataDir').value = settings.dataDir || '';
 }
@@ -652,7 +653,7 @@ async function saveSettings() {
     riskSeconds: Number($('riskSeconds').value),
     dataDir: storage.isDemo ? 'localStorage' : $('dataDir').value,
     soundEnabled: $('soundEnabled').checked,
-    voiceEnabled: false,
+    voiceEnabled: $('voiceEnabled').checked,
     desktopEnabled: $('desktopEnabled').checked
   };
   try {
