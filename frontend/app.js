@@ -709,6 +709,7 @@ async function loadDashboard() {
     await loadSummary();
     const stats = await storage.stats();
     drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#1d5f99');
+    drawBarChart($('monthlyChart'), stats.monthly || [], 'average', 100, '#16794a');
     drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#b45309');
   } catch {
     toast('โหลดข้อมูลไม่สำเร็จ');
@@ -846,16 +847,29 @@ $('clearData')?.addEventListener('click', async () => {
 /* ── Chart Tabs & Notification Handlers ── */
 $('btnDailyChart')?.addEventListener('click', () => {
   $('btnDailyChart').classList.add('active');
+  $('btnMonthlyChart').classList.remove('active');
   $('btnWeeklyChart').classList.remove('active');
   $('dailyChart').style.display = 'block';
+  $('monthlyChart').style.display = 'none';
+  $('weeklyChart').style.display = 'none';
+});
+
+$('btnMonthlyChart')?.addEventListener('click', () => {
+  $('btnDailyChart').classList.remove('active');
+  $('btnMonthlyChart').classList.add('active');
+  $('btnWeeklyChart').classList.remove('active');
+  $('dailyChart').style.display = 'none';
+  $('monthlyChart').style.display = 'block';
   $('weeklyChart').style.display = 'none';
 });
 
 $('btnWeeklyChart')?.addEventListener('click', () => {
-  $('btnWeeklyChart').classList.add('active');
   $('btnDailyChart').classList.remove('active');
+  $('btnMonthlyChart').classList.remove('active');
+  $('btnWeeklyChart').classList.add('active');
   $('weeklyChart').style.display = 'block';
   $('dailyChart').style.display = 'none';
+  $('monthlyChart').style.display = 'none';
 });
 
 $('desktopEnabled')?.addEventListener('change', async (e) => {

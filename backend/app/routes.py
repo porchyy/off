@@ -329,13 +329,29 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
         if values["measurements"]
     ]
 
+    monthly_totals: dict[str, dict[str, float | int]] = defaultdict(lambda: {"score": 0.0, "measurements": 0, "periods": 0})
+    for label, values in daily_totals.items():
+        bucket = monthly_totals[label[:7]]
+        bucket["score"] += values["score"]
+        bucket["measurements"] += values["measurements"]
+        bucket["periods"] += values["periods"]
+    monthly = [
+        {
+            "label": label,
+            "average": int(round(values["score"] / values["measurements"])),
+            "samples": int(values["periods"]),
+        }
+        for label, values in sorted(monthly_totals.items())
+        if values["measurements"]
+    ]
+
     alert_totals: dict[str, int] = defaultdict(int)
     for row in db.scalars(select(Alert)):
         alert_totals[local_day_label(row.created_at)] += 1
     labels = sorted(set(daily_totals) | set(alert_totals))[-14:]
     weekly_alerts = [{"label": label, "alerts": alert_totals[label]} for label in labels]
 
-    return StatsResponse(daily=daily, weekly_alerts=weekly_alerts)
+    return StatsResponse(daily=daily, weekly_alerts=weekly_alerts, monthly=monthly)
 
 
 @router.get("/api/reports/daily.xlsx")

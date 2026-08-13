@@ -234,6 +234,7 @@ def test_summary_and_stats():
     stats_data = stats_res.json()
     assert len(stats_data["daily"]) >= 1
     assert len(stats_data["weeklyAlerts"]) >= 1
+    assert len(stats_data["monthly"]) >= 1
 
 
 def test_compact_legacy_samples_moves_high_frequency_data_to_one_minute(tmp_path):

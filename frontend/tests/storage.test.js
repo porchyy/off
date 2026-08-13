@@ -69,6 +69,8 @@ test('LocalStorageStorage addSample, summary, and stats', async () => {
   assert.ok(stats.daily.length >= 1);
   assert.equal(stats.daily[0].samples, 2);
   assert.equal(stats.daily[0].average, 80);
+  assert.equal(stats.monthly.length, 1);
+  assert.equal(stats.monthly[0].average, 80);
 });
 
 test('LocalStorageStorage clear', async () => {

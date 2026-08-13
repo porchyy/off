@@ -189,7 +189,19 @@ class LocalStorageStorage {
       .slice(-14)
       .map(label => ({ label, alerts: alertsByDay.get(label) || 0 }));
 
-    return { daily, weeklyAlerts };
+    const months = new Map();
+    for (const row of samplesByDay.values()) {
+      const label = row.label.slice(0, 7);
+      const month = months.get(label) || { label, total: 0, samples: 0 };
+      month.total += row.total;
+      month.samples += row.samples;
+      months.set(label, month);
+    }
+    const monthly = Array.from(months.values())
+      .map(row => ({ label: row.label, average: Math.round(row.total / row.samples), samples: row.samples }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    return { daily, weeklyAlerts, monthly };
   }
 
   setAdminToken() {}

@@ -83,9 +83,16 @@ class WeeklyAlertStat(BaseModel):
     alerts: int
 
 
+class MonthlyStat(BaseModel):
+    label: str
+    average: int
+    samples: int
+
+
 class StatsResponse(BaseModel):
     daily: list[DailyStat]
     weekly_alerts: list[WeeklyAlertStat] = Field(serialization_alias="weeklyAlerts")
+    monthly: list[MonthlyStat]
 
 
 class OkResponse(BaseModel):

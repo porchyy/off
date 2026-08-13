@@ -209,11 +209,13 @@
         <div class="chart-header">
           <div class="chart-tabs">
             <button id="btnDailyChart" class="chart-tab active" type="button">คะแนนเฉลี่ยรายวัน</button>
+            <button id="btnMonthlyChart" class="chart-tab" type="button">คะแนนเฉลี่ยรายเดือน</button>
             <button id="btnWeeklyChart" class="chart-tab" type="button">แจ้งเตือนรายสัปดาห์</button>
           </div>
         </div>
         <div class="chart-container">
           <canvas id="dailyChart" width="720" height="260"></canvas>
+          <canvas id="monthlyChart" width="720" height="260" style="display: none;"></canvas>
           <canvas id="weeklyChart" width="720" height="260" style="display: none;"></canvas>
         </div>
       </article>
