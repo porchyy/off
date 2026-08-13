@@ -1,4 +1,4 @@
-"""Daily PostureAI Excel report generation."""
+"""Daily and monthly PostureAI Excel report generation."""
 
 from __future__ import annotations
 
@@ -28,6 +28,16 @@ def local_day_bounds(report_date: date) -> tuple[str, str]:
     start = datetime.combine(report_date, time.min, tzinfo=LOCAL_TZ).astimezone(timezone.utc)
     end = start + timedelta(days=1)
     return start.isoformat(), end.isoformat()
+
+
+def local_month_bounds(report_month: date) -> tuple[str, str]:
+    """Return UTC ISO bounds for the Bangkok calendar month containing report_month."""
+    start_local = datetime(report_month.year, report_month.month, 1, tzinfo=LOCAL_TZ)
+    if report_month.month == 12:
+        end_local = datetime(report_month.year + 1, 1, 1, tzinfo=LOCAL_TZ)
+    else:
+        end_local = datetime(report_month.year, report_month.month + 1, 1, tzinfo=LOCAL_TZ)
+    return start_local.astimezone(timezone.utc).isoformat(), end_local.astimezone(timezone.utc).isoformat()
 
 
 def local_today() -> date:
@@ -107,6 +117,10 @@ def prune_expired_reports(report_dir: Path, days: int) -> int:
 
 def _minute_rows(db: Session, report_date: date, risk_threshold: int) -> list[dict[str, Any]]:
     start, end = local_day_bounds(report_date)
+    return _minute_rows_between(db, start, end, risk_threshold)
+
+
+def _minute_rows_between(db: Session, start: str, end: str, risk_threshold: int) -> list[dict[str, Any]]:
     buckets: dict[str, dict[str, Any]] = {}
 
     for row in db.scalars(
@@ -175,6 +189,10 @@ def _minute_rows(db: Session, report_date: date, risk_threshold: int) -> list[di
 
 def _alert_rows(db: Session, report_date: date) -> list[Alert]:
     start, end = local_day_bounds(report_date)
+    return _alert_rows_between(db, start, end)
+
+
+def _alert_rows_between(db: Session, start: str, end: str) -> list[Alert]:
     return list(db.scalars(select(Alert).where(Alert.created_at >= start, Alert.created_at < end).order_by(Alert.created_at)))
 
 
@@ -288,3 +306,116 @@ def write_daily_report(db: Session, report_date: date, risk_threshold: int, repo
     temporary.write_bytes(build_daily_report(db, report_date, risk_threshold))
     temporary.replace(target)
     return target
+
+
+def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -> bytes:
+    """Create an Excel workbook summarising one Bangkok calendar month."""
+    start, end = local_month_bounds(report_month)
+    minute_rows = _minute_rows_between(db, start, end, risk_threshold)
+    alerts = _alert_rows_between(db, start, end)
+    daily: dict[str, dict[str, float | int]] = {}
+    for row in minute_rows:
+        label = row["time"].date().isoformat()
+        bucket = daily.setdefault(label, {"score_sum": 0.0, "minutes": 0, "risk_seconds": 0})
+        bucket["score_sum"] += float(row["score"])
+        bucket["minutes"] += 1
+        bucket["risk_seconds"] += int(row["risk_seconds"])
+    alerts_by_day: dict[str, int] = {}
+    for alert in alerts:
+        label = local_day_label(alert.created_at)
+        alerts_by_day[label] = alerts_by_day.get(label, 0) + 1
+
+    workbook = Workbook()
+    summary = workbook.active
+    summary.title = "สรุปรายเดือน"
+    daily_sheet = workbook.create_sheet("สรุปรายวัน")
+    alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
+
+    summary.merge_cells("A1:H1")
+    summary["A1"] = "PostureAI — รายงานท่านั่งรายเดือน"
+    summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
+    summary["A1"].fill = HEADER_FILL
+    summary["A1"].alignment = Alignment(horizontal="center")
+    summary["A2"] = "เดือนรายงาน"
+    summary["B2"] = report_month.replace(day=1)
+    summary["B2"].number_format = "mmmm yyyy"
+    summary["A3"] = "หมายเหตุ"
+    summary["B3"] = "สรุปจากข้อมูลรายนาทีในเดือนที่เลือก ไม่รวมภาพหรือวิดีโอ"
+    summary["B3"].alignment = Alignment(wrap_text=True)
+    period_count = len(minute_rows)
+    average = sum(float(row["score"]) for row in minute_rows) / period_count if period_count else 0
+    risk_minutes = sum(int(row["risk_seconds"]) for row in minute_rows) / 60
+    summary_rows = [
+        ("คะแนนเฉลี่ยทั้งเดือน", average),
+        ("วันที่มีข้อมูล", len(daily)),
+        ("ช่วงเวลาที่บันทึก", period_count),
+        ("เวลาที่เสี่ยง (นาที)", risk_minutes),
+        ("จำนวน Alert", len(alerts)),
+        ("เกณฑ์คะแนนเสี่ยง", risk_threshold),
+    ]
+    for row_index, (label, value) in enumerate(summary_rows, start=4):
+        summary.cell(row_index, 1, label).font = Font(bold=True)
+        summary.cell(row_index, 2, value)
+        if row_index in (4, 7):
+            summary.cell(row_index, 2).number_format = "0.0"
+    summary.column_dimensions["A"].width = 28
+    summary.column_dimensions["B"].width = 44
+
+    daily_sheet.append(["วันที่", "คะแนนเฉลี่ย", "ช่วงเวลาที่บันทึก", "เวลาที่เสี่ยง (นาที)", "จำนวน Alert"])
+    for cell in daily_sheet[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = HEADER_FILL
+    for label in sorted(set(daily) | set(alerts_by_day)):
+        values = daily.get(label, {"score_sum": 0.0, "minutes": 0, "risk_seconds": 0})
+        minutes = int(values["minutes"])
+        daily_sheet.append([
+            date.fromisoformat(label),
+            float(values["score_sum"]) / minutes if minutes else 0,
+            minutes,
+            int(values["risk_seconds"]) / 60,
+            alerts_by_day.get(label, 0),
+        ])
+    for row in daily_sheet.iter_rows(min_row=2):
+        row[0].number_format = "dd/mm/yyyy"
+        row[1].number_format = "0.0"
+        row[3].number_format = "0.0"
+    daily_sheet.conditional_formatting.add(
+        f"B2:B{max(2, daily_sheet.max_row)}",
+        CellIsRule(operator="lessThan", formula=[str(risk_threshold)], fill=RISK_FILL),
+    )
+    for column, width in enumerate((14, 16, 20, 20, 14), start=1):
+        daily_sheet.column_dimensions[get_column_letter(column)].width = width
+    daily_sheet.freeze_panes = "A2"
+    if daily_sheet.max_row > 1:
+        trend_chart = LineChart()
+        trend_chart.title = "แนวโน้มคะแนนเฉลี่ยรายวัน"
+        trend_chart.y_axis.title = "คะแนน"
+        trend_chart.x_axis.title = "วันที่"
+        trend_chart.y_axis.scaling.min = 0
+        trend_chart.y_axis.scaling.max = 100
+        trend_chart.height = 8
+        trend_chart.width = 18
+        trend_chart.add_data(Reference(daily_sheet, min_col=2, min_row=1, max_row=daily_sheet.max_row), titles_from_data=True)
+        trend_chart.set_categories(Reference(daily_sheet, min_col=1, min_row=2, max_row=daily_sheet.max_row))
+        summary.add_chart(trend_chart, "D3")
+
+    alert_sheet.append(["เวลา", "ระดับ", "ข้อความ"])
+    for cell in alert_sheet[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = HEADER_FILL
+    for alert in alerts:
+        alert_sheet.append([
+            datetime.fromisoformat(alert.created_at).astimezone(LOCAL_TZ).replace(tzinfo=None),
+            alert.severity,
+            alert.message,
+        ])
+    for cell in alert_sheet["A"][1:]:
+        cell.number_format = "dd/mm/yyyy hh:mm"
+    alert_sheet.column_dimensions["A"].width = 20
+    alert_sheet.column_dimensions["B"].width = 12
+    alert_sheet.column_dimensions["C"].width = 70
+    alert_sheet.freeze_panes = "A2"
+
+    output = BytesIO()
+    workbook.save(output)
+    return output.getvalue()

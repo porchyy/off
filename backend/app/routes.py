@@ -18,7 +18,7 @@ from .config import settings
 from .camera_store import camera_frames
 from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
-from .daily_report import build_daily_report, local_day_bounds, local_day_label, local_today
+from .daily_report import build_daily_report, build_monthly_report, local_day_bounds, local_day_label, local_today
 from .export import rows_to_csv
 from .models import Alert, Base, MinuteSummary, Sample, Setting
 from .schemas import (
@@ -381,6 +381,23 @@ def download_daily_excel(
     risk_threshold = get_all(db)["riskThreshold"]
     content = build_daily_report(db, selected_date, risk_threshold)
     filename = f"PostureAI_{selected_date.isoformat()}.xlsx"
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/api/reports/monthly.xlsx")
+def download_monthly_excel(
+    report_month: date | None = Query(default=None, alias="month"),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Create and download a readable Excel report for one Bangkok calendar month."""
+    selected_month = (report_month or local_today()).replace(day=1)
+    risk_threshold = get_all(db)["riskThreshold"]
+    content = build_monthly_report(db, selected_month, risk_threshold)
+    filename = f"PostureAI_{selected_month.strftime('%Y-%m')}.xlsx"
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

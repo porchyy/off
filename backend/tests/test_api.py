@@ -302,6 +302,22 @@ def test_download_daily_excel_report():
     assert len(workbook["สรุปรายวัน"]._charts) == 1
 
 
+def test_download_monthly_excel_report():
+    client.post("/api/samples", json={"score": 88.0, "neck": 9.0, "shoulders": 4.0, "torso": 3.0})
+    client.post("/api/alerts", json={"severity": "risk", "message": "Monthly posture alert"})
+
+    response = client.get("/api/reports/monthly.xlsx")
+
+    assert response.status_code == 200
+    assert "spreadsheetml.sheet" in response.headers["content-type"]
+    assert "PostureAI_" in response.headers["content-disposition"]
+    workbook = load_workbook(BytesIO(response.content), data_only=False)
+    assert workbook.sheetnames == ["สรุปรายเดือน", "สรุปรายวัน", "เหตุการณ์แจ้งเตือน"]
+    assert workbook["สรุปรายวัน"]["B2"].value == 88
+    assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Monthly posture alert"
+    assert len(workbook["สรุปรายเดือน"]._charts) == 1
+
+
 def test_clear_data():
     client.post("/api/samples", json={"score": 85.0, "neck": 10.0, "shoulders": 4.0, "torso": 3.0})
     client.post("/api/alerts", json={"severity": "risk", "message": "Posture risk alert"})

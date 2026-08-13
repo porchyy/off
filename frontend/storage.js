@@ -126,6 +126,13 @@ class BackendStorage {
     return response.blob();
   }
 
+  async exportMonthlyExcel(reportMonth) {
+    const query = reportMonth ? `?month=${encodeURIComponent(`${reportMonth}-01`)}` : '';
+    const response = await fetch(`/api/reports/monthly.xlsx${query}`);
+    if (!response.ok) throw Error(`HTTP ${response.status}`);
+    return response.blob();
+  }
+
   async clear() {
     return requestJson('/api/data', { method: 'DELETE', headers: adminHeaders() });
   }
@@ -223,6 +230,10 @@ class LocalStorageStorage {
 
   async exportExcel() {
     throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ PostureAI');
+  }
+
+  async exportMonthlyExcel() {
+    throw Error('การส่งออก Excel รายเดือนต้องเชื่อมต่อกับ backend ของ PostureAI');
   }
 
   async clear() {

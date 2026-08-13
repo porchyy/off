@@ -782,6 +782,10 @@ function bangkokDate() {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
+function bangkokMonth() {
+  return bangkokDate().slice(0, 7);
+}
+
 async function downloadExcel() {
   try {
     const reportDate = $('reportDate')?.value || bangkokDate();
@@ -799,6 +803,23 @@ async function downloadExcel() {
   }
 }
 
+async function downloadMonthlyExcel() {
+  try {
+    const reportMonth = $('reportMonth')?.value || bangkokMonth();
+    const blob = await storage.exportMonthlyExcel(reportMonth);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PostureAI_${reportMonth}.xlsx`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (error) {
+    toast(error.message || 'ส่งออก Excel รายเดือนไม่สำเร็จ');
+  }
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
@@ -810,8 +831,11 @@ $('saveSettings')?.addEventListener('click', saveSettings);
 $('exportCsv')?.addEventListener('click', () => downloadExport('csv'));
 $('exportJson')?.addEventListener('click', () => downloadExport('json'));
 $('exportExcel')?.addEventListener('click', downloadExcel);
+$('exportMonthlyExcel')?.addEventListener('click', downloadMonthlyExcel);
 const reportDateInput = $('reportDate');
 if (reportDateInput) reportDateInput.value = bangkokDate();
+const reportMonthInput = $('reportMonth');
+if (reportMonthInput) reportMonthInput.value = bangkokMonth();
 $('testAlert')?.addEventListener('click', () => notifyRisk(true));
 $('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
 $('clearData')?.addEventListener('click', async () => {
