@@ -34,7 +34,6 @@ let piReconnectTimer;
 let piManualStop = false;
 let piLandmarks = [];
 let piMetrics = null;
-let piRoboflowResult = null;
 
 const toast = msg => {
   const el = $('toast');
@@ -155,22 +154,6 @@ function updateLcdPreview(metrics) {
     : safeScore >= 60
       ? 'CHECK POSTURE'
       : 'ADJUST POSTURE');
-}
-
-function updateRoboflowResult(result) {
-  const el = $('roboflowResult');
-  const label = String(result?.label || '');
-  const confidence = Number(result?.confidence);
-  if (!label || !Number.isFinite(confidence)) return;
-  const labels = {
-    good_posture: 'AI เสริม: ท่านั่งดี',
-    slouch: 'AI เสริม: หลังงอ',
-    leaning_forward: 'AI เสริม: โน้มตัวไปข้างหน้า',
-    leaning_backward: 'AI เสริม: เอนตัวไปข้างหลัง'
-  };
-  piRoboflowResult = result;
-  el.hidden = false;
-  el.textContent = `${labels[label] || `AI เสริม: ${label}`} (${Math.round(confidence * 100)}%)`;
 }
 
 async function save(m) {
@@ -477,9 +460,7 @@ function endPiCamera() {
   if (piVideo) piVideo.srcObject = null;
   piLandmarks = [];
   piMetrics = null;
-  piRoboflowResult = null;
   $('postureModelResult').hidden = true;
-  $('roboflowResult').hidden = true;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.hidden = true;
   $('cameraHelp').hidden = false;
@@ -594,8 +575,6 @@ function connectPiCamera() {
         $('postureModelResult').hidden = true;
       }
       if (!running || analysisVideo !== $('piCamera')) drawPiOverlay();
-    } else if (message.type === 'roboflow_update') {
-      updateRoboflowResult(message.result);
     } else if (message.type === 'error') {
       toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
       if (message.code === 'unavailable') {

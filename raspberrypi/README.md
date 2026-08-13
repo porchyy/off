@@ -191,42 +191,6 @@ posture_classifier:
 ยังเริ่มไม่เสร็จ client จะ retry แบบหน่วงสูงสุด 10 วินาที และ systemd จะ restart ให้อัตโนมัติ
 หากโปรเซสหยุดทำงาน.
 
-## AI เสริมจาก Roboflow (ทางเลือก)
-
-ระบบหลักยังคงใช้ **MediaPipe Pose Landmarker Full บน Pi** เพื่อวาด skeleton,
-คำนวณคะแนน และแจ้งเตือนโดยไม่ต้องใช้อินเทอร์เน็ต. หากต้องการให้หน้าเว็บแสดง
-ผลจำแนกท่านั่งจากโมเดล Roboflow เพิ่มเติม ให้เปิด `roboflow.enabled: true` ใน
-`config.yaml` และเก็บ API key ไว้นอก repository:
-
-```bash
-sudo install -d -m 700 /etc/postureai
-sudo nano /etc/postureai/roboflow.env
-```
-
-ใส่เพียงบรรทัดนี้ในไฟล์ (แทนที่ด้วย key ของตนเอง):
-
-```text
-ROBOFLOW_API_KEY=your-key-here
-```
-
-จากนั้นจำกัดสิทธิ์และเพิ่ม environment ให้ service:
-
-```bash
-sudo chmod 600 /etc/postureai/roboflow.env
-sudo systemctl edit postureai-client
-```
-
-ใส่:
-
-```ini
-[Service]
-EnvironmentFile=/etc/postureai/roboflow.env
-```
-
-แล้วสั่ง `sudo systemctl daemon-reload` และ `sudo systemctl restart postureai-client`.
-ผล Roboflow เป็นการส่งภาพตัวอย่างออกไปประมวลผลที่ cloud ทุก 1 วินาที จึงต้องให้
-Pi ออกอินเทอร์เน็ตได้ และไม่ควรเปิดใช้หากนโยบายความเป็นส่วนตัวไม่อนุญาต.
-
 ## หมายเหตุ
 
 - `detection.mode` รองรับ `mediapipe` เท่านั้น และประมวลผลภาพบน Pi

@@ -66,15 +66,6 @@ def test_config_uses_live_video_defaults_and_ai_rate(tmp_path):
         "interval": 0.5,
         "min_confidence": 0.65,
     }
-    assert config["roboflow"] == {
-        "enabled": False,
-        "model_id": "sitting-posture-detection-3933f/2",
-        "interval": 1.0,
-        "confidence": 0.6,
-        "timeout": 8.0,
-        "input_width": 640,
-        "api_key_env": "ROBOFLOW_API_KEY",
-    }
 
 
 def test_config_clamps_overlay_smoothing_options(tmp_path):
@@ -115,11 +106,7 @@ def test_config_accepts_only_supported_score_sources(tmp_path):
         validate_config({"detection": {"score_source": "hips"}}, tmp_path / "config.yaml")
 
 
-def test_config_can_disable_mediapipe_without_disabling_roboflow(tmp_path):
-    config = validate_config(
-        {"detection": {"enabled": False}, "roboflow": {"enabled": True}},
-        tmp_path / "config.yaml",
-    )
+def test_config_can_disable_mediapipe(tmp_path):
+    config = validate_config({"detection": {"enabled": False}}, tmp_path / "config.yaml")
 
     assert config["detection"]["enabled"] is False
-    assert config["roboflow"]["enabled"] is True

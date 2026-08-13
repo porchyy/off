@@ -683,7 +683,7 @@ button:disabled {
   line-height: 1.5;
 }
 
-.roboflow-result {
+.posture-model-result {
   justify-self: center;
   padding: 5px 10px;
   border-radius: 999px;

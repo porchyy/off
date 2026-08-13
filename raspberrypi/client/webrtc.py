@@ -43,8 +43,6 @@ class PiWebRtcSender:
         self._pose_lock = threading.Lock()
         self._latest_pose: dict[str, Any] | None = None
         self._pose_revision = 0
-        self._latest_roboflow: dict[str, Any] | None = None
-        self._roboflow_revision = 0
 
     def start(self) -> None:
         self._thread.start()
@@ -64,12 +62,6 @@ class PiWebRtcSender:
                 "metrics": dict(metrics),
                 "landmarks": list(landmarks),
             }
-
-    def publish_roboflow_result(self, result: dict[str, Any]) -> None:
-        """Store the newest hosted posture classification for the dashboard."""
-        with self._pose_lock:
-            self._roboflow_revision += 1
-            self._latest_roboflow = {"type": "roboflow_update", "result": dict(result)}
 
     def _run(self) -> None:
         try:
@@ -127,7 +119,6 @@ class PiWebRtcSender:
     ) -> None:
         """Forward only the most recent landmarks, never a queue of stale poses."""
         delivered_revision = 0
-        delivered_roboflow_revision = 0
         while not self._stop.is_set():
             await viewer_ready.wait()
             with self._pose_lock:
@@ -137,13 +128,6 @@ class PiWebRtcSender:
                 async with send_lock:
                     await socket.send(json.dumps(payload, separators=(",", ":")))
                 delivered_revision = revision
-            with self._pose_lock:
-                roboflow_revision = self._roboflow_revision
-                roboflow_payload = self._latest_roboflow
-            if roboflow_payload is not None and roboflow_revision > delivered_roboflow_revision:
-                async with send_lock:
-                    await socket.send(json.dumps(roboflow_payload, separators=(",", ":")))
-                delivered_roboflow_revision = roboflow_revision
             await asyncio.sleep(0.03)
 
     async def _answer_offer(self, socket: Any, message: dict[str, Any]) -> None:

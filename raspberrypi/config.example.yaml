@@ -22,7 +22,7 @@ camera:
   flip: 0
 
 detection:
-  # false = ไม่เรียก MediaPipe (ใช้ Roboflow เพียงตัวเดียว)
+  # false = ไม่เรียก MediaPipe (ส่งเฉพาะภาพ live ไปยัง dashboard)
   enabled: true
   # ความถี่การวิเคราะห์และบันทึกคะแนน (วินาที, 0.1 = 10 FPS)
   interval: 0.1
@@ -52,18 +52,6 @@ posture_classifier:
   interval: 0.5
   # ความมั่นใจต่ำกว่านี้จะกลับไปใช้คะแนนจาก MediaPipe ชั่วคราว
   min_confidence: 0.65
-
-# AI เสริมจาก Roboflow: ใช้ผล Good/Slouch/Leaning บนหน้าเว็บ
-# API key ต้องอยู่ใน environment ของ systemd เท่านั้น ไม่ใส่ในไฟล์นี้
-roboflow:
-  enabled: false
-  model_id: sitting-posture-detection-3933f/2
-  interval: 1.0
-  confidence: 0.6
-  timeout: 8
-  # Resize only the cloud request; this never reduces dashboard video quality.
-  input_width: 640
-  api_key_env: ROBOFLOW_API_KEY
 
 video:
   # WebRTC preview อยู่ใน LAN โดยภาพไม่ถูกบันทึกลงดิสก์

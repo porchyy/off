@@ -32,7 +32,7 @@ def load_config(path: Path) -> dict[str, Any]:
 
 def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Validate the small stable configuration surface before opening hardware."""
-    for section in ("backend", "camera", "detection", "posture_classifier", "roboflow", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
+    for section in ("backend", "camera", "detection", "posture_classifier", "risk", "sound", "indicator", "buzzer", "lcd", "buffer", "video"):
         value = config.get(section)
         if value is None:
             config[section] = {}
@@ -96,19 +96,6 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     posture_classifier["min_confidence"] = min(
         1.0, max(0.0, float(posture_classifier.get("min_confidence", 0.65)))
     )
-
-    roboflow = config["roboflow"]
-    roboflow["enabled"] = bool(roboflow.get("enabled", False))
-    roboflow["model_id"] = str(roboflow.get("model_id", "sitting-posture-detection-3933f/2")).strip()
-    if not roboflow["model_id"]:
-        raise ValueError("roboflow.model_id must not be empty")
-    roboflow["interval"] = max(0.5, float(roboflow.get("interval", 1.0)))
-    roboflow["confidence"] = min(1.0, max(0.0, float(roboflow.get("confidence", 0.6))))
-    roboflow["timeout"] = max(1.0, float(roboflow.get("timeout", 8.0)))
-    roboflow["input_width"] = max(160, min(1280, int(roboflow.get("input_width", 640))))
-    roboflow["api_key_env"] = str(roboflow.get("api_key_env", "ROBOFLOW_API_KEY")).strip()
-    if not roboflow["api_key_env"]:
-        raise ValueError("roboflow.api_key_env must not be empty")
 
     video = config["video"]
     video["enabled"] = bool(video.get("enabled", True))
@@ -284,7 +271,6 @@ def main(argv: list[str] | None = None) -> int:
                 camera.release()
 
     from client.capture import CameraProducer
-    from client.roboflow import RoboflowInferenceWorker
     from client.uploader import Uploader
     from client.webrtc import PiWebRtcSender
 
@@ -292,8 +278,6 @@ def main(argv: list[str] | None = None) -> int:
     if detection_enabled:
         from client.detect import close_detector, draw_pose_overlay, process_live_frame
     else:
-        # Keep the MediaPipe code installed for easy rollback, but do not load
-        # its model or call its inference path in Roboflow-only mode.
         close_detector = lambda: None
 
     backend_url = config["backend"]["url"]
@@ -303,7 +287,6 @@ def main(argv: list[str] | None = None) -> int:
         buffer_path=config["buffer"]["path"],
     )
     alert_controller = AlertController(config, uploader, sound_player, indicator, buzzer)
-    roboflow = RoboflowInferenceWorker(config["roboflow"])
 
     consecutive_failures = 0
     camera = None
@@ -328,7 +311,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
         else:
             update_stream_overlay = None
-            logger.info("MediaPipe is disabled; running Roboflow posture classification only")
+            logger.info("MediaPipe is disabled; streaming camera without posture analysis")
 
         producer.start()
         if config["video"]["enabled"]:
@@ -364,10 +347,6 @@ def main(argv: list[str] | None = None) -> int:
                             update_stream_overlay,
                             lcd,
                         )
-                    roboflow.submit_if_due(frame, producer.color_space)
-                    classification = roboflow.take_result()
-                    if classification is not None and webrtc is not None:
-                        webrtc.publish_roboflow_result(classification)
                 consecutive_failures = producer.failures
                 if consecutive_failures >= 3:
                     raise RuntimeError(f"camera capture failed repeatedly: {producer.last_error}")
@@ -411,7 +390,6 @@ def main(argv: list[str] | None = None) -> int:
                 camera.release()
             except Exception:
                 pass
-        roboflow.stop()
         close_detector()
         indicator.close()
         buzzer.close()
