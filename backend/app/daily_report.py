@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
+import re
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -13,7 +14,7 @@ from openpyxl.chart import LineChart, Reference
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from .models import Alert, MinuteSummary, Sample
@@ -31,6 +32,77 @@ def local_day_bounds(report_date: date) -> tuple[str, str]:
 
 def local_today() -> date:
     return datetime.now(LOCAL_TZ).date()
+
+
+def _utc_minute(timestamp: str) -> str:
+    parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(second=0, microsecond=0).isoformat()
+
+
+def local_day_label(timestamp: str) -> str:
+    parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(LOCAL_TZ).date().isoformat()
+
+
+def compact_legacy_samples(db: Session, risk_threshold: int) -> int:
+    """Move old high-frequency rows into one aggregate per minute exactly once."""
+    samples = list(db.scalars(select(Sample).order_by(Sample.id)))
+    if not samples:
+        return 0
+    existing = {row.minute_start: row for row in db.scalars(select(MinuteSummary))}
+    for sample in samples:
+        minute_start = _utc_minute(sample.created_at)
+        row = existing.get(minute_start)
+        if row is None:
+            row = MinuteSummary(
+                minute_start=minute_start,
+                score_sum=0.0,
+                score_min=sample.score,
+                score_max=sample.score,
+                neck_sum=0.0,
+                shoulders_sum=0.0,
+                torso_sum=0.0,
+                measurements=0,
+                risk_measurements=0,
+            )
+            existing[minute_start] = row
+            db.add(row)
+        row.score_sum += sample.score
+        row.score_min = min(row.score_min, sample.score)
+        row.score_max = max(row.score_max, sample.score)
+        row.neck_sum += sample.neck or 0.0
+        row.shoulders_sum += sample.shoulders or 0.0
+        row.torso_sum += sample.torso or 0.0
+        row.measurements += 1
+        row.risk_measurements += int(sample.score < risk_threshold)
+    db.execute(delete(Sample))
+    db.commit()
+    return len(samples)
+
+
+def prune_expired_reports(report_dir: Path, days: int) -> int:
+    """Remove only dated PostureAI reports outside the same retention window."""
+    if not report_dir.exists():
+        return 0
+    cutoff = local_today() - timedelta(days=days)
+    removed = 0
+    pattern = re.compile(r"PostureAI_(\d{4}-\d{2}-\d{2})\.xlsx$")
+    for report in report_dir.iterdir():
+        match = pattern.fullmatch(report.name)
+        if not report.is_file() or match is None:
+            continue
+        try:
+            report_date = date.fromisoformat(match.group(1))
+        except ValueError:
+            continue
+        if report_date < cutoff:
+            report.unlink()
+            removed += 1
+    return removed
 
 
 def _minute_rows(db: Session, report_date: date, risk_threshold: int) -> list[dict[str, Any]]:
@@ -55,7 +127,7 @@ def _minute_rows(db: Session, report_date: date, risk_threshold: int) -> list[di
     # Include historical samples written before minute aggregation was introduced.
     legacy = db.scalars(select(Sample).where(Sample.created_at >= start, Sample.created_at < end))
     for row in legacy:
-        minute = datetime.fromisoformat(row.created_at).replace(second=0, microsecond=0).isoformat()
+        minute = _utc_minute(row.created_at)
         bucket = buckets.setdefault(
             minute,
             {

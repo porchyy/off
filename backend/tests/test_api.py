@@ -4,13 +4,15 @@ import pytest
 from io import BytesIO
 from fastapi.testclient import TestClient
 from openpyxl import load_workbook
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.config import settings
+from app.daily_report import compact_legacy_samples, prune_expired_reports
 from app.main import app
+from app.models import MinuteSummary, Sample
 from app.settings_store import ensure_defaults
 
 # Setup in-memory SQLite database for testing
@@ -221,7 +223,7 @@ def test_summary_and_stats():
     sum_res = client.get("/api/summary")
     assert sum_res.status_code == 200
     sum_data = sum_res.json()
-    assert sum_data["samples"] == 2
+    assert sum_data["samples"] == 1
     assert sum_data["average"] == 80  # (90 + 70)/2 = 80
     assert len(sum_data["alerts"]) == 1
     assert sum_data["alerts"][0]["message"] == "Slouching warning"
@@ -232,6 +234,32 @@ def test_summary_and_stats():
     stats_data = stats_res.json()
     assert len(stats_data["daily"]) >= 1
     assert len(stats_data["weekly_alerts"]) >= 1
+
+
+def test_compact_legacy_samples_moves_high_frequency_data_to_one_minute(tmp_path):
+    with TestingSessionLocal() as db:
+        db.add_all([
+            Sample(score=90, neck=2, shoulders=3, torso=4, created_at="2026-08-13T02:01:10+00:00"),
+            Sample(score=70, neck=4, shoulders=5, torso=6, created_at="2026-08-13T02:01:40+00:00"),
+        ])
+        db.commit()
+
+        assert compact_legacy_samples(db, risk_threshold=80) == 2
+        assert list(db.scalars(select(Sample))) == []
+        summaries = list(db.scalars(select(MinuteSummary)))
+        assert len(summaries) == 1
+        assert summaries[0].minute_start == "2026-08-13T02:01:00+00:00"
+        assert summaries[0].score_sum == 160
+        assert summaries[0].measurements == 2
+        assert summaries[0].risk_measurements == 1
+
+    old_report = tmp_path / "PostureAI_2020-01-01.xlsx"
+    unrelated_file = tmp_path / "keep-me.xlsx"
+    old_report.write_bytes(b"report")
+    unrelated_file.write_bytes(b"keep")
+    assert prune_expired_reports(tmp_path, days=30) == 1
+    assert not old_report.exists()
+    assert unrelated_file.exists()
 
 
 def test_export_csv_and_json():

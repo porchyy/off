@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 import hmac
 import json
@@ -10,14 +11,14 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .camera_store import camera_frames
 from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
-from .daily_report import build_daily_report, local_today
+from .daily_report import build_daily_report, local_day_bounds, local_day_label, local_today
 from .export import rows_to_csv
 from .models import Alert, Base, MinuteSummary, Sample, Setting
 from .schemas import (
@@ -292,59 +293,49 @@ def add_alert(payload: AlertIn, db: Session = Depends(get_db)) -> OkResponse:
     return OkResponse()
 
 
-def _today_start_iso() -> str:
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    return today.isoformat()
-
-
 @router.get("/api/summary", response_model=SummaryResponse)
 def summary(db: Session = Depends(get_db)) -> SummaryResponse:
-    since = _today_start_iso()
-    legacy_count, legacy_sum = db.execute(
-        select(func.count(Sample.id), func.coalesce(func.sum(Sample.score), 0)).where(Sample.created_at >= since)
-    ).one()
-    minute_count, minute_sum = db.execute(
-        select(
-            func.coalesce(func.sum(MinuteSummary.measurements), 0),
-            func.coalesce(func.sum(MinuteSummary.score_sum), 0),
-        ).where(MinuteSummary.minute_start >= since)
-    ).one()
-    samples_count = int(legacy_count or 0) + int(minute_count or 0)
-    score_sum = float(legacy_sum or 0) + float(minute_sum or 0)
+    since, until = local_day_bounds(local_today())
+    rows = list(db.scalars(select(MinuteSummary).where(MinuteSummary.minute_start >= since, MinuteSummary.minute_start < until)))
+    period_count = len(rows)
+    measurement_count = sum(row.measurements for row in rows)
+    score_sum = sum(row.score_sum for row in rows)
     alerts_rows = db.execute(
         select(Alert.id, Alert.severity, Alert.message, Alert.created_at)
-        .where(Alert.created_at >= since)
+        .where(Alert.created_at >= since, Alert.created_at < until)
         .order_by(Alert.id.desc())
         .limit(10)
     ).all()
     return SummaryResponse(
-        samples=samples_count,
-        average=int(round(score_sum / samples_count)) if samples_count else None,
+        samples=period_count,
+        average=int(round(score_sum / measurement_count)) if measurement_count else None,
         alerts=[AlertOut(id=r[0], severity=r[1], message=r[2], created_at=r[3]) for r in alerts_rows],
     )
 
 
 @router.get("/api/stats", response_model=StatsResponse)
 def stats(db: Session = Depends(get_db)) -> StatsResponse:
-    daily_rows = db.execute(
-        text(
-            "SELECT label, ROUND(SUM(score_total) / SUM(samples)) AS average, SUM(samples) AS samples "
-            "FROM ("
-            "SELECT substr(created_at, 1, 10) AS label, score AS score_total, 1 AS samples FROM samples "
-            "UNION ALL "
-            "SELECT substr(minute_start, 1, 10) AS label, score_sum AS score_total, measurements AS samples FROM minute_summaries"
-            ") GROUP BY label ORDER BY label DESC LIMIT 14"
-        )
-    ).all()
-    daily = [{"label": r[0], "average": int(r[1] or 0), "samples": int(r[2] or 0)} for r in reversed(daily_rows)]
+    daily_totals: dict[str, dict[str, float | int]] = defaultdict(lambda: {"score": 0.0, "measurements": 0, "periods": 0})
+    for row in db.scalars(select(MinuteSummary)):
+        bucket = daily_totals[local_day_label(row.minute_start)]
+        bucket["score"] += row.score_sum
+        bucket["measurements"] += row.measurements
+        bucket["periods"] += 1
+    daily = [
+        {
+            "label": label,
+            "average": int(round(values["score"] / values["measurements"])),
+            "samples": int(values["periods"]),
+        }
+        for label, values in sorted(daily_totals.items())[-14:]
+        if values["measurements"]
+    ]
 
-    alert_rows = db.execute(
-        text(
-            "SELECT substr(created_at, 1, 10) AS label, COUNT(*) AS alerts "
-            "FROM alerts GROUP BY label ORDER BY label DESC LIMIT 14"
-        )
-    ).all()
-    weekly_alerts = [{"label": r[0], "alerts": int(r[1] or 0)} for r in reversed(alert_rows)]
+    alert_totals: dict[str, int] = defaultdict(int)
+    for row in db.scalars(select(Alert)):
+        alert_totals[local_day_label(row.created_at)] += 1
+    labels = sorted(set(daily_totals) | set(alert_totals))[-14:]
+    weekly_alerts = [{"label": label, "alerts": alert_totals[label]} for label in labels]
 
     return StatsResponse(daily=daily, weekly_alerts=weekly_alerts)
 
@@ -407,7 +398,7 @@ def clear_data(db: Session = Depends(get_db), _: None = Depends(require_admin_to
 
 
 def prune_expired_data(db: Session, days: int) -> None:
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    cutoff, _ = local_day_bounds(local_today() - timedelta(days=days))
     deleted_samples = db.execute(delete(Sample).where(Sample.created_at < cutoff)).rowcount
     deleted_minutes = db.execute(delete(MinuteSummary).where(MinuteSummary.minute_start < cutoff)).rowcount
     deleted_alerts = db.execute(delete(Alert).where(Alert.created_at < cutoff)).rowcount
