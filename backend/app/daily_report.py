@@ -1,4 +1,4 @@
-"""Daily and monthly PostureAI Excel report generation."""
+"""Daily and monthly OffSyn Tech Excel report generation."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from .models import Alert, MinuteSummary, Sample
+from .models import Alert, DailySummary, MinuteSummary, Sample
 
 LOCAL_TZ = ZoneInfo("Asia/Bangkok")
 HEADER_FILL = PatternFill("solid", fgColor="1E3A5F")
@@ -95,12 +95,12 @@ def compact_legacy_samples(db: Session, risk_threshold: int) -> int:
 
 
 def prune_expired_reports(report_dir: Path, days: int) -> int:
-    """Remove only dated PostureAI reports outside the same retention window."""
+    """Remove only dated OffSyn Tech or legacy PostureAI reports outside the retention window."""
     if not report_dir.exists():
         return 0
     cutoff = local_today() - timedelta(days=days)
     removed = 0
-    pattern = re.compile(r"PostureAI_(\d{4}-\d{2}-\d{2})\.xlsx$")
+    pattern = re.compile(r"(?:OffSynTech|PostureAI)_(\d{4}-\d{2}-\d{2})\.xlsx$")
     for report in report_dir.iterdir():
         match = pattern.fullmatch(report.name)
         if not report.is_file() or match is None:
@@ -196,10 +196,139 @@ def _alert_rows_between(db: Session, start: str, end: str) -> list[Alert]:
     return list(db.scalars(select(Alert).where(Alert.created_at >= start, Alert.created_at < end).order_by(Alert.created_at)))
 
 
+def _history_bounds(start_date: date | None, end_date: date | None) -> tuple[str, str]:
+    start = local_day_bounds(start_date)[0] if start_date else "0001-01-01T00:00:00+00:00"
+    end = local_day_bounds(end_date)[0] if end_date else "9999-12-31T23:59:59+00:00"
+    return start, end
+
+
+def _raw_daily_aggregates(
+    db: Session,
+    risk_threshold: int,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict[str, dict[str, float | int | None]]:
+    """Aggregate retained minute/alert rows by Bangkok day; end_date is exclusive."""
+    start, end = _history_bounds(start_date, end_date)
+    daily: dict[str, dict[str, float | int | None]] = {}
+    for row in _minute_rows_between(db, start, end, risk_threshold):
+        label = row["time"].date().isoformat()
+        bucket = daily.setdefault(
+            label,
+            {
+                "score_sum": 0.0,
+                "score_min": None,
+                "score_max": None,
+                "measurements": 0,
+                "periods": 0,
+                "risk_seconds": 0,
+                "alerts": 0,
+            },
+        )
+        measurements = int(row["measurements"])
+        bucket["score_sum"] = float(bucket["score_sum"]) + float(row["score"]) * measurements
+        bucket["measurements"] = int(bucket["measurements"]) + measurements
+        bucket["periods"] = int(bucket["periods"]) + 1
+        bucket["risk_seconds"] = int(bucket["risk_seconds"]) + int(row["risk_seconds"])
+        bucket["score_min"] = (
+            float(row["score_min"])
+            if bucket["score_min"] is None
+            else min(float(bucket["score_min"]), float(row["score_min"]))
+        )
+        bucket["score_max"] = (
+            float(row["score_max"])
+            if bucket["score_max"] is None
+            else max(float(bucket["score_max"]), float(row["score_max"]))
+        )
+
+    for alert in _alert_rows_between(db, start, end):
+        label = local_day_label(alert.created_at)
+        bucket = daily.setdefault(
+            label,
+            {
+                "score_sum": 0.0,
+                "score_min": None,
+                "score_max": None,
+                "measurements": 0,
+                "periods": 0,
+                "risk_seconds": 0,
+                "alerts": 0,
+            },
+        )
+        bucket["alerts"] = int(bucket["alerts"]) + 1
+    return daily
+
+
+def daily_history(
+    db: Session,
+    risk_threshold: int,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[dict[str, float | int | str | None]]:
+    """Merge persisted summaries with retained raw days, preferring current raw values."""
+    statement = select(DailySummary)
+    if start_date is not None:
+        statement = statement.where(DailySummary.day >= start_date.isoformat())
+    if end_date is not None:
+        statement = statement.where(DailySummary.day < end_date.isoformat())
+    merged: dict[str, dict[str, float | int | str | None]] = {
+        row.day: {
+            "label": row.day,
+            "score_sum": row.score_sum,
+            "score_min": row.score_min,
+            "score_max": row.score_max,
+            "measurements": row.measurements,
+            "periods": row.periods,
+            "risk_seconds": row.risk_seconds,
+            "alerts": row.alert_count,
+        }
+        for row in db.scalars(statement)
+    }
+    for label, values in _raw_daily_aggregates(db, risk_threshold, start_date, end_date).items():
+        merged[label] = {"label": label, **values}
+    return [merged[label] for label in sorted(merged)]
+
+
+def capture_daily_summaries(
+    db: Session,
+    risk_threshold: int,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> int:
+    """Upsert raw aggregates before detailed rows are removed; end_date is exclusive."""
+    raw = _raw_daily_aggregates(db, risk_threshold, start_date, end_date)
+    updated_at = datetime.now(timezone.utc).isoformat()
+    for label, values in raw.items():
+        row = db.get(DailySummary, label)
+        if row is None:
+            row = DailySummary(day=label)
+            db.add(row)
+        row.score_sum = float(values["score_sum"])
+        row.score_min = float(values["score_min"]) if values["score_min"] is not None else None
+        row.score_max = float(values["score_max"]) if values["score_max"] is not None else None
+        row.measurements = int(values["measurements"])
+        row.periods = int(values["periods"])
+        row.risk_seconds = int(values["risk_seconds"])
+        row.alert_count = int(values["alerts"])
+        row.updated_at = updated_at
+    db.commit()
+    return len(raw)
+
+
+def prune_daily_summaries(db: Session, days: int) -> int:
+    """Keep compact daily aggregates for a longer, independent retention window."""
+    cutoff = (local_today() - timedelta(days=days)).isoformat()
+    removed = db.execute(delete(DailySummary).where(DailySummary.day < cutoff)).rowcount or 0
+    db.commit()
+    return removed
+
+
 def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> bytes:
     """Create a readable Excel workbook for one Bangkok calendar day."""
     minute_rows = _minute_rows(db, report_date, risk_threshold)
     alerts = _alert_rows(db, report_date)
+    history = daily_history(db, risk_threshold, report_date, report_date + timedelta(days=1))
+    day_summary = history[0] if history else None
     workbook = Workbook()
     summary = workbook.active
     summary.title = "สรุปรายวัน"
@@ -207,7 +336,7 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
 
     summary.merge_cells("A1:H1")
-    summary["A1"] = "PostureAI — รายงานท่านั่งรายวัน"
+    summary["A1"] = "OffSyn Tech — รายงานท่านั่งรายวัน"
     summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
     summary["A1"].fill = HEADER_FILL
     summary["A1"].alignment = Alignment(horizontal="center")
@@ -215,7 +344,7 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     summary["B2"] = report_date
     summary["B2"].number_format = "dd/mm/yyyy"
     summary["A3"] = "หมายเหตุ"
-    summary["B3"] = "รายงานนี้เก็บเฉพาะคะแนนและเหตุการณ์แจ้งเตือน ไม่เก็บภาพหรือวิดีโอ"
+    summary["B3"] = "ข้อมูลรายนาทีเก็บตามนโยบายระบบ ส่วนสรุปรายวันเก็บระยะยาว ไม่รวมภาพหรือวิดีโอ"
     summary["B3"].alignment = Alignment(wrap_text=True)
     if minute_rows:
         summary_rows = [
@@ -225,12 +354,22 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
             ("เวลาที่เสี่ยง (นาที)", "=IFERROR(SUM('รายละเอียดรายนาที'!I2:I%d)/60,0)" % (len(minute_rows) + 1)),
             ("จำนวนช่วงเวลาที่มีข้อมูล", len(minute_rows)),
         ]
+    elif day_summary:
+        measurements = int(day_summary["measurements"])
+        summary_rows = [
+            ("คะแนนเฉลี่ย", float(day_summary["score_sum"]) / measurements if measurements else 0),
+            ("คะแนนต่ำสุด", day_summary["score_min"] or 0),
+            ("คะแนนสูงสุด", day_summary["score_max"] or 0),
+            ("เวลาที่เสี่ยง (นาที)", int(day_summary["risk_seconds"]) / 60),
+            ("จำนวนช่วงเวลาที่มีข้อมูล", int(day_summary["periods"])),
+        ]
     else:
         summary_rows = [
             ("คะแนนเฉลี่ย", 0), ("คะแนนต่ำสุด", 0), ("คะแนนสูงสุด", 0),
             ("เวลาที่เสี่ยง (นาที)", 0), ("จำนวนช่วงเวลาที่มีข้อมูล", 0),
         ]
-    summary_rows.extend([("จำนวน Alert", len(alerts)), ("เกณฑ์คะแนนเสี่ยง", risk_threshold)])
+    alert_count = int(day_summary["alerts"]) if day_summary else len(alerts)
+    summary_rows.extend([("จำนวน Alert", alert_count), ("เกณฑ์คะแนนเสี่ยง", risk_threshold)])
     for row_index, (label, value) in enumerate(summary_rows, start=4):
         summary.cell(row_index, 1, label).font = Font(bold=True)
         summary.cell(row_index, 2, value)
@@ -301,7 +440,7 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
 
 def write_daily_report(db: Session, report_date: date, risk_threshold: int, report_dir: Path) -> Path:
     report_dir.mkdir(parents=True, exist_ok=True)
-    target = report_dir / f"PostureAI_{report_date.isoformat()}.xlsx"
+    target = report_dir / f"OffSynTech_{report_date.isoformat()}.xlsx"
     temporary = target.with_suffix(".xlsx.tmp")
     temporary.write_bytes(build_daily_report(db, report_date, risk_threshold))
     temporary.replace(target)
@@ -310,20 +449,21 @@ def write_daily_report(db: Session, report_date: date, risk_threshold: int, repo
 
 def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -> bytes:
     """Create an Excel workbook summarising one Bangkok calendar month."""
-    start, end = local_month_bounds(report_month)
-    minute_rows = _minute_rows_between(db, start, end, risk_threshold)
+    month_start = report_month.replace(day=1)
+    month_end = date(month_start.year + 1, 1, 1) if month_start.month == 12 else date(month_start.year, month_start.month + 1, 1)
+    start, end = local_month_bounds(month_start)
     alerts = _alert_rows_between(db, start, end)
-    daily: dict[str, dict[str, float | int]] = {}
-    for row in minute_rows:
-        label = row["time"].date().isoformat()
-        bucket = daily.setdefault(label, {"score_sum": 0.0, "minutes": 0, "risk_seconds": 0})
-        bucket["score_sum"] += float(row["score"])
-        bucket["minutes"] += 1
-        bucket["risk_seconds"] += int(row["risk_seconds"])
-    alerts_by_day: dict[str, int] = {}
-    for alert in alerts:
-        label = local_day_label(alert.created_at)
-        alerts_by_day[label] = alerts_by_day.get(label, 0) + 1
+    history = daily_history(db, risk_threshold, month_start, month_end)
+    daily = {
+        str(row["label"]): {
+            "score_sum": float(row["score_sum"]),
+            "measurements": int(row["measurements"]),
+            "minutes": int(row["periods"]),
+            "risk_seconds": int(row["risk_seconds"]),
+        }
+        for row in history
+    }
+    alerts_by_day = {str(row["label"]): int(row["alerts"]) for row in history}
 
     workbook = Workbook()
     summary = workbook.active
@@ -332,7 +472,7 @@ def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -
     alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
 
     summary.merge_cells("A1:H1")
-    summary["A1"] = "PostureAI — รายงานท่านั่งรายเดือน"
+    summary["A1"] = "OffSyn Tech — รายงานท่านั่งรายเดือน"
     summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
     summary["A1"].fill = HEADER_FILL
     summary["A1"].alignment = Alignment(horizontal="center")
@@ -340,17 +480,19 @@ def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -
     summary["B2"] = report_month.replace(day=1)
     summary["B2"].number_format = "mmmm yyyy"
     summary["A3"] = "หมายเหตุ"
-    summary["B3"] = "สรุปจากข้อมูลรายนาทีในเดือนที่เลือก ไม่รวมภาพหรือวิดีโอ"
+    summary["B3"] = "สรุปรายวันเก็บระยะยาว 1 ปี; รายละเอียดรายนาทีและ Alert เป็นไปตามช่วงเก็บข้อมูล ไม่รวมภาพหรือวิดีโอ"
     summary["B3"].alignment = Alignment(wrap_text=True)
-    period_count = len(minute_rows)
-    average = sum(float(row["score"]) for row in minute_rows) / period_count if period_count else 0
-    risk_minutes = sum(int(row["risk_seconds"]) for row in minute_rows) / 60
+    period_count = sum(int(row["periods"]) for row in history)
+    measurement_count = sum(int(row["measurements"]) for row in history)
+    average = sum(float(row["score_sum"]) for row in history) / measurement_count if measurement_count else 0
+    risk_minutes = sum(int(row["risk_seconds"]) for row in history) / 60
+    alert_count = sum(int(row["alerts"]) for row in history)
     summary_rows = [
         ("คะแนนเฉลี่ยทั้งเดือน", average),
-        ("วันที่มีข้อมูล", len(daily)),
+        ("วันที่มีข้อมูล", sum(int(row["measurements"]) > 0 for row in history)),
         ("ช่วงเวลาที่บันทึก", period_count),
         ("เวลาที่เสี่ยง (นาที)", risk_minutes),
-        ("จำนวน Alert", len(alerts)),
+        ("จำนวน Alert", alert_count),
         ("เกณฑ์คะแนนเสี่ยง", risk_threshold),
     ]
     for row_index, (label, value) in enumerate(summary_rows, start=4):
@@ -366,11 +508,12 @@ def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = HEADER_FILL
     for label in sorted(set(daily) | set(alerts_by_day)):
-        values = daily.get(label, {"score_sum": 0.0, "minutes": 0, "risk_seconds": 0})
+        values = daily.get(label, {"score_sum": 0.0, "measurements": 0, "minutes": 0, "risk_seconds": 0})
         minutes = int(values["minutes"])
+        measurements = int(values["measurements"])
         daily_sheet.append([
             date.fromisoformat(label),
-            float(values["score_sum"]) / minutes if minutes else 0,
+            float(values["score_sum"]) / measurements if measurements else 0,
             minutes,
             int(values["risk_seconds"]) / 60,
             alerts_by_day.get(label, 0),

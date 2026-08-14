@@ -1,4 +1,4 @@
-# PostureAI — local development stack.
+# OffSyn Tech — local development stack.
 #
 # Usage:
 #   docker compose up --build
@@ -28,6 +28,7 @@ services:
       POSTUREAI_REQUIRE_ADMIN_TOKEN: "true"
       POSTUREAI_ADMIN_TOKEN: "${POSTUREAI_ADMIN_TOKEN:-}"
       POSTUREAI_RETENTION_DAYS: "35"
+      POSTUREAI_SUMMARY_RETENTION_DAYS: "365"
     volumes:
       - ./database:/app/database
     ports:

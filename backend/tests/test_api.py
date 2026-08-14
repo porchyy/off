@@ -1,4 +1,4 @@
-"""Unit tests for PostureAI FastAPI routes and API logic."""
+"""Unit tests for OffSyn Tech FastAPI routes and API logic."""
 
 import pytest
 from io import BytesIO
@@ -10,9 +10,10 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.config import settings
-from app.daily_report import compact_legacy_samples, prune_expired_reports
+from app.daily_report import capture_daily_summaries, compact_legacy_samples, prune_expired_reports
 from app.main import app
-from app.models import MinuteSummary, Sample
+from app.models import Alert, DailySummary, MinuteSummary, Sample
+from app.routes import prune_expired_data
 from app.settings_store import ensure_defaults
 
 # Setup in-memory SQLite database for testing
@@ -272,9 +273,10 @@ def test_download_daily_excel_report():
 
     assert response.status_code == 200
     assert "spreadsheetml.sheet" in response.headers["content-type"]
-    assert "PostureAI_" in response.headers["content-disposition"]
+    assert "OffSynTech_" in response.headers["content-disposition"]
     workbook = load_workbook(BytesIO(response.content), data_only=False)
     assert workbook.sheetnames == ["สรุปรายวัน", "รายละเอียดรายนาที", "เหตุการณ์แจ้งเตือน"]
+    assert workbook["สรุปรายวัน"]["A1"].value == "OffSyn Tech — รายงานท่านั่งรายวัน"
     assert workbook["รายละเอียดรายนาที"]["B2"].value == 80
     assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Posture risk alert"
     assert len(workbook["สรุปรายวัน"]._charts) == 1
@@ -288,12 +290,55 @@ def test_download_monthly_excel_report():
 
     assert response.status_code == 200
     assert "spreadsheetml.sheet" in response.headers["content-type"]
-    assert "PostureAI_" in response.headers["content-disposition"]
+    assert "OffSynTech_" in response.headers["content-disposition"]
     workbook = load_workbook(BytesIO(response.content), data_only=False)
     assert workbook.sheetnames == ["สรุปรายเดือน", "สรุปรายวัน", "เหตุการณ์แจ้งเตือน"]
+    assert workbook["สรุปรายเดือน"]["A1"].value == "OffSyn Tech — รายงานท่านั่งรายเดือน"
     assert workbook["สรุปรายวัน"]["B2"].value == 88
     assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Monthly posture alert"
     assert len(workbook["สรุปรายเดือน"]._charts) == 1
+
+
+def test_monthly_summary_survives_minute_and_alert_retention():
+    with TestingSessionLocal() as db:
+        db.add(
+            MinuteSummary(
+                minute_start="2026-01-10T02:00:00+00:00",
+                score_sum=75,
+                score_min=75,
+                score_max=75,
+                neck_sum=12,
+                shoulders_sum=6,
+                torso_sum=4,
+                measurements=1,
+                risk_measurements=0,
+            )
+        )
+        db.add(Alert(severity="caution", message="Historical alert", created_at="2026-01-10T02:00:30+00:00"))
+        db.commit()
+
+        assert capture_daily_summaries(db, risk_threshold=60) == 1
+        stored = db.get(DailySummary, "2026-01-10")
+        assert stored is not None
+        assert stored.score_sum == 75
+        assert stored.periods == 1
+        assert stored.alert_count == 1
+
+        prune_expired_data(db, days=35)
+        assert list(db.scalars(select(MinuteSummary))) == []
+        assert list(db.scalars(select(Alert))) == []
+
+    response = client.get("/api/reports/monthly.xlsx?month=2026-01-01")
+    assert response.status_code == 200
+    workbook = load_workbook(BytesIO(response.content), data_only=False)
+    assert workbook["สรุปรายวัน"]["B2"].value == 75
+    assert workbook["สรุปรายวัน"]["E2"].value == 1
+    assert workbook["สรุปรายเดือน"]["B8"].value == 1
+
+    stats = client.get("/api/stats").json()
+    january = next(row for row in stats["monthly"] if row["label"] == "2026-01")
+    assert january["average"] == 75
+    assert january["samples"] == 1
 
 
 def test_clear_data():
@@ -344,3 +389,4 @@ def test_client_status_round_trip():
     assert get_res.json()["online"] is True
     assert get_res.json()["lastSyncAt"] == "2026-08-06T00:00:00+00:00"
     assert get_res.json()["retentionDays"] == 35
+    assert get_res.json()["summaryRetentionDays"] == 365

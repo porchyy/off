@@ -30,7 +30,7 @@ python3 -m venv --system-site-packages "$SCRIPT_DIR/.venv"
 echo "[3/4] Registering postureai-sensors.service..."
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
-Description=PostureAI BH1750 sensor client
+Description=OffSyn Tech BH1750 sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
 StartLimitIntervalSec=0

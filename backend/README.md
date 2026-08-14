@@ -1,4 +1,4 @@
-# PostureAI Backend (FastAPI)
+# OffSyn Tech Backend (FastAPI)
 
 FastAPI replacement for the original `server.mjs`. Keeps the same HTTP contract
 (`/api/health`, `/api/settings`, `/api/samples`, `/api/alerts`, `/api/summary`,
@@ -49,7 +49,8 @@ Environment variables (loaded via `pydantic-settings`, supports `.env`):
 | `POSTUREAI_PORT` | `8000` | HTTP port |
 | `POSTUREAI_REQUIRE_ADMIN_TOKEN` | `false` | Require an admin token for settings/data mutations |
 | `POSTUREAI_ADMIN_TOKEN` | empty | Secret sent as `X-PostureAI-Admin-Token` by the dashboard |
-| `POSTUREAI_RETENTION_DAYS` | `35` | Remove samples, alerts, and dated reports older than this at startup and then daily |
+| `POSTUREAI_RETENTION_DAYS` | `35` | Remove minute data, alert details, and dated report files older than this |
+| `POSTUREAI_SUMMARY_RETENTION_DAYS` | `365` | Keep compact daily aggregates for monthly trends and historical reports |
 
 The `dataDir` field returned by `/api/settings` always reflects the resolved
 absolute path the server is actually using. Changes via `PUT /api/settings`

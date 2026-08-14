@@ -58,7 +58,7 @@ def publish_sensor_payload(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="ส่งค่า BH1750 ล่าสุดไปยัง OfficeGuardian dashboard"
+        description="ส่งค่า BH1750 ล่าสุดไปยัง OffSyn Tech dashboard"
     )
     parser.add_argument("--backend-url", default="http://localhost:8000")
     parser.add_argument("--interval", type=float, default=1.0)

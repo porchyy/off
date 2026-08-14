@@ -1,4 +1,4 @@
-"""Pydantic request/response models for PostureAI API & OAuth/Model Sync."""
+"""Pydantic request/response models for OffSyn Tech API and runtime state."""
 
 from __future__ import annotations
 
@@ -108,6 +108,7 @@ class ClientStatusIn(ApiModel):
 class ClientStatusResponse(ClientStatusIn):
     updated_at: str = Field(serialization_alias="updatedAt")
     retention_days: int = Field(serialization_alias="retentionDays")
+    summary_retention_days: int = Field(serialization_alias="summaryRetentionDays")
 
 
 class SensorReadingsIn(ApiModel):

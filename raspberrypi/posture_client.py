@@ -1,4 +1,4 @@
-"""PostureAI Raspberry Pi client.
+"""OffSyn Tech Raspberry Pi client.
 
 Main loop ที่:
   1. เปิดกล้อง
@@ -166,7 +166,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="PostureAI Pi client")
+    parser = argparse.ArgumentParser(description="OffSyn Tech Pi client")
     parser.add_argument("--config", type=Path, default=Path("config.yaml"))
     parser.add_argument("--once", action="store_true", help="Run a single detection cycle and exit (for testing)")
     parser.add_argument("--test-sound", action="store_true", help="Play the configured alert sound and exit")

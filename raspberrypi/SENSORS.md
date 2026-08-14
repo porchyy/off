@@ -1,4 +1,4 @@
-# OfficeGuardian AI: BH1750
+# OffSyn Tech: BH1750
 
 คู่มือนี้ครอบคลุม BH1750 สำหรับวัดความสว่างเป็น Lux ผ่าน I2C bus 1 ของ Pi 5
 

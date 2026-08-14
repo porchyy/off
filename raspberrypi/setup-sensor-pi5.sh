@@ -12,7 +12,7 @@ if [ "$(uname -m)" != "aarch64" ]; then
 fi
 
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 alsa-utils python3-gpiozero curl
+sudo apt-get install -y python3-venv python3-picamera2 python3-opencv libgl1 alsa-utils espeak-ng python3-gpiozero curl
 
 # Picamera2 is supplied by Raspberry Pi OS, so expose system packages to the venv.
 python3 -m venv --system-site-packages .venv

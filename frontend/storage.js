@@ -207,15 +207,20 @@ class LocalStorageStorage {
   setAdminToken() {}
 
   async clientStatus() {
-    return { online: false, message: 'โหมดตัวอย่างไม่เชื่อมต่อ Raspberry Pi', retentionDays: null };
+    return {
+      online: false,
+      message: 'โหมดตัวอย่างไม่เชื่อมต่อ Raspberry Pi',
+      retentionDays: null,
+      summaryRetentionDays: null,
+    };
   }
 
   async exportExcel() {
-    throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ PostureAI');
+    throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ OffSyn Tech');
   }
 
   async exportMonthlyExcel() {
-    throw Error('การส่งออก Excel รายเดือนต้องเชื่อมต่อกับ backend ของ PostureAI');
+    throw Error('การส่งออก Excel รายเดือนต้องเชื่อมต่อกับ backend ของ OffSyn Tech');
   }
 
   async clear() {

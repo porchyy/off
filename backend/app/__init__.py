@@ -1,1 +1,1 @@
-"""PostureAI FastAPI backend package."""
+"""OffSyn Tech FastAPI backend package."""

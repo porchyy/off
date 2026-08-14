@@ -34,7 +34,7 @@ def main() -> int:
     bh1750 = Bh1750Reader(addresses=bh_addresses, bus_number=args.bus)
 
     print("--------------------------------")
-    print("OfficeGuardian AI Sensors")
+    print("OffSyn Tech Sensors")
     print("--------------------------------")
 
     try:

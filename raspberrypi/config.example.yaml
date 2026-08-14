@@ -1,4 +1,4 @@
-# PostureAI Pi client configuration
+# OffSyn Tech Pi client configuration
 # setup-pi5.sh creates config.yaml from this file automatically.
 
 backend:

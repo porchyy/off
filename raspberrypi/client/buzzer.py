@@ -1,4 +1,4 @@
-"""GPIO buzzer for the PostureAI Raspberry Pi client."""
+"""GPIO buzzer for the OffSyn Tech Raspberry Pi client."""
 
 from __future__ import annotations
 

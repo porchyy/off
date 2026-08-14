@@ -536,7 +536,7 @@ function connectPiCamera() {
     preview.onloadedmetadata = () => {
       drawPiOverlay();
     };
-    console.log('[PostureAI] WebRTC stream color mode: RGB', {
+    console.log('[OffSyn Tech] WebRTC stream color mode: RGB', {
       track: event.track.getSettings?.(),
       streamId: event.streams[0]?.id
     });
@@ -562,7 +562,7 @@ function connectPiCamera() {
       const colorMode = message.displayColorMode || message.cameraFormat || 'unknown';
       $('streamColorMode').textContent = `รูปแบบภาพ: ${colorMode} · RGB`;
       $('streamColorMode').className = 'badge good';
-      console.log('[PostureAI] actual Pi Camera stream format:', message.cameraFormat, {
+      console.log('[OffSyn Tech] actual Pi Camera stream format:', message.cameraFormat, {
         displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
       });
@@ -634,12 +634,17 @@ async function loadPiStatus() {
   try {
     const status = await storage.clientStatus();
     const sync = status.lastSyncAt ? new Date(status.lastSyncAt).toLocaleTimeString('th-TH') : 'ยังไม่เคย sync';
+    const summaryRetention = Number.isFinite(status.summaryRetentionDays)
+      ? ` · เก็บสรุป ${status.summaryRetentionDays} วัน`
+      : '';
     target.textContent = status.online
-      ? `Pi ออนไลน์ · sync ตั้งค่าล่าสุด ${sync} · เก็บข้อมูล ${status.retentionDays} วัน`
+      ? `Pi ออนไลน์ · sync ตั้งค่าล่าสุด ${sync} · เก็บข้อมูลละเอียด ${status.retentionDays} วัน${summaryRetention}`
       : `Pi ยังไม่รายงานตัว · ${status.message || 'กำลังรอ sensor client'}`;
     if (Number.isFinite(status.retentionDays)) {
-      $('historyEyebrow').textContent = `ฐานข้อมูล SQLite ในเครื่อง · เก็บข้อมูล ${status.retentionDays} วัน`;
-      $('retentionSummary').textContent = `${status.retentionDays} วัน`;
+      $('historyEyebrow').textContent = `ฐานข้อมูล SQLite ในเครื่อง · ข้อมูลละเอียด ${status.retentionDays} วัน${summaryRetention}`;
+      $('retentionSummary').textContent = Number.isFinite(status.summaryRetentionDays)
+        ? `${status.retentionDays} / ${status.summaryRetentionDays} วัน`
+        : `${status.retentionDays} วัน`;
     }
   } catch {
     target.textContent = 'ไม่สามารถอ่านสถานะ Raspberry Pi ได้';
@@ -765,7 +770,7 @@ function notifyRisk(force = false, message = 'กรุณายืดหลั�
   lastAlert = now;
   $('riskPopup').hidden = false;
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('PostureAI: เสี่ยงจากท่านั่ง', { body: message });
+    new Notification('OffSyn Tech: เสี่ยงจากท่านั่ง', { body: message });
   }
 }
 
@@ -788,7 +793,7 @@ async function downloadExcel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PostureAI_${reportDate}.xlsx`;
+    a.download = `OffSynTech_${reportDate}.xlsx`;
     document.body.append(a);
     a.click();
     a.remove();
@@ -805,7 +810,7 @@ async function downloadMonthlyExcel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PostureAI_${reportMonth}.xlsx`;
+    a.download = `OffSynTech_${reportMonth}.xlsx`;
     document.body.append(a);
     a.click();
     a.remove();

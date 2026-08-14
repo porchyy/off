@@ -1,4 +1,4 @@
-"""HTTP routes for the PostureAI backend."""
+"""HTTP routes for the OffSyn Tech backend."""
 
 from __future__ import annotations
 
@@ -18,8 +18,16 @@ from .config import settings
 from .camera_store import camera_frames
 from .camera_signaling import camera_signaling
 from .database import SessionLocal, engine, get_db
-from .daily_report import build_daily_report, build_monthly_report, local_day_bounds, local_day_label, local_today
-from .models import Alert, Base, MinuteSummary, Sample, Setting
+from .daily_report import (
+    build_daily_report,
+    build_monthly_report,
+    capture_daily_summaries,
+    daily_history,
+    local_day_bounds,
+    local_today,
+    prune_daily_summaries,
+)
+from .models import Alert, Base, DailySummary, MinuteSummary, Sample, Setting
 from .schemas import (
     AlertIn,
     AlertOut,
@@ -80,6 +88,7 @@ def client_status() -> ClientStatusResponse:
         message=client_runtime_state.message if online else "Pi client heartbeat is stale or unavailable",
         updated_at=client_runtime_state.updated_at,
         retention_days=settings.retention_days,
+        summary_retention_days=settings.summary_retention_days,
     )
 
 
@@ -172,7 +181,7 @@ async def camera_webrtc(websocket: WebSocket) -> None:
                     payload = {}
                 if payload.get("type") == "stream_info":
                     print(
-                        "PostureAI actual Pi Camera stream format: "
+                        "OffSyn Tech actual Pi Camera stream format: "
                         f"{payload.get('cameraFormat', 'unknown')} "
                         f"[{payload.get('displayColorMode', 'unknown')}] "
                         f"(normalized output: {payload.get('outputColorSpace', 'unknown')})",
@@ -313,28 +322,29 @@ def summary(db: Session = Depends(get_db)) -> SummaryResponse:
 
 @router.get("/api/stats", response_model=StatsResponse)
 def stats(db: Session = Depends(get_db)) -> StatsResponse:
-    daily_totals: dict[str, dict[str, float | int]] = defaultdict(lambda: {"score": 0.0, "measurements": 0, "periods": 0})
-    for row in db.scalars(select(MinuteSummary)):
-        bucket = daily_totals[local_day_label(row.minute_start)]
-        bucket["score"] += row.score_sum
-        bucket["measurements"] += row.measurements
-        bucket["periods"] += 1
+    risk_threshold = get_all(db)["riskThreshold"]
+    history = daily_history(
+        db,
+        risk_threshold,
+        local_today() - timedelta(days=settings.summary_retention_days),
+        local_today() + timedelta(days=1),
+    )
+    posture_days = [row for row in history if int(row["measurements"])]
     daily = [
         {
-            "label": label,
-            "average": int(round(values["score"] / values["measurements"])),
-            "samples": int(values["periods"]),
+            "label": str(row["label"]),
+            "average": int(round(float(row["score_sum"]) / int(row["measurements"]))),
+            "samples": int(row["periods"]),
         }
-        for label, values in sorted(daily_totals.items())[-14:]
-        if values["measurements"]
+        for row in posture_days[-14:]
     ]
 
     monthly_totals: dict[str, dict[str, float | int]] = defaultdict(lambda: {"score": 0.0, "measurements": 0, "periods": 0})
-    for label, values in daily_totals.items():
-        bucket = monthly_totals[label[:7]]
-        bucket["score"] += values["score"]
-        bucket["measurements"] += values["measurements"]
-        bucket["periods"] += values["periods"]
+    for row in posture_days:
+        bucket = monthly_totals[str(row["label"])[:7]]
+        bucket["score"] += float(row["score_sum"])
+        bucket["measurements"] += int(row["measurements"])
+        bucket["periods"] += int(row["periods"])
     monthly = [
         {
             "label": label,
@@ -345,11 +355,10 @@ def stats(db: Session = Depends(get_db)) -> StatsResponse:
         if values["measurements"]
     ]
 
-    alert_totals: dict[str, int] = defaultdict(int)
-    for row in db.scalars(select(Alert)):
-        alert_totals[local_day_label(row.created_at)] += 1
-    labels = sorted(set(daily_totals) | set(alert_totals))[-14:]
-    weekly_alerts = [{"label": label, "alerts": alert_totals[label]} for label in labels]
+    weekly_alerts = [
+        {"label": str(row["label"]), "alerts": int(row["alerts"])}
+        for row in history[-14:]
+    ]
 
     return StatsResponse(daily=daily, weekly_alerts=weekly_alerts, monthly=monthly)
 
@@ -363,7 +372,7 @@ def download_daily_excel(
     selected_date = report_date or local_today()
     risk_threshold = get_all(db)["riskThreshold"]
     content = build_daily_report(db, selected_date, risk_threshold)
-    filename = f"PostureAI_{selected_date.isoformat()}.xlsx"
+    filename = f"OffSynTech_{selected_date.isoformat()}.xlsx"
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -380,7 +389,7 @@ def download_monthly_excel(
     selected_month = (report_month or local_today()).replace(day=1)
     risk_threshold = get_all(db)["riskThreshold"]
     content = build_monthly_report(db, selected_month, risk_threshold)
-    filename = f"PostureAI_{selected_month.strftime('%Y-%m')}.xlsx"
+    filename = f"OffSynTech_{selected_month.strftime('%Y-%m')}.xlsx"
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -392,6 +401,7 @@ def download_monthly_excel(
 def clear_data(db: Session = Depends(get_db), _: None = Depends(require_admin_token)) -> OkResponse:
     db.execute(delete(Sample))
     db.execute(delete(MinuteSummary))
+    db.execute(delete(DailySummary))
     db.execute(delete(Alert))
     db.commit()
     return OkResponse()
@@ -413,9 +423,11 @@ def prune_expired_data(db: Session, days: int) -> None:
 
 @router.post("/api/data/prune", response_model=OkResponse)
 def prune_old_data(
-    days: int = Query(default=30, ge=1, le=365),
+    days: int = Query(default=settings.retention_days, ge=1, le=365),
     db: Session = Depends(get_db),
     _: None = Depends(require_admin_token),
 ) -> OkResponse:
+    capture_daily_summaries(db, get_all(db)["riskThreshold"])
     prune_expired_data(db, days)
+    prune_daily_summaries(db, settings.summary_retention_days)
     return OkResponse()

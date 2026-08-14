@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime configuration for the PostureAI backend."""
+    """Runtime configuration for the OffSyn Tech backend."""
 
     data_dir: Path = Field(default=Path("./database"), alias="POSTUREAI_DATA_DIR")
     cors_origins: str = Field(
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     admin_token: str = Field(default="", alias="POSTUREAI_ADMIN_TOKEN")
     require_admin_token: bool = Field(default=False, alias="POSTUREAI_REQUIRE_ADMIN_TOKEN")
     retention_days: int = Field(default=35, ge=1, le=365, alias="POSTUREAI_RETENTION_DAYS")
+    summary_retention_days: int = Field(default=365, ge=30, le=3650, alias="POSTUREAI_SUMMARY_RETENTION_DAYS")
     report_dir: Path | None = Field(default=None, alias="POSTUREAI_REPORT_DIR")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

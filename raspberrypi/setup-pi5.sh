@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PostureAI — Raspberry Pi 5 all-in-one installer (Pi Camera + web + backend).
+# OffSyn Tech — Raspberry Pi 5 all-in-one installer (Pi Camera + web + backend).
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -156,7 +156,7 @@ done
 echo "Registering the persistent BH1750 service..."
 sudo tee /etc/systemd/system/postureai-sensors.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI BH1750 sensor client
+Description=OffSyn Tech BH1750 sensor client
 Wants=network-online.target postureai-stack.service
 After=network-online.target postureai-stack.service
 StartLimitIntervalSec=0
@@ -187,7 +187,7 @@ cd "$SCRIPT_DIR"
 echo "[6/6] Registering services to start after every reboot..."
 sudo tee /etc/systemd/system/postureai-stack.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI web and backend containers
+Description=OffSyn Tech web and backend containers
 Wants=network-online.target
 After=network-online.target docker.service
 Requires=docker.service
@@ -206,7 +206,7 @@ EOF
 
 sudo tee /etc/systemd/system/postureai-client.service >/dev/null <<EOF
 [Unit]
-Description=PostureAI Pi Camera sensor client
+Description=OffSyn Tech Pi Camera sensor client
 Wants=network-online.target
 After=network-online.target postureai-stack.service
 Requires=postureai-stack.service
@@ -232,7 +232,7 @@ sudo systemctl enable --now postureai-sensors.service
 
 PI_IP="$(hostname -I | awk '{print $1}')"
 echo
-echo "PostureAI is ready. Open: http://$PI_IP:3000"
+echo "OffSyn Tech is ready. Open: http://$PI_IP:3000"
 echo "Status: sudo systemctl status postureai-stack postureai-client postureai-sensors"
 echo "Camera/AI logs: sudo journalctl -u postureai-client -f"
 echo "Sensor logs:    sudo journalctl -u postureai-sensors -f"

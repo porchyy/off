@@ -1,4 +1,4 @@
-# PostureAI Frontend
+# OffSyn Tech Frontend
 
 Static HTML/JS/CSS ที่ใช้ MediaPipe Pose ใน browser — ปรับแค่ path ให้ทำงาน
 ภายใต้ Vite (build tool) โดยไม่เปลี่ยน logic เดิม

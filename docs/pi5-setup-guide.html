@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <title>คู่มือติดตั้ง PostureAI บน Raspberry Pi 5</title>
+  <title>คู่มือติดตั้ง OffSyn Tech บน Raspberry Pi 5</title>
   <style>
     @page { size: A4; margin: 18mm 16mm; }
     body { font-family: Arial, "Noto Sans Thai", "Th Sarabun New", sans-serif; color: #172033; font-size: 12pt; line-height: 1.55; }
@@ -19,7 +19,7 @@
   </style>
 </head>
 <body>
-  <h1>ติดตั้ง PostureAI บน Raspberry Pi 5</h1>
+  <h1>ติดตั้ง OffSyn Tech บน Raspberry Pi 5</h1>
   <p class="lead">สำหรับ Raspberry Pi 5 (8 GB) + Raspberry Pi Camera Module: ล้างเครื่อง ลง Raspberry Pi OS และเปิดระบบตรวจท่านั่ง</p>
 
   <div class="box warn"><strong>คำเตือน:</strong> การเขียน Raspberry Pi OS ลง microSD จะลบข้อมูลทั้งหมดบนการ์ดใบนั้น ตรวจชื่อไดรฟ์ให้ถูกก่อนกด Write</div>
@@ -52,7 +52,7 @@
     <li>เลือก <strong>Storage</strong>: microSD ของ Pi</li>
     <li>กดไอคอนรูปเฟือง หรือ Edit Settings แล้วตั้งค่า:
       <ul>
-        <li>Hostname: <code>postureai</code></li>
+        <li>Hostname: <code>offsyn-tech</code></li>
         <li>Username: <code>porchy</code></li>
         <li>Password: ตั้งรหัสผ่านที่จำได้</li>
         <li>Configure wireless LAN: ชื่อ Wi-Fi และรหัสผ่าน</li>
@@ -69,7 +69,7 @@
     <li>รอ 1–2 นาทีให้ Pi ต่อ Wi-Fi</li>
     <li>เปิด Terminal บนคอมพิวเตอร์ แล้วเชื่อมต่อ:</li>
   </ol>
-  <pre>ssh porchy@postureai.local</pre>
+  <pre>ssh porchy@offsyn-tech.local</pre>
   <p>หากหาเครื่องไม่เจอ ให้ดู IP จากหน้า router แล้วใช้ <code>ssh porchy@&lt;IP-Pi&gt;</code></p>
 
   <h2>4. ติดตั้งโปรเจกต์</h2>

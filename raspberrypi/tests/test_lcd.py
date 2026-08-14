@@ -47,5 +47,5 @@ def test_lcd_1602_prompts_for_a_complete_pose_and_clears_stale_scores():
     assert lcd.show_waiting_for_pose() is True
     assert lines == [
         (" POSE NOT READY ", "PLEASE SIT WELL "),
-        ("POSTUREAI READY ", "WAITING FOR POSE"),
+        ("  OFFSYN TECH   ", "WAITING FOR POSE"),
     ]

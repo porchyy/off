@@ -16,8 +16,10 @@ from .config import settings
 from .database import Base, SessionLocal, engine
 from .daily_report import (
     LOCAL_TZ,
+    capture_daily_summaries,
     compact_legacy_samples,
     local_today,
+    prune_daily_summaries,
     prune_expired_reports,
     write_daily_report,
 )
@@ -30,7 +32,9 @@ async def _retention_loop() -> None:
     while True:
         await asyncio.sleep(24 * 60 * 60)
         with SessionLocal() as db:
+            capture_daily_summaries(db, get_all(db)["riskThreshold"])
             prune_expired_data(db, settings.retention_days)
+            prune_daily_summaries(db, settings.summary_retention_days)
         prune_expired_reports(settings.daily_report_dir, settings.retention_days)
 
 
@@ -41,7 +45,10 @@ async def _daily_report_loop() -> None:
         next_run = datetime.combine(now.date() + timedelta(days=1), time(hour=0, minute=5), tzinfo=LOCAL_TZ)
         await asyncio.sleep((next_run - now).total_seconds())
         with SessionLocal() as db:
-            write_daily_report(db, (next_run - timedelta(days=1)).date(), get_all(db)["riskThreshold"], settings.daily_report_dir)
+            report_date = (next_run - timedelta(days=1)).date()
+            risk_threshold = get_all(db)["riskThreshold"]
+            capture_daily_summaries(db, risk_threshold, report_date, report_date + timedelta(days=1))
+            write_daily_report(db, report_date, risk_threshold, settings.daily_report_dir)
 
 
 @asynccontextmanager
@@ -49,9 +56,12 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_defaults(db)
-        compact_legacy_samples(db, get_all(db)["riskThreshold"])
+        risk_threshold = get_all(db)["riskThreshold"]
+        compact_legacy_samples(db, risk_threshold)
+        capture_daily_summaries(db, risk_threshold)
         prune_expired_data(db, settings.retention_days)
-        write_daily_report(db, local_today() - timedelta(days=1), get_all(db)["riskThreshold"], settings.daily_report_dir)
+        prune_daily_summaries(db, settings.summary_retention_days)
+        write_daily_report(db, local_today() - timedelta(days=1), risk_threshold, settings.daily_report_dir)
         prune_expired_reports(settings.daily_report_dir, settings.retention_days)
     retention_task = asyncio.create_task(_retention_loop())
     report_task = asyncio.create_task(_daily_report_loop())
@@ -70,7 +80,7 @@ async def lifespan(app: FastAPI):
             pass
 
 
-app = FastAPI(title="PostureAI Backend", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="OffSyn Tech Backend", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -96,7 +106,7 @@ else:
     @app.get("/", include_in_schema=False)
     def _root_index() -> dict:
         return {
-            "service": "postureai-backend",
+            "service": "offsyn-tech-backend",
             "docs": "/docs",
             "health": "/api/health",
         }

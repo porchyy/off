@@ -1,4 +1,4 @@
-"""I2C readers for the standalone OfficeGuardian sensor checks."""
+"""I2C readers for the standalone OffSyn Tech sensor checks."""
 
 from __future__ import annotations
 

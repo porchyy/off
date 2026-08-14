@@ -1,4 +1,4 @@
-# PostureAI — Raspberry Pi Client
+# OffSyn Tech — Raspberry Pi Client
 
 Lightweight Python client ที่รันบน Raspberry Pi เพื่อตรวจจับท่านั่งผ่านกล้อง USB หรือ Pi Camera
 โดยใช้ **MediaPipe Pose Landmarker Full** วาด skeleton และประเมินคอ ไหล่ และการค่อม/บิดของช่วงบน

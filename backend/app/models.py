@@ -42,6 +42,22 @@ class MinuteSummary(Base):
     risk_measurements: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
+class DailySummary(Base):
+    """Long-lived Bangkok-calendar aggregate retained after minute data expires."""
+
+    __tablename__ = "daily_summaries"
+
+    day: Mapped[str] = mapped_column(String, primary_key=True)
+    score_sum: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    score_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    score_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    measurements: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    periods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    risk_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    alert_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False, default=_utcnow_iso)
+
+
 class Alert(Base):
     __tablename__ = "alerts"
 

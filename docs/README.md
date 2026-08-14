@@ -1,4 +1,4 @@
-# PostureAI — Docs
+# OffSyn Tech — Docs
 
 เอกสารทั้งหมดของโปรเจกต์ แยกเป็นหมวดย่อย
 

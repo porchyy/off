@@ -1,4 +1,4 @@
-# Docker — PostureAI
+# Docker — OffSyn Tech
 
 Dockerfile และ compose files สำหรับ deploy
 

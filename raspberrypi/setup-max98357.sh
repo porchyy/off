@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configure the MAX98357A I2S DAC/amplifier as PostureAI's only Pi audio output.
+# Configure the MAX98357A I2S DAC/amplifier as OffSyn Tech's only Pi audio output.
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,14 +37,14 @@ TEMP_BOOT="$(mktemp)"
 trap 'rm -f "$TEMP_BOOT"' EXIT
 awk '
     /^[[:space:]]*dtoverlay=hifiberry-dac([,[:space:]].*)?$/ {
-        print "# Disabled by PostureAI MAX98357A setup: " $0
+        print "# Disabled by OffSyn Tech MAX98357A setup: " $0
         next
     }
     /^[[:space:]]*dtoverlay=max98357a([,[:space:]].*)?$/ { next }
     { print }
     END {
         print ""
-        print "# PostureAI MAX98357A I2S DAC/amplifier"
+        print "# OffSyn Tech MAX98357A I2S DAC/amplifier"
         print "dtoverlay=max98357a,sdmode-pin=4"
     }
 ' "$BOOT_CONFIG" > "$TEMP_BOOT"
@@ -66,7 +66,7 @@ ctl.!default {
 }
 ASOUND
 
-echo "[4/4] Pointing PostureAI directly at MAX98357A..."
+echo "[4/4] Pointing OffSyn Tech directly at MAX98357A..."
 if [ -f "$POSTURE_CONFIG" ]; then
     sed -i -E 's|^([[:space:]]*)device:[[:space:]].*$|\1device: "plughw:CARD=MAX98357A,DEV=0"|' "$POSTURE_CONFIG"
     sed -i -E '/^buzzer:/,/^[^[:space:]#]/{s/^([[:space:]]*)enabled:[[:space:]].*$/\1enabled: false/}' "$POSTURE_CONFIG"

@@ -1,4 +1,4 @@
-# PostureAI front-layout 3D-print case
+# OffSyn Tech front-layout 3D-print case
 
 The model follows the latest hand sketch and is saved in millimetres.
 

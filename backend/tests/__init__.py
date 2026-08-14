@@ -1,1 +1,1 @@
-"""Unit test package for PostureAI backend."""
+"""Unit test package for the OffSyn Tech backend."""

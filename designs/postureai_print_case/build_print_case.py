@@ -1,4 +1,4 @@
-"""Build a two-part 3D-printable PostureAI enclosure in Blender.
+"""Build a two-part 3D-printable OffSyn Tech enclosure in Blender.
 
 Dimensions are millimetres; the case is purposely based on the latest
 hand-drawn front layout.  The shell and rear cover export separately as STL.
@@ -97,7 +97,7 @@ left = add_box("Left wall", (WALL, D - WALL, H), (-W / 2 + WALL / 2, WALL / 2, H
 right = add_box("Right wall", (WALL, D - WALL, H), (W / 2 - WALL / 2, WALL / 2, H / 2))
 top = add_box("Top wall", (W - 2 * WALL, D - WALL, WALL), (0, WALL / 2, H - WALL / 2))
 bottom = add_box("Bottom wall", (W - 2 * WALL, D - WALL, WALL), (0, WALL / 2, WALL / 2))
-shell = join([front, left, right, top, bottom], "PostureAI front shell")
+shell = join([front, left, right, top, bottom], "OffSyn Tech front shell")
 bevel(shell, 3.0, 4)
 
 # Cut the front apertures. Cutters extend through the front plate only.
@@ -129,7 +129,7 @@ cut(camera_lip, camera_hole, "camera opening")
 lcd_lip = add_box("LCD inner support", (LCD_W + 8, 2.0, LCD_H + 8), (0, front_y + 4.0, LCD_Z))
 lcd_hole = add_box("LCD support hole", (LCD_W, 4.0, LCD_H), (0, front_y + 4.0, LCD_Z))
 cut(lcd_lip, lcd_hole, "LCD opening")
-shell = join([shell, camera_lip, lcd_lip], "PostureAI front shell")
+shell = join([shell, camera_lip, lcd_lip], "OffSyn Tech front shell")
 
 # Four internal 6 mm standoffs for the removable rear cover. Holes are 2.8 mm
 # pilot holes: drill to final screw size or fit heat-set inserts later.
@@ -140,10 +140,10 @@ for x in (-W / 2 + 11, W / 2 - 11):
         hole = add_cylinder("standoff pilot", 2.8, 14.0, (x, D / 2 - 9.0, z), vertices=24)
         cut(post, hole, "pilot hole")
         posts.append(post)
-shell = join([shell] + posts, "PostureAI front shell")
+shell = join([shell] + posts, "OffSyn Tech front shell")
 
 # Flat removable rear cover. Screw holes are deliberately only on this rear face.
-cover = add_box("PostureAI rear cover", (W - 0.4, WALL, H - 0.4), (0, D / 2 - WALL / 2, H / 2))
+cover = add_box("OffSyn Tech rear cover", (W - 0.4, WALL, H - 0.4), (0, D / 2 - WALL / 2, H / 2))
 bevel(cover, 3.0, 4)
 for x in (-W / 2 + 11, W / 2 - 11):
     for z in (11, H - 11):

@@ -1,4 +1,4 @@
-"""GPIO status indicator for the PostureAI Raspberry Pi client."""
+"""GPIO status indicator for the OffSyn Tech Raspberry Pi client."""
 
 from __future__ import annotations
 

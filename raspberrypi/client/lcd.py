@@ -1,4 +1,4 @@
-"""Optional 16x2 I2C character LCD output for PostureAI."""
+"""Optional 16x2 I2C character LCD output for OffSyn Tech."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class CharacterLcd:
                 charmap="A00",
                 auto_linebreaks=False,
             )
-            self._write(("POSTUREAI READY", "WAITING FOR POSE"), force=True)
+            self._write(("OFFSYN TECH", "WAITING FOR POSE"), force=True)
             logger.info("LCD 1602 ready on I2C bus %s address 0x%02X", self.port, self.address)
         except Exception as exc:
             logger.error("LCD 1602 is unavailable: %s", exc)
@@ -109,7 +109,7 @@ class CharacterLcd:
     def show_waiting_for_pose(self) -> bool:
         """Clear any stale score while the camera cannot see a person."""
         return self._write(
-            (self._fit("POSTUREAI READY", self.cols), self._fit("WAITING FOR POSE", self.cols))
+            (self._fit("OFFSYN TECH", self.cols), self._fit("WAITING FOR POSE", self.cols))
         )
 
     def show_test(self) -> bool:
