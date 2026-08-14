@@ -713,9 +713,9 @@ async function loadDashboard() {
   try {
     await loadSummary();
     const stats = await storage.stats();
-    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#1d5f99');
-    drawBarChart($('monthlyChart'), stats.monthly || [], 'average', 100, '#16794a');
-    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#b45309');
+    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#087cff');
+    drawBarChart($('monthlyChart'), stats.monthly || [], 'average', 100, '#00d9ff');
+    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#ff344b');
   } catch {
     toast('โหลดข้อมูลไม่สำเร็จ');
   }
@@ -727,9 +727,9 @@ function drawBarChart(target, rows, field, maxValue, color) {
   const c = target.getContext('2d');
   const { width, height } = target;
   c.clearRect(0, 0, width, height);
-  c.fillStyle = '#f8fafc';
+  c.fillStyle = '#041126';
   c.fillRect(0, 0, width, height);
-  c.strokeStyle = '#e2e8f0';
+  c.strokeStyle = 'rgba(70, 139, 214, 0.22)';
   for (let i = 1; i <= 4; i++) {
     const y = 24 + (height - 64) * i / 4;
     c.beginPath();
@@ -738,7 +738,7 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.stroke();
   }
   if (!rows.length) {
-    c.fillStyle = '#526174';
+    c.fillStyle = '#9eb7d2';
     c.font = '16px sans-serif';
     c.fillText('ยังไม่มีข้อมูล', 34, height / 2);
     return;
@@ -753,7 +753,7 @@ function drawBarChart(target, rows, field, maxValue, color) {
     const y = height - 38 - h;
     c.fillStyle = color;
     c.fillRect(x, y, barW, h);
-    c.fillStyle = '#526174';
+    c.fillStyle = '#9eb7d2';
     c.font = '12px sans-serif';
     c.fillText(String(value), x, y - 6);
     c.save();

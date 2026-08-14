@@ -5,39 +5,39 @@
 
 /* ── CSS Custom Properties (Design Tokens) ── */
 :root {
-  /* Color Palette — Academic Light Theme */
-  --bg-primary: #f4f7fb;
-  --bg-secondary: #edf2f7;
-  --bg-tertiary: #e8eef6;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
+  /* Color Palette — OffSyn Electric Navy */
+  --bg-primary: #020817;
+  --bg-secondary: #031126;
+  --bg-tertiary: #071a31;
+  --bg-card: rgba(5, 19, 40, 0.88);
+  --bg-card-hover: rgba(8, 29, 58, 0.94);
 
   /* Text Colors */
-  --text-primary: #1f2937;
-  --text-secondary: #556274;
-  --text-tertiary: #778396;
-  --text-heading: #172033;
+  --text-primary: #eaf4ff;
+  --text-secondary: #9eb7d2;
+  --text-tertiary: #718ba8;
+  --text-heading: #f7fbff;
 
   /* Accent & Brand */
-  --brand-accent: #1769aa;
-  --brand-accent-hover: #0e548d;
-  --brand-accent-subtle: rgba(23, 105, 170, 0.08);
-  --brand-primary: #1d5f99;
-  --brand-primary-hover: #164b7a;
-  --brand-primary-glow: rgba(29, 95, 153, 0.16);
+  --brand-accent: #00d9ff;
+  --brand-accent-hover: #65eaff;
+  --brand-accent-subtle: rgba(0, 217, 255, 0.10);
+  --brand-primary: #087cff;
+  --brand-primary-hover: #239cff;
+  --brand-primary-glow: rgba(8, 124, 255, 0.28);
 
   /* Status Colors */
-  --status-good: #16794a;
-  --status-good-bg: #eaf7ef;
-  --status-caution: #9a6700;
-  --status-caution-bg: #fff7df;
-  --status-risk: #b4233d;
-  --status-risk-bg: #fff0f2;
+  --status-good: #20e6d0;
+  --status-good-bg: rgba(32, 230, 208, 0.10);
+  --status-caution: #ffc857;
+  --status-caution-bg: rgba(255, 200, 87, 0.11);
+  --status-risk: #ff344b;
+  --status-risk-bg: rgba(255, 52, 75, 0.11);
 
   /* Borders */
-  --border-subtle: #e2e8f0;
-  --border-default: #cbd5e1;
-  --border-accent: rgba(23, 105, 170, 0.3);
+  --border-subtle: rgba(70, 139, 214, 0.22);
+  --border-default: rgba(80, 157, 238, 0.38);
+  --border-accent: rgba(0, 217, 255, 0.48);
 
   /* Typography */
   --font-sans: 'IBM Plex Sans Thai', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -50,10 +50,10 @@
   --r-xl: 20px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);
-  --shadow-glow: 0 0 0 transparent;
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.20);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.38);
+  --shadow-glow: 0 0 28px rgba(0, 126, 255, 0.14);
 
   /* Transitions */
   --t-fast: 150ms ease;
@@ -1429,4 +1429,188 @@ body {
 @media (max-width: 900px) {
   .intro { grid-template-columns: 1fr; gap: 22px; }
   .system-overview { max-width: 460px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   OFFSYN TECH — ELECTRIC NAVY THEME
+   Inspired by the project's blue/cyan technology identity
+   ═══════════════════════════════════════════════════════ */
+html { color-scheme: dark; }
+
+body {
+  position: relative;
+  background:
+    radial-gradient(circle at 12% -8%, rgba(0, 126, 255, 0.20), transparent 34rem),
+    radial-gradient(circle at 92% 18%, rgba(0, 217, 255, 0.10), transparent 30rem),
+    linear-gradient(145deg, #010611 0%, #031126 52%, #010713 100%);
+  background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(21, 105, 196, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 105, 196, 0.16) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, #000, transparent 78%);
+}
+
+::selection { background: rgba(0, 217, 255, 0.28); color: #fff; }
+:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
+
+.topbar {
+  background: rgba(1, 7, 19, 0.90);
+  border-bottom-color: rgba(0, 126, 255, 0.36);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(0, 217, 255, 0.08);
+}
+
+.brand { color: var(--text-heading); }
+.brand-icon {
+  background: linear-gradient(135deg, #00d9ff 0%, #087cff 62%, #004ee5 100%);
+  color: #fff;
+  box-shadow: 0 0 22px rgba(0, 159, 255, 0.42);
+}
+.brand b {
+  color: transparent;
+  background: linear-gradient(90deg, #f7fbff 0%, #f7fbff 45%, #28c9ff 70%, #087cff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+.brand-tag { background: rgba(8, 124, 255, 0.12); color: #9fdfff; border-color: rgba(0, 217, 255, 0.28); }
+.topbar nav a { color: var(--text-secondary); }
+.topbar nav a:hover { color: #fff; background: rgba(8, 124, 255, 0.12); }
+.topbar nav a.active { color: #75eaff; background: rgba(0, 126, 255, 0.14); border-color: rgba(0, 217, 255, 0.32); }
+.text-btn:hover { color: #fff; background: rgba(255, 52, 75, 0.10); border-color: rgba(255, 52, 75, 0.30); }
+
+.intro { border-bottom-color: rgba(0, 126, 255, 0.30); }
+.eyebrow { color: var(--brand-accent); }
+.intro h1, .section-heading, .card h3, .overview-title { color: var(--text-heading); }
+.intro h1 em {
+  color: transparent;
+  background: linear-gradient(100deg, #2ee2ff 0%, #087cff 58%, #0054ed 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  filter: drop-shadow(0 0 18px rgba(0, 126, 255, 0.20));
+}
+
+.system-overview,
+.card {
+  background: linear-gradient(145deg, rgba(6, 21, 43, 0.94), rgba(3, 13, 30, 0.94));
+  border-color: rgba(56, 130, 211, 0.31);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(130, 202, 255, 0.045);
+}
+.card:hover { border-color: rgba(0, 174, 255, 0.48); box-shadow: var(--shadow-lg), var(--shadow-glow); }
+.system-overview { box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(130, 202, 255, 0.05); }
+.system-overview dl > div, .card-head, .detail-row, .privacy-item, .site-footer { border-color: var(--border-subtle); }
+.system-overview dd, .detail-row b { color: var(--text-heading); }
+
+.section-icon,
+.section-icon.monitor-accent,
+.section-icon.history-accent,
+.section-icon.settings-accent,
+.section-icon.privacy-accent {
+  color: #7beeff;
+  background: linear-gradient(145deg, rgba(0, 217, 255, 0.16), rgba(8, 124, 255, 0.13));
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  box-shadow: 0 0 20px rgba(0, 126, 255, 0.12);
+}
+
+.badge.neutral { background: rgba(107, 144, 182, 0.10); color: #b3c9df; border-color: rgba(125, 168, 211, 0.24); }
+.badge.good { background: var(--status-good-bg); color: var(--status-good); border-color: rgba(32, 230, 208, 0.30); }
+.badge.caution { background: var(--status-caution-bg); color: var(--status-caution); border-color: rgba(255, 200, 87, 0.30); }
+.badge.risk { background: var(--status-risk-bg); color: #ff6b7c; border-color: rgba(255, 52, 75, 0.36); }
+
+.video-wrap {
+  background: #01050d;
+  border-color: rgba(0, 126, 255, 0.48);
+  box-shadow: inset 0 0 60px rgba(0, 79, 174, 0.13), 0 0 26px rgba(0, 126, 255, 0.10);
+}
+.camera-signal { background: rgba(2, 10, 24, 0.88); border-color: rgba(94, 152, 210, 0.28); color: var(--text-secondary); }
+.camera-signal.good { color: var(--status-good); border-color: rgba(32, 230, 208, 0.42); }
+.camera-signal.risk { color: #ff7181; border-color: rgba(255, 52, 75, 0.46); }
+
+button.primary {
+  background: linear-gradient(135deg, #0a9fff 0%, #087cff 54%, #0054e8 100%);
+  color: #fff;
+  border-color: rgba(70, 190, 255, 0.50);
+  box-shadow: 0 8px 24px rgba(0, 96, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+button.primary:hover { background: linear-gradient(135deg, #22b6ff, #1689ff 54%, #0964f3); box-shadow: 0 10px 28px rgba(0, 126, 255, 0.34); }
+button.secondary, button.outline {
+  background: rgba(5, 22, 46, 0.82);
+  color: #b9d9f6;
+  border-color: rgba(56, 130, 211, 0.45);
+}
+button.secondary:hover, button.outline:hover { color: #fff; background: rgba(8, 124, 255, 0.16); border-color: rgba(0, 217, 255, 0.55); }
+button:disabled { opacity: 0.42; }
+
+.score { border-top-color: var(--brand-primary); }
+.score output,
+.summary-value,
+.sensor-reading output {
+  color: #fff;
+  text-shadow: 0 0 20px rgba(0, 174, 255, 0.25);
+}
+.score output {
+  color: transparent;
+  background: linear-gradient(180deg, #f7fbff 8%, #6be1ff 48%, #087cff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+.summary-card::before, .progress-bar-fill { background: linear-gradient(90deg, #087cff, #00d9ff); }
+.risk-card.neutral { border-left-color: rgba(94, 152, 210, 0.42); }
+.risk-card.good { border-left-color: var(--status-good); }
+.risk-card.caution { border-left-color: var(--status-caution); }
+.risk-card.risk { border-left-color: var(--status-risk); box-shadow: var(--shadow-md), -5px 0 18px rgba(255, 52, 75, 0.07); }
+
+.report-date,
+.setting input[type='number'],
+.setting input[type='text'],
+input[type='date'],
+input[type='month'] {
+  color: var(--text-heading);
+  background: rgba(1, 9, 22, 0.78);
+  border-color: rgba(56, 130, 211, 0.42);
+}
+.report-date:focus,
+.setting input:focus,
+input[type='date']:focus,
+input[type='month']:focus { border-color: var(--brand-accent); box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.10); }
+input[type='checkbox'] { accent-color: var(--brand-primary); }
+
+.chart-card canvas { background: #041126; border: 1px solid rgba(56, 130, 211, 0.25); }
+.chart-tabs { background: rgba(1, 9, 22, 0.76); border: 1px solid rgba(56, 130, 211, 0.22); }
+.chart-tab { color: var(--text-secondary); }
+.chart-tab:hover { color: #fff; background: rgba(8, 124, 255, 0.10); }
+.chart-tab.active { color: #7beeff; background: rgba(8, 124, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(0, 217, 255, 0.26), 0 0 18px rgba(0, 126, 255, 0.10); }
+.events li { background: rgba(4, 18, 39, 0.72); border-color: rgba(56, 130, 211, 0.24); }
+.events li::before { background: var(--brand-accent); box-shadow: 0 0 10px rgba(0, 217, 255, 0.55); }
+
+.privacy-icon { background: linear-gradient(145deg, #0a9fff, #075be8); box-shadow: 0 0 18px rgba(0, 126, 255, 0.18); }
+.privacy-item:nth-child(2) .privacy-icon { background: linear-gradient(145deg, #00d9ff, #087cff); }
+.privacy-item:nth-child(3) .privacy-icon { background: linear-gradient(145deg, #ffc857, #ff8a00); }
+.progress-bar-wrap { background: rgba(79, 137, 196, 0.18); }
+
+.risk-popup {
+  background: rgba(19, 7, 17, 0.97);
+  border-color: rgba(255, 52, 75, 0.48);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.48), 0 0 32px rgba(255, 52, 75, 0.12);
+}
+.risk-popup-icon { background: var(--status-risk); box-shadow: 0 0 20px rgba(255, 52, 75, 0.28); }
+#toast { background: rgba(3, 16, 34, 0.97); color: #fff; border: 1px solid rgba(0, 217, 255, 0.32); box-shadow: var(--shadow-lg); }
+.demo-banner { background: rgba(255, 200, 87, 0.10); color: #ffe19a; border-color: rgba(255, 200, 87, 0.26); }
+.site-footer { color: var(--text-tertiary); }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #010713; }
+::-webkit-scrollbar-thumb { background: #0b3767; border: 2px solid #010713; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #0b67b8; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
