@@ -560,8 +560,6 @@ function connectPiCamera() {
       await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
     } else if (message.type === 'stream_info') {
       const colorMode = message.displayColorMode || message.cameraFormat || 'unknown';
-      $('streamColorMode').textContent = `รูปแบบภาพ: ${colorMode} · RGB`;
-      $('streamColorMode').className = 'badge good';
       console.log('[OffSyn Tech] actual Pi Camera stream format:', message.cameraFormat, {
         displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
@@ -642,9 +640,6 @@ async function loadPiStatus() {
       : `Pi ยังไม่รายงานตัว · ${status.message || 'กำลังรอ sensor client'}`;
     if (Number.isFinite(status.retentionDays)) {
       $('historyEyebrow').textContent = `ฐานข้อมูล SQLite ในเครื่อง · ข้อมูลละเอียด ${status.retentionDays} วัน${summaryRetention}`;
-      $('retentionSummary').textContent = Number.isFinite(status.summaryRetentionDays)
-        ? `${status.retentionDays} / ${status.summaryRetentionDays} วัน`
-        : `${status.retentionDays} วัน`;
     }
   } catch {
     target.textContent = 'ไม่สามารถอ่านสถานะ Raspberry Pi ได้';

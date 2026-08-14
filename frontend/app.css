@@ -1363,45 +1363,19 @@ body {
 .intro {
   max-width: none;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: 1fr;
   align-items: end;
-  gap: 48px;
   padding: 12px 0 40px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.intro-copy { max-width: 680px; }
+.intro-copy { max-width: 760px; }
 .intro h1 {
   font-weight: 700;
   letter-spacing: -0.035em;
   margin-bottom: 14px;
 }
 .intro-desc { max-width: 610px; font-size: 15px; }
-
-.system-overview {
-  padding: 18px 20px;
-  background: #fff;
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-}
-.overview-title {
-  margin: 0 0 12px;
-  color: var(--text-heading);
-  font-size: 13px;
-  font-weight: 700;
-}
-.system-overview dl { margin: 0; }
-.system-overview dl > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 9px 0;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 13px;
-}
-.system-overview dt { color: var(--text-secondary); }
-.system-overview dd { margin: 0; color: var(--text-heading); font-weight: 600; text-align: right; }
 
 .section-header { margin-top: 32px; margin-bottom: 20px; }
 .section-heading { font-size: 22px; }
@@ -1428,7 +1402,6 @@ body {
 
 @media (max-width: 900px) {
   .intro { grid-template-columns: 1fr; gap: 22px; }
-  .system-overview { max-width: 460px; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1498,16 +1471,14 @@ body::before {
   filter: drop-shadow(0 0 18px rgba(0, 126, 255, 0.20));
 }
 
-.system-overview,
 .card {
   background: linear-gradient(145deg, rgba(6, 21, 43, 0.94), rgba(3, 13, 30, 0.94));
   border-color: rgba(56, 130, 211, 0.31);
   box-shadow: var(--shadow-md), inset 0 1px 0 rgba(130, 202, 255, 0.045);
 }
 .card:hover { border-color: rgba(0, 174, 255, 0.48); box-shadow: var(--shadow-lg), var(--shadow-glow); }
-.system-overview { box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(130, 202, 255, 0.05); }
-.system-overview dl > div, .card-head, .detail-row, .privacy-item, .site-footer { border-color: var(--border-subtle); }
-.system-overview dd, .detail-row b { color: var(--text-heading); }
+.card-head, .detail-row, .privacy-item, .site-footer { border-color: var(--border-subtle); }
+.detail-row b { color: var(--text-heading); }
 
 .section-icon,
 .section-icon.monitor-accent,
