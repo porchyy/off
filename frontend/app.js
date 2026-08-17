@@ -85,25 +85,25 @@ function updateRisk(m) {
 
 function scoreBand(score) {
   if (score >= 80) return {
-    cls: 'good', status: 'ท่านั่งดี', state: 'กำลังติดตาม',
+    cls: 'good', status: '🟢 ปกติ (Normal)', state: 'ปกติ (Normal)',
     advice: 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย',
-    camera: 'สีเขียว: ท่านั่งอยู่ในเกณฑ์ดี',
-    risk: 'สีเขียว · ความเสี่ยงจากท่านั่งต่ำ',
-    reason: 'ท่าที่เห็นตอนนี้อยู่ในเกณฑ์ดี'
+    camera: '🟢 ปกติ (Normal): ท่านั่งอยู่ในเกณฑ์ดี',
+    risk: '🟢 ปกติ (Normal)',
+    reason: 'คะแนน 80–100: ท่าทางปกติ (Normal)'
   };
   if (score >= 60) return {
-    cls: 'caution', status: 'ปรับท่านั่ง', state: 'ปรับพฤติกรรม',
+    cls: 'caution', status: '🟡 เฝ้าระวัง (Attention)', state: 'เฝ้าระวัง (Attention)',
     advice: 'ลองยืดหลัง ดึงคางเข้า และคลายไหล่เล็กน้อย',
-    camera: 'สีส้ม: ควรปรับท่านั่ง',
-    risk: 'สีส้ม · ควรปรับท่านั่ง',
-    reason: 'คะแนนอยู่ระหว่าง 60–79: ควรปรับท่า แต่ยังไม่ใช่ระดับเสี่ยง'
+    camera: '🟡 เฝ้าระวัง (Attention): ควรระวังท่านั่ง',
+    risk: '🟡 เฝ้าระวัง (Attention)',
+    reason: 'คะแนนอยู่ระหว่าง 60–79: ควรเฝ้าระวัง (Attention)'
   };
   return {
-    cls: 'risk', status: 'เสี่ยงจากท่านั่ง', state: 'ท่านั่งเสี่ยง',
+    cls: 'risk', status: '🔴 ควรปรับ (Adjust)', state: 'ควรปรับ (Adjust)',
     advice: 'พักสั้น ๆ แล้วจัดหลัง คอ และไหล่ให้ตรง',
-    camera: 'สีแดง: เสี่ยงจากท่านั่ง',
-    risk: 'สีแดง · เสี่ยงจากท่านั่ง',
-    reason: 'คะแนนต่ำกว่า 60: ควรพักและปรับท่านั่งทันที'
+    camera: '🔴 ควรปรับ (Adjust): เสี่ยงจากท่านั่ง',
+    risk: '🔴 ควรปรับ (Adjust)',
+    reason: 'คะแนนต่ำกว่า 60: ควรปรับ (Adjust) ทันที'
   };
 }
 
@@ -131,7 +131,7 @@ function updatePostureModelResult(metrics) {
   const confidence = Number(metrics?.posture_confidence);
   if (!label || !Number.isFinite(confidence)) return;
   const labels = {
-    good: 'AI: ท่านั่งดี',
+    good: 'AI: ปกติ (Normal)',
     slouch: 'AI: หลังค่อม',
     chin_rest: 'AI: เท้าคาง',
     stretch: 'AI: กำลังยืดตัว'
@@ -145,17 +145,17 @@ function updateLcdPreview(metrics) {
   const safeScore = Math.max(0, Math.min(100, Math.round(metrics.score)));
   const aiLabel = metrics.posture_ai_used === true ? metrics.posture_label : '';
   const aiStatus = {
-    good: 'GOOD POSTURE',
+    good: 'NORMAL',
     slouch: 'SLOUCH DETECT',
     chin_rest: 'CHIN REST',
     stretch: 'STRETCH BREAK'
   }[aiLabel];
   $('lcdLine1').textContent = `SCORE: ${String(safeScore).padStart(3, ' ')}/100`;
   $('lcdLine2').textContent = aiStatus || (safeScore >= 80
-    ? 'GOOD POSTURE'
+    ? 'NORMAL'
     : safeScore >= 60
-      ? 'CHECK POSTURE'
-      : 'ADJUST POSTURE');
+      ? 'ATTENTION'
+      : 'ADJUST');
 }
 
 async function save(m) {
@@ -173,7 +173,7 @@ async function save(m) {
   if (m.score < settings.riskThreshold && now - lastAlert > 120000) {
     lastAlert = now;
     try {
-      await storage.addAlert({ severity: 'risk', message: 'ตรวจพบท่านั่งที่ควรปรับ' });
+      await storage.addAlert({ severity: 'risk', message: 'ตรวจพบท่านั่งที่ควรปรับ (Adjust)' });
       loadDashboard();
     } catch {}
   }
@@ -765,7 +765,7 @@ function notifyRisk(force = false, message = 'กรุณายืดหลั�
   lastAlert = now;
   $('riskPopup').hidden = false;
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('OffSyn Tech: เสี่ยงจากท่านั่ง', { body: message });
+    new Notification('OffSyn Tech: 🔴 ควรปรับ (Adjust)', { body: message });
   }
 }
 

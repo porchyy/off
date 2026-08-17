@@ -59,7 +59,7 @@ class CharacterLcd:
         score = max(0, min(100, round(float(metrics["score"]))))
         ai_label = str(metrics.get("posture_label", "")) if metrics.get("posture_ai_used") else ""
         ai_status = {
-            "good": "GOOD POSTURE",
+            "good": "NORMAL",
             "slouch": "SLOUCH DETECT",
             "chin_rest": "CHIN REST",
             "stretch": "STRETCH BREAK",
@@ -67,11 +67,11 @@ class CharacterLcd:
         if ai_status:
             status = ai_status
         elif score >= 80:
-            status = "GOOD POSTURE"
+            status = "NORMAL"
         elif score >= risk_threshold:
-            status = "CHECK POSTURE"
+            status = "ATTENTION"
         else:
-            status = "ADJUST POSTURE"
+            status = "ADJUST"
         return cls._fit(f"SCORE: {score:3}/100", columns), cls._fit(status, columns)
 
     @property
@@ -113,7 +113,7 @@ class CharacterLcd:
         )
 
     def show_test(self) -> bool:
-        return self._write((self._fit("SCORE:  82/100", self.cols), self._fit("GOOD POSTURE", self.cols)), force=True)
+        return self._write((self._fit("SCORE:  82/100", self.cols), self._fit("NORMAL", self.cols)), force=True)
 
     def close(self) -> None:
         if self._lcd is None:

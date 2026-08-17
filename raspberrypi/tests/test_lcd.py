@@ -11,20 +11,20 @@ from client.lcd import CharacterLcd
 def test_lcd_1602_lines_fit_the_display_and_show_posture_state():
     lines = CharacterLcd.format_metrics({"score": 82}, columns=16, risk_threshold=60)
 
-    assert lines == (" SCORE:  82/100 ", "  GOOD POSTURE  ")
+    assert lines == (" SCORE:  82/100 ", "     NORMAL     ")
     assert all(len(line) == 16 for line in lines)
 
 
 def test_lcd_1602_uses_risk_message_for_low_score():
     _, line = CharacterLcd.format_metrics({"score": 39}, columns=16, risk_threshold=60)
 
-    assert line == " ADJUST POSTURE "
+    assert line == "     ADJUST     "
 
 
 def test_lcd_1602_marks_scores_from_60_to_79_as_check_posture():
     _, line = CharacterLcd.format_metrics({"score": 69}, columns=16, risk_threshold=60)
 
-    assert line == " CHECK POSTURE  "
+    assert line == "   ATTENTION    "
 
 
 def test_lcd_1602_shows_the_trained_classifier_label_when_it_was_used():
