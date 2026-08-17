@@ -85,24 +85,24 @@ function updateRisk(m) {
 
 function scoreBand(score) {
   if (score >= 80) return {
-    cls: 'good', status: 'ท่านั่งดี', state: 'กำลังติดตาม',
+    cls: 'good', status: '🟢 ปกติ (Normal)', state: 'ปกติ',
     advice: 'รักษาระดับสายตาและไหล่ให้ผ่อนคลาย',
-    camera: 'สีเขียว: ท่านั่งอยู่ในเกณฑ์ดี',
-    risk: 'สีเขียว · ความเสี่ยงจากท่านั่งต่ำ',
+    camera: '🟢 ปกติ (Normal)',
+    risk: '🟢 ปกติ (Normal)',
     reason: 'ท่าที่เห็นตอนนี้อยู่ในเกณฑ์ดี'
   };
   if (score >= 60) return {
-    cls: 'caution', status: 'ปรับท่านั่ง', state: 'ปรับพฤติกรรม',
+    cls: 'caution', status: '🟡 เฝ้าระวัง (Attention)', state: 'เฝ้าระวัง',
     advice: 'ลองยืดหลัง ดึงคางเข้า และคลายไหล่เล็กน้อย',
-    camera: 'สีส้ม: ควรปรับท่านั่ง',
-    risk: 'สีส้ม · ควรปรับท่านั่ง',
+    camera: '🟡 เฝ้าระวัง (Attention)',
+    risk: '🟡 เฝ้าระวัง (Attention)',
     reason: 'คะแนนอยู่ระหว่าง 60–79: ควรปรับท่า แต่ยังไม่ใช่ระดับเสี่ยง'
   };
   return {
-    cls: 'risk', status: 'เสี่ยงจากท่านั่ง', state: 'ท่านั่งเสี่ยง',
+    cls: 'risk', status: '🔴 ควรปรับ (Adjust)', state: 'ควรปรับ',
     advice: 'พักสั้น ๆ แล้วจัดหลัง คอ และไหล่ให้ตรง',
-    camera: 'สีแดง: เสี่ยงจากท่านั่ง',
-    risk: 'สีแดง · เสี่ยงจากท่านั่ง',
+    camera: '🔴 ควรปรับ (Adjust)',
+    risk: '🔴 ควรปรับ (Adjust)',
     reason: 'คะแนนต่ำกว่า 60: ควรพักและปรับท่านั่งทันที'
   };
 }
