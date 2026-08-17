@@ -1404,12 +1404,11 @@ body {
 .card-head { padding-bottom: 14px; margin-bottom: 0; border-bottom: 1px solid var(--border-subtle); }
 .camera.card { padding: 20px; }
 .metrics { gap: 14px; }
-.grid {
-  grid-template-columns: minmax(0, 1.55fr) minmax(360px, 0.85fr);
-  align-items: start;
+.video-wrap {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
-.metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.lcd-preview { grid-column: 1 / -1; }
 .score { padding: 24px; border-top: 3px solid var(--brand-primary); }
 .score output { font-size: 64px; }
 .risk-card { border-left: 3px solid var(--border-default); }
@@ -1429,16 +1428,8 @@ body {
 .privacy-item { padding: 18px 0; }
 
 @media (max-width: 900px) {
-  .intro, .grid { grid-template-columns: 1fr; gap: 22px; }
-}
-
-@media (min-width: 761px) {
-  .risk-popup {
-    left: auto;
-    right: 28px;
-    transform: none;
-    max-width: 360px;
-  }
+  .intro { grid-template-columns: 1fr; gap: 22px; }
+  .video-wrap { max-width: none; }
 }
 
 @media (max-width: 760px) {
