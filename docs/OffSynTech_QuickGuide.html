@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>OffSyn Tech — คู่มือสรุปการใช้งานและผังวงจร (Quick Guide & Overview)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap');
+
+    @page {
+      size: A4;
+      margin: 14mm 14mm 14mm 14mm;
+      @bottom-right {
+        content: "หน้า " counter(page);
+        font-family: 'Prompt', sans-serif;
+        font-size: 8pt;
+        color: #94a3b8;
+      }
+      @bottom-left {
+        content: "OffSyn Tech — Quick Guide (ฉบับอ่านง่าย)";
+        font-family: 'Prompt', sans-serif;
+        font-size: 8pt;
+        color: #94a3b8;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      font-size: 10pt;
+      line-height: 1.55;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Header */
+    .header {
+      border-bottom: 2.5px solid #0284c7;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .header-title h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 22pt;
+      font-weight: 700;
+      color: #0284c7;
+      margin: 0 0 2px;
+    }
+    .header-title p {
+      font-family: 'Prompt', sans-serif;
+      font-size: 11pt;
+      color: #475569;
+      margin: 0;
+    }
+    .header-badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      font-size: 8.5pt;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #bae6fd;
+    }
+
+    h2 {
+      font-family: 'Prompt', sans-serif;
+      color: #0f172a;
+      font-size: 12.5pt;
+      font-weight: 600;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      page-break-after: avoid;
+    }
+
+    p { margin: 0 0 8px; }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 8px 0 12px;
+      page-break-inside: avoid;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .card h4 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 10pt;
+      color: #0284c7;
+      margin: 0 0 3px;
+    }
+    .card p {
+      font-size: 9pt;
+      color: #475569;
+      margin: 0;
+    }
+
+    .info-box {
+      background: #f0f9ff;
+      border-left: 3.5px solid #0284c7;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-size: 9.2pt;
+      page-break-inside: avoid;
+    }
+    .success-box {
+      background: #f0fdf4;
+      border-left: 3.5px solid #16a34a;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-size: 9.2pt;
+      page-break-inside: avoid;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 12px;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 5px 8px;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: #f8fafc; }
+
+    /* Code */
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 8.5pt;
+      background: #f1f5f9;
+      color: #0284c7;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Fira Code', monospace;
+      font-size: 8.2pt;
+      line-height: 1.4;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin: 6px 0 10px;
+      page-break-inside: avoid;
+      white-space: pre-wrap;
+    }
+    pre .comment { color: #94a3b8; }
+    pre .cmd { color: #38bdf8; font-weight: bold; }
+
+    ul { margin: 0 0 8px; padding-left: 18px; }
+    li { margin-bottom: 2px; }
+
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">
+      <h1>OffSyn Tech</h1>
+      <p>ระบบตรวจจับท่านั่งและแจ้งเตือนป้องกัน Office Syndrome (คู่มือฉบับอ่านง่าย)</p>
+    </div>
+    <div class="header-badge">
+      Raspberry Pi 5 + AI MediaPipe
+    </div>
+  </div>
+
+  <!-- 1. ภาพรวมโปรเจกต์ -->
+  <h2>📌 1. ภาพรวมโปรเจกต์ (Project Overview)</h2>
+  <p>
+    <strong>OffSyn Tech</strong> คืออุปกรณ์ตรวจจับสรีระการนั่งทำงานแบบเรียลไทม์ ใช้กล้องสแกนร่างกายส่วนบน (คอ ไหล่ ลำตัว) ด้วย AI MediaPipe บน Raspberry Pi 5 หากผู้ใช้นั่งหลังค่อมหรือก้มคอนานเกินไป ระบบจะส่ง <strong>เสียงพูดเตือนภาษาไทย</strong> และ <strong>ไฟ LED สีแดง</strong> เพื่อเตือนให้ปรับท่านั่งทันที พร้อมดูข้อมูลสดบนหน้าจอเว็บได้
+  </p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>🔒 ปลอดภัยและเป็นส่วนตัว 100%</h4>
+      <p>ภาพกล้องส่งสดแบบ P2P ในวง LAN เท่านั้น ไม่มีการส่งภาพออกนอกเน็ตและไม่บันทึกภาพลงเครื่อง</p>
+    </div>
+    <div class="card">
+      <h4>🎙️ เสียงพูดไทย AI ธรรมชาติ</h4>
+      <p>เตือนด้วยเสียงพูดนุ่มนวล ชัดเจน ("กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่ค่ะ") ไม่มีเสียงหุ่นยนต์</p>
+    </div>
+  </div>
+
+  <!-- 2. ผังการต่อสายอุปกรณ์ -->
+  <h2>🔌 2. รายการอุปกรณ์ & ผังการต่อสายไฟ (Wiring Guide)</h2>
+  <p>ตารางสรุปการเสียบสายไฟเข้ากับหัวพิน <strong>GPIO 40-Pin</strong> บนบอร์ด Raspberry Pi 5:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">อุปกรณ์</th>
+        <th style="width: 25%;">เสียบที่พิน (Pin)</th>
+        <th style="width: 25%;">รหัส GPIO</th>
+        <th style="width: 25%;">หน้าที่</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>กล้อง Pi Camera 3</strong></td>
+        <td>พอร์ต CAM/DISP</td>
+        <td>CSI Ribbon Cable</td>
+        <td>จับภาพท่านั่งส่งให้ AI วิเคราะห์</td>
+      </tr>
+      <tr>
+        <td><strong>ไฟ LED แจ้งเตือน (แดง)</strong></td>
+        <td><strong>Pin 11</strong> (+)<br>Pin 9 หรือ 14 (-)</td>
+        <td><strong>GPIO 17</strong><br>GND</td>
+        <td>ไฟติดสว่างเมื่อนั่งผิดท่าต่อเนื่องเกิน 5 วิ</td>
+      </tr>
+      <tr>
+        <td><strong>เซนเซอร์แสง BH1750</strong></td>
+        <td>Pin 1 (3.3V), Pin 6 (GND)<br>Pin 3 (SDA), Pin 5 (SCL)</td>
+        <td>3.3V, GND<br>GPIO 2, GPIO 3</td>
+        <td>วัดความสว่างของแสงรอบโต๊ะทำงาน (Lux)</td>
+      </tr>
+      <tr>
+        <td><strong>จอแสดงผล LCD 1602</strong></td>
+        <td>Pin 2 (5V), Pin 9 (GND)<br>Pin 3 (SDA), Pin 5 (SCL)</td>
+        <td>5V, GND<br>GPIO 2, GPIO 3</td>
+        <td>แสดงคะแนนสรีระและสถานะปัจจุบัน</td>
+      </tr>
+      <tr>
+        <td><strong>ลำโพง MAX98357A</strong></td>
+        <td>Pin 2 (5V), Pin 12 (BCLK)<br>Pin 35 (LRCLK), Pin 40 (DIN)</td>
+        <td>5V, GPIO 18<br>GPIO 19, GPIO 21</td>
+        <td>ขับเสียงพูดภาษาไทยแจ้งเตือนผ่านลำโพง</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 3. การทำงานและการแจ้งเตือน -->
+  <h2>⚙️ 3. ระบบการตรวจจับและการแจ้งเตือน (How it Works)</h2>
+  
+  <div class="info-box">
+    <strong>🎯 การตั้งค่าโหมดสมดุล (Balanced Focus Mode):</strong>
+    <ul style="margin: 4px 0 0; padding-left: 16px;">
+      <li><strong>เกณฑ์คะแนนความเสี่ยง:</strong> <code>65 คะแนน</code> (คะแนนเต็ม 100, ถ้าต่ำกว่า 65 ถือว่านั่งผิดท่า)</li>
+      <li><strong>นั่งผิดท่าต่อเนื่อง:</strong> <code>8 วินาที</code> (เพื่อไม่ให้เตือนตอนแค่ก้มหยิบของชั่วคราว)</li>
+      <li><strong>เว้นระยะเตือนซ้ำ:</strong> <code>45 วินาที</code> (ไม่ส่งเสียงเตือนรัวเกินไปจนรบกวนสมาธิ)</li>
+    </ul>
+  </div>
+
+  <p><strong>ลำดับการเตือนเมื่อนั่งผิดท่า:</strong></p>
+  <ol style="margin-bottom: 8px;">
+    <li><strong>นาทีที่ 0 - 5:</strong> AI ตรวจพบคะแนน &lt; 65 และเริ่มนับเวลา</li>
+    <li><strong>ครบ 5 วินาที:</strong> <strong>ไฟ LED สีแดง (Pin 11) ติดสว่าง</strong> เตือนผู้ใช้แบบเงียบๆ</li>
+    <li><strong>ครบ 8 วินาที:</strong> <strong>ลำโพงส่งเสียงพูดไทย AI</strong> *"กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่ค่ะ"*</li>
+    <li><strong>เมื่อผู้ใช้นั่งหลังตรง:</strong> คะแนนกลับมาเกิน 65 &rarr; <strong>ไฟ LED ดับลงทันที</strong></li>
+  </ol>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- 4. วิธีเข้าใช้งาน Dashboard -->
+  <h2>💻 4. วิธีเข้าใช้งานหน้าเว็บ Dashboard</h2>
+  <p>
+    เปิดเบราว์เซอร์ (Chrome/Safari) บนคอมพิวเตอร์หรือมือถือที่ต่อ Wi-Fi เดียวกับ Pi แล้วเข้าไปที่:
+  </p>
+  <div class="success-box" style="font-size: 11pt; text-align: center; font-family: 'Prompt', sans-serif;">
+    🌐 <strong>http://10.0.2.225:3000</strong> &nbsp; (หรือ <code>http://&lt;IP-ของ-Pi&gt;:3000</code>)
+  </div>
+
+  <p><strong>ฟังก์ชันบนหน้าเว็บ Dashboard:</strong></p>
+  <ul>
+    <li><strong>หน้าจอ Live:</strong> ดูภาพสดพร้อมโครงกระดูก AI เรืองแสง (Neon Skeleton) และคะแนนสรีระแบบวินาทีต่อวินาที</li>
+    <li><strong>แท็บสถิติ:</strong> ดูกราฟคะแนนเฉลี่ยย้อนหลังรายสัปดาห์ จำนวนครั้งที่นั่งผิดท่า</li>
+    <li><strong>แท็บตั้งค่า:</strong> ปรับคะแนนเกณฑ์เตือน, ปรับเวลาหน่วง, และมีปุ่ม <strong>"ทดสอบการแจ้งเตือน"</strong> เพื่อลองฟังเสียง</li>
+    <li><strong>ส่งออกข้อมูล:</strong> ดาวน์โหลดรายงานสรุปเป็นไฟล์ <strong>Excel (.xlsx)</strong> รายวันและรายเดือนได้</li>
+  </ul>
+
+  <!-- 5. รวมคำสั่งสำคัญที่ต้องใช้ -->
+  <h2>⌨️ 5. รวมคำสั่งสำคัญที่ต้องใช้ (Essential Commands)</h2>
+
+  <h3>1. คำสั่งเข้าเครื่อง Pi จาก Mac (ผ่าน Terminal)</h3>
+  <pre><span class="cmd">ssh</span> porchy@10.0.2.225
+<span class="comment"># ใส่รหัสผ่านของเครื่อง Pi แล้วกด Enter</span></pre>
+
+  <h3>2. คำสั่งทดสอบอุปกรณ์แต่ละชิ้น</h3>
+  <pre><span class="comment"># เข้าโฟลเดอร์โปรเจกต์</span>
+<span class="cmd">cd</span> ~/off/raspberrypi
+
+<span class="comment"># 1. ทดสอบอ่านเซนเซอร์วัดแสง (Lux):</span>
+<span class="cmd">.venv/bin/python test_sensors.py</span>
+
+<span class="comment"># 2. ทดสอบเสียงพูดภาษาไทยผ่านลำโพง Pi:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-sound</span>
+
+<span class="comment"># 3. ทดสอบกล้อง:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-camera</span>
+
+<span class="comment"># 4. ทดสอบจอ LCD:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-lcd</span>
+
+<span class="comment"># 5. ทดสอบไฟ LED กะพริบ 2 ครั้ง:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-led</span></pre>
+
+  <h3>3. คำสั่งอัปเดตโค้ดและรีสตาร์ทระบบ</h3>
+  <pre><span class="comment"># ดึงโค้ดล่าสุดจาก GitHub:</span>
+<span class="cmd">cd</span> ~/off
+<span class="cmd">git fetch origin && git reset --hard origin/main</span>
+
+<span class="comment"># รีสตาร์ทหน้าเว็บ Dashboard:</span>
+<span class="cmd">sudo docker-compose restart web</span>
+
+<span class="comment"># รีสตาร์ท Service กล้องและ AI:</span>
+<span class="cmd">sudo systemctl restart postureai-client</span></pre>
+
+  <div style="text-align: center; margin-top: 20px; font-size: 8pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+    OffSyn Tech Quick Guide • จัดทำขึ้นให้อ่านง่ายสำหรับผู้ใช้งานทุกระดับ © 2026
+  </div>
+
+</body>
+</html>
