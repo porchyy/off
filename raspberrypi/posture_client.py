@@ -199,22 +199,18 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("loaded config from %s", args.config)
 
     # Lazy imports so --help / config validation ไม่ต้องมี lib ติดตั้งครบ
-    from client.alert import AlertController, SoundPlayer, SpeechPlayer
+    from client.alert import AlertController, SoundPlayer
     from client.buzzer import GpioBuzzer
     from client.indicator import GpioLed
     from client.lcd import CharacterLcd
 
     sound_player = SoundPlayer(config.get("sound", {}))
-    speech_player = SpeechPlayer(config.get("voice", {}), fallback_device=sound_player.device)
     indicator = GpioLed(config.get("indicator", {}))
     buzzer = GpioBuzzer(config.get("buzzer", {}))
     lcd = CharacterLcd(config.get("lcd", {}))
-    if args.test_sound:
-        logger.info("testing alert sound...")
+    if args.test_sound or args.test_voice:
+        logger.info("testing alert sound (Thai AI voice / alert sound)...")
         return 0 if sound_player.play() else 1
-    if args.test_voice:
-        logger.info("testing Thai voice alert...")
-        return 0 if speech_player.speak() else 1
     if args.test_led:
         logger.info("testing red LED indicator: blinking twice...")
         return 0 if indicator.blink(times=2) else 1
@@ -312,7 +308,6 @@ def main(argv: list[str] | None = None) -> int:
         sound_player,
         indicator,
         buzzer,
-        speech_player=speech_player,
     )
 
     consecutive_failures = 0

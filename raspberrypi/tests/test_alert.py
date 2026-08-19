@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from client.alert import AlertController, SoundPlayer, SpeechPlayer
+from client.alert import AlertController, SoundPlayer
 
 
 class FakeUploader:
@@ -27,18 +27,6 @@ class FakeSound:
         return True
 
 
-class FakeVoice:
-    def __init__(self) -> None:
-        self.enabled = True
-        self.speak_count = 0
-
-    def speak(self) -> bool:
-        if not self.enabled:
-            return False
-        self.speak_count += 1
-        return True
-
-
 class FakeIndicator:
     def __init__(self) -> None:
         self.on_count = 0
@@ -54,13 +42,6 @@ class FakeIndicator:
 def test_sound_player_defaults_to_max98357a_only():
     player = SoundPlayer({})
 
-    assert player.device == "plughw:CARD=MAX98357A,DEV=0"
-
-
-def test_speech_player_defaults_to_thai_on_max98357a():
-    player = SpeechPlayer({})
-
-    assert player.language == "th"
     assert player.device == "plughw:CARD=MAX98357A,DEV=0"
 
 
@@ -102,25 +83,6 @@ def test_zero_risk_duration_alerts_immediately_and_respects_cooldown():
     now[0] = 101.0
     assert controller.update({"score": 40}) is False
     assert sound.play_count == 1
-
-
-def test_alert_speaks_thai_when_voice_is_enabled():
-    now = [100.0]
-    voice = FakeVoice()
-    controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 0, "cooldown": 30}},
-        FakeUploader(),
-        FakeSound(),
-        clock=lambda: now[0],
-        speech_player=voice,
-    )
-
-    assert controller.update({"score": 50}) is True
-    assert voice.speak_count == 1
-    assert controller.apply_runtime_settings({"voiceEnabled": False}) is True
-    now[0] = 130.0
-    assert controller.update({"score": 50}) is True
-    assert voice.speak_count == 1
 
 
 def test_good_posture_resets_low_score_timer():
