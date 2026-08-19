@@ -758,6 +758,39 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.restore();
   });
 let alertAudio = null;
+let popupTimer = null;
+
+function hideRiskPopup() {
+  const popup = $('riskPopup');
+  if (!popup || popup.hidden) return;
+  if (popupTimer) {
+    clearTimeout(popupTimer);
+    popupTimer = null;
+  }
+  popup.classList.remove('popup-enter');
+  popup.classList.add('popup-exit');
+  setTimeout(() => {
+    popup.hidden = true;
+    popup.classList.remove('popup-exit');
+  }, 380);
+}
+
+function showRiskPopup(durationMs = 5000) {
+  const popup = $('riskPopup');
+  if (!popup) return;
+  if (popupTimer) {
+    clearTimeout(popupTimer);
+    popupTimer = null;
+  }
+  popup.hidden = false;
+  popup.classList.remove('popup-exit');
+  popup.classList.add('popup-enter');
+
+  // ปิดและเลื่อนลงเองอัตโนมัติเมื่อครบเวลา
+  popupTimer = setTimeout(() => {
+    hideRiskPopup();
+  }, durationMs);
+}
 
 function playAlertSound() {
   try {
@@ -773,7 +806,10 @@ function notifyRisk(force = false, message = 'กรุณาปรับท่�
   const now = Date.now();
   if (!force && now - lastAlert < 15000) return;
   lastAlert = now;
-  $('riskPopup').hidden = false;
+  
+  // แสดงการแจ้งเตือนขึ้นพร้อมเสียง และเลื่อนลงปิดเองอัตโนมัติ
+  showRiskPopup(5000);
+
   if (settings.voiceEnabled || settings.soundEnabled) {
     playAlertSound();
   }
@@ -843,7 +879,7 @@ if (reportDateInput) reportDateInput.value = bangkokDate();
 const reportMonthInput = $('reportMonth');
 if (reportMonthInput) reportMonthInput.value = bangkokMonth();
 $('testAlert')?.addEventListener('click', () => notifyRisk(true));
-$('closePopup')?.addEventListener('click', () => { const p = $('riskPopup'); if (p) p.hidden = true; });
+$('closePopup')?.addEventListener('click', () => hideRiskPopup());
 $('clearData')?.addEventListener('click', async () => {
   if (!unlockAdminActions()) return;
   const ok = confirm(storage.isDemo ? 'ลบประวัติและแจ้งเตือนทั้งหมดจากเบราว์เซอร์นี้?' : 'ลบประวัติและแจ้งเตือนทั้งหมดจากฐานข้อมูลในเครื่อง?');
