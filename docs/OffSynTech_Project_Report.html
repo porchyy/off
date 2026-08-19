@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>OffSyn Tech — เอกสารรายงานและคู่มือโครงการฉบับสมบูรณ์ (Project Documentation & Manual)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+    @page {
+      size: A4;
+      margin: 15mm 15mm 15mm 15mm;
+      @bottom-right {
+        content: counter(page);
+        font-family: 'Prompt', sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 10.5pt;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Cover / Header */
+    .header-banner {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0f172a 100%);
+      color: white;
+      padding: 26px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.15);
+    }
+    .header-banner h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 24pt;
+      font-weight: 700;
+      margin: 0 0 6px;
+      letter-spacing: -0.5px;
+    }
+    .header-banner .subtitle {
+      font-family: 'Prompt', sans-serif;
+      font-size: 13pt;
+      color: #bae6fd;
+      margin: 0 0 14px;
+      font-weight: 400;
+    }
+    .header-banner .meta-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 8.5pt;
+      font-weight: 500;
+    }
+
+    h2 {
+      font-family: 'Prompt', sans-serif;
+      color: #0369a1;
+      font-size: 14pt;
+      font-weight: 600;
+      border-bottom: 2px solid #e0f2fe;
+      padding-bottom: 5px;
+      margin-top: 26px;
+      margin-bottom: 12px;
+      page-break-after: avoid;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3 {
+      font-family: 'Prompt', sans-serif;
+      color: #0f172a;
+      font-size: 11.5pt;
+      font-weight: 600;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+
+    p { margin: 0 0 10px; text-align: justify; }
+
+    /* Highlights & Boxes */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      page-break-inside: avoid;
+    }
+    .card h4 {
+      font-family: 'Prompt', sans-serif;
+      color: #0284c7;
+      font-size: 10.5pt;
+      margin: 0 0 4px;
+    }
+    .card p {
+      font-size: 9.5pt;
+      margin: 0;
+      color: #475569;
+    }
+
+    .alert-box {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      margin: 12px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    .alert-box.info {
+      background: #f0f9ff;
+      border-left-color: #0284c7;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    /* Code & Terminal blocks */
+    code {
+      font-family: 'Fira Code', Menlo, Consolas, monospace;
+      font-size: 8.8pt;
+      background: #f1f5f9;
+      color: #0369a1;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Fira Code', Menlo, Consolas, monospace;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      padding: 10px 12px;
+      border-radius: 6px;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      margin: 8px 0 14px;
+      page-break-inside: avoid;
+    }
+    pre .comment { color: #94a3b8; }
+    pre .cmd { color: #38bdf8; font-weight: bold; }
+
+    ul, ol { margin: 0 0 12px; padding-left: 22px; }
+    li { margin-bottom: 4px; }
+
+    .page-break { page-break-before: always; }
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+      color: white;
+    }
+    .badge-success { background: #16a34a; }
+    .badge-info { background: #0284c7; }
+    .badge-warning { background: #ea580c; }
+  </style>
+</head>
+<body>
+
+  <!-- COVER / HEADER -->
+  <div class="header-banner">
+    <div class="meta-tags">
+      <span class="tag">Raspberry Pi 5 (8GB)</span>
+      <span class="tag">Edge AI MediaPipe</span>
+      <span class="tag">WebRTC Streaming</span>
+      <span class="tag">FastAPI + Docker</span>
+      <span class="tag">Natural AI Voice (Thai)</span>
+    </div>
+    <h1>OffSyn Tech</h1>
+    <div class="subtitle">ระบบตรวจจับและติดตามสรีระท่านั่งอัจฉริยะ ป้องกัน Office Syndrome</div>
+    <div style="font-size: 9pt; color: #e0f2fe;">
+      เอกสารรายงานทางเทคนิค สถาปัตยกรรมระบบ ผังวงจรฮาร์ดแวร์ และคู่มือการใช้งานฉบับสมบูรณ์ (Version 2.0)
+    </div>
+  </div>
+
+  <!-- SECTION 1: ภาพรวมโครงการ -->
+  <h2>1. บทสรุปผู้บริหาร & ภาพรวมโครงการ (Project Overview)</h2>
+  <p>
+    <strong>OffSyn Tech</strong> คือระบบเฝ้าระวังและวิเคราะห์พฤติกรรมการนั่งทำงานแบบเรียลไทม์ โดยใช้ <strong>Raspberry Pi 5</strong> ร่วมกับกล้อง <strong>Pi Camera Module 3</strong> ประมวลผลภาพด้วยโมเดล <strong>MediaPipe Pose (Upper Body)</strong> บนอุปกรณ์ภายในเครือข่าย (Edge Computing) เพื่อตรวจจับสรีระของคอ ไหล่ และลำตัวช่วงบน จากนั้นส่งข้อมูลคะแนนสรีระและการแจ้งเตือนไปยังเว็บ <strong>Dashboard</strong> ผ่าน <strong>WebRTC</strong> และ <strong>FastAPI Backend</strong>
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4>🔒 ความเป็นส่วนตัวสูงสุด (100% Privacy)</h4>
+      <p>ภาพวิดีโอจากกล้องส่งตรงผ่าน WebRTC ภายใน LAN แบบ P2P เท่านั้น ไม่มีการบันทึกภาพนิ่งหรือวิดีโอลงดิสก์หรือเซิร์ฟเวอร์</p>
+    </div>
+    <div class="card">
+      <h4>🧠 Edge AI ประมวลผลบนบอร์ด</h4>
+      <p>คำนวณโครงกระดูกและคะแนนท่านั่ง (0-100) ด้วย MediaPipe บน Pi 5 แบบออฟไลน์ ทำงานได้ต่อเนื่องแม้เครือข่ายหลุด</p>
+    </div>
+    <div class="card">
+      <h4>🎙️ ระบบเสียงพูดไทยธรรมชาติ AI</h4>
+      <p>แจ้งเตือนด้วยเสียงพูดภาษาไทยสมจริง (Neural Voice) นุ่มนวล ชัดเจน ไม่รบกวนสมาธิผู้ใช้งาน</p>
+    </div>
+    <div class="card">
+      <h4>📊 รายงานวิเคราะห์ & ส่งออก Excel</h4>
+      <p>บันทึกสถิติคะแนนและชั่วโมงการนั่งลง SQLite ในเครื่อง พร้อมส่งออกรายงาน Excel รายวันและรายเดือน</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: สถาปัตยกรรมระบบ -->
+  <h2>2. สถาปัตยกรรมระบบ (System Architecture)</h2>
+  <p>ระบบถูกแบ่งการทำงานออกเป็น 4 ชั้นหลัก (Layer Architecture) เพื่อความเสถียรและประสิทธิภาพสูงสุด:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">เลเยอร์ (Layer)</th>
+        <th style="width: 35%;">โมดูล / เทคโนโลยี</th>
+        <th style="width: 40%;">บทบาทหน้าที่</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Hardware & Edge AI</strong></td>
+        <td>Raspberry Pi 5 + Pi Camera + MediaPipe Pose</td>
+        <td>จับภาพ 640x360 @ 12fps, คำนวณ Upper Body Skeleton, คำนวณคะแนนสรีระ</td>
+      </tr>
+      <tr>
+        <td><strong>2. Audio & Actuators</strong></td>
+        <td>MAX98357A I2S DAC, LCD 1602, LED, BH1750</td>
+        <td>ส่งเสียงเตือน AI Voice, แสดงผลบนจอ LCD, ไฟกะพริบเตือน, อ่านค่าความสว่างแสง (Lux)</td>
+      </tr>
+      <tr>
+        <td><strong>3. Backend & API</strong></td>
+        <td>FastAPI, SQLite, WebRTC Signaling</td>
+        <td>บันทึกข้อมูลสถิติ, จัดการการตั้งค่า (Settings), Buffer ข้อมูลยามออฟไลน์</td>
+      </tr>
+      <tr>
+        <td><strong>4. Frontend Dashboard</strong></td>
+        <td>Vite + Vanilla JS + CSS Glassmorphism + Nginx</td>
+        <td>แสดงภาพสดพร้อมโครงกระดูก Neon, กราฟสถิติย้อนหลัง, ดาวน์โหลดรายงาน Excel</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK FOR HARDWARE -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 3: ผังการต่อวงจรและพิน GPIO -->
+  <h2>3. ผังการต่อวงจรและพินฮาร์ดแวร์ (Hardware Wiring & Pinout Guide)</h2>
+  <p>การเชื่อมต่ออุปกรณ์ภายนอกทั้งหมดเข้ากับหัวพิน <strong>40-Pin GPIO Header</strong> ของ Raspberry Pi 5:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>อุปกรณ์ (Component)</th>
+        <th>พินบนบอร์ด (Physical Pin)</th>
+        <th>รหัส BCM (GPIO)</th>
+        <th>ประเภทสัญญาณ</th>
+        <th>หน้าที่</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td rowspan="4"><strong>BH1750</strong> (เซนเซอร์วัดแสง)</td>
+        <td>Pin 1</td>
+        <td>3.3V Power</td>
+        <td>Power</td>
+        <td>ไฟเลี้ยง 3.3V</td>
+      </tr>
+      <tr>
+        <td>Pin 3</td>
+        <td>GPIO 2 (SDA1)</td>
+        <td>I2C Data</td>
+        <td>สายข้อมูล I2C (Address 0x23 / 0x5C)</td>
+      </tr>
+      <tr>
+        <td>Pin 5</td>
+        <td>GPIO 3 (SCL1)</td>
+        <td>I2C Clock</td>
+        <td>สายสัญญาณนาฬิกา I2C</td>
+      </tr>
+      <tr>
+        <td>Pin 6 หรือ 9</td>
+        <td>GND</td>
+        <td>Ground</td>
+        <td>กราวด์ระบบ</td>
+      </tr>
+      <tr>
+        <td rowspan="4"><strong>LCD 1602</strong> (จอแสดงผล I2C)</td>
+        <td>Pin 2 หรือ 4</td>
+        <td>5V Power</td>
+        <td>Power</td>
+        <td>ไฟเลี้ยง 5V สำหรับ Backlight</td>
+      </tr>
+      <tr>
+        <td>Pin 3</td>
+        <td>GPIO 2 (SDA1)</td>
+        <td>I2C Data</td>
+        <td>แชร์สาย I2C ร่วมกับ BH1750 (Address 0x27)</td>
+      </tr>
+      <tr>
+        <td>Pin 5</td>
+        <td>GPIO 3 (SCL1)</td>
+        <td>I2C Clock</td>
+        <td>แชร์สัญญาณนาฬิกา I2C</td>
+      </tr>
+      <tr>
+        <td>Pin 6 หรือ 9</td>
+        <td>GND</td>
+        <td>Ground</td>
+        <td>กราวด์ระบบ</td>
+      </tr>
+      <tr>
+        <td rowspan="2"><strong>LED Indicator</strong> (ไฟแจ้งเตือนสีแดง)</td>
+        <td><strong>Pin 11</strong></td>
+        <td><strong>GPIO 17</strong></td>
+        <td>Digital Output</td>
+        <td>ส่งไฟ 3.3V เมื่อตรวจพบนั่งผิดท่านานเกิน 5 วิ</td>
+      </tr>
+      <tr>
+        <td>Pin 9 หรือ 14</td>
+        <td>GND</td>
+        <td>Ground</td>
+        <td>ขั้วลบกราวด์ (ต่อผ่าน R 220Ω)</td>
+      </tr>
+      <tr>
+        <td rowspan="4"><strong>MAX98357A</strong> (แอมป์ขยายเสียง I2S)</td>
+        <td>Pin 2 หรือ 4</td>
+        <td>5V Power</td>
+        <td>Power</td>
+        <td>ไฟเลี้ยง 5V แอมป์ขยายเสียง</td>
+      </tr>
+      <tr>
+        <td>Pin 12</td>
+        <td>GPIO 18 (PCM_CLK)</td>
+        <td>I2S BCLK</td>
+        <td>Bit Clock</td>
+      </tr>
+      <tr>
+        <td>Pin 35</td>
+        <td>GPIO 19 (PCM_FS)</td>
+        <td>I2S LRCLK</td>
+        <td>Left/Right Frame Sync</td>
+      </tr>
+      <tr>
+        <td>Pin 40</td>
+        <td>GPIO 21 (PCM_DOUT)</td>
+        <td>I2S DIN</td>
+        <td>Digital Audio Data</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 4: ระบบวิเคราะห์สรีระและการแจ้งเตือน -->
+  <h2>4. ตรรกะการวิเคราะห์สรีระและการแจ้งเตือน (Scoring & Alert Logic)</h2>
+  
+  <h3>สูตรการประเมินคะแนนสรีระ (Upper Body Formula)</h3>
+  <p>
+    ระบบวิเคราะห์จุดสังเกตสำคัญ 8 จุด: จมูก (0), หูซ้าย-ขวา (7, 8), ไหล่ซ้าย-ขวา (11, 12), ข้อศอก (13, 14), และจุดอ้างอิงลำตัวส่วนบน:
+  </p>
+  <ul>
+    <li><strong>ความเอียงระดับไหล่ (Shoulder Tilt):</strong> คำนวณมุมองศาความต่างระหว่างไหล่ซ้ายและขวา (หักคะแนนหากไหล่ยกหรือเอียง)</li>
+    <li><strong>การก้ม/ยื่นของศีรษะ (Forward Head Posture):</strong> คำนวณระยะระหว่างหูและแนวระนาบของไหล่</li>
+    <li><strong>ความสมดุลลำตัวช่วงบน (Torso Alignment):</strong> ประเมินแกนสมมาตรระหว่างจุดกึ่งกลางไหล่และลำตัว</li>
+  </ul>
+
+  <div class="alert-box info">
+    <strong>🎯 การตั้งค่าระบบแจ้งเตือนแบบ Balanced Focus Mode (รูปแบบที่ 1):</strong>
+    <ul style="margin: 6px 0 0; padding-left: 18px;">
+      <li><strong>คะแนนเกณฑ์ความเสี่ยง (Risk Threshold):</strong> <code>65 คะแนน</code> (คะแนนต่ำกว่า 65 ถือว่านั่งผิดท่า)</li>
+      <li><strong>ระยะเวลานั่งผิดท่าต่อเนื่อง (Duration):</strong> <code>8 วินาที</code> (ไม่เตือนตอนก้มหยิบของชั่วคราว)</li>
+      <li><strong>ระยะเว้นการเตือนซ้ำ (Cooldown):</strong> <code>45 วินาที</code> (ป้องกันเสียงเตือนรบกวนสมาธิถี่เกินไป)</li>
+      <li><strong>เสียงพูดแจ้งเตือน:</strong> เล่นไฟล์เสียงพูดภาษาไทยธรรมชาติ <code>alert_thai.wav</code> ทั้งบนลำโพง Pi และหน้าเว็บ</li>
+    </ul>
+  </div>
+
+  <!-- PAGE BREAK FOR COMMANDS -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 5: คู่มือคำสั่งการควบคุมและทดสอบ -->
+  <h2>5. รวมคำสั่งควบคุมและทดสอบระบบทั้งหมด (Commands Reference)</h2>
+
+  <h3>1. คำสั่งทดสอบอุปกรณ์แต่ละตัว (Hardware Tests)</h3>
+  <pre><span class="comment"># เข้าสู่โฟลเดอร์โปรเจกต์</span>
+<span class="cmd">cd</span> ~/off/raspberrypi
+
+<span class="comment"># ตรวจสอบพิน I2C (ต้องพบ 0x23/0x5c สำหรับ BH1750 และ 0x27 สำหรับ LCD)</span>
+<span class="cmd">sudo i2cdetect -y 1</span>
+
+<span class="comment"># ทดสอบอ่านค่าความสว่างแสง Lux ต่อเนื่อง:</span>
+<span class="cmd">.venv/bin/python test_sensors.py</span>
+
+<span class="comment"># ทดสอบเสียงพูดภาษาไทย AI ผ่านลำโพง MAX98357A:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-sound</span>
+
+<span class="comment"># ทดสอบกล้อง Pi Camera Module 3:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-camera</span>
+
+<span class="comment"># ทดสอบจอ LCD 1602:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-lcd</span>
+
+<span class="comment"># ทดสอบไฟ LED กะพริบ 2 ครั้ง:</span>
+<span class="cmd">.venv/bin/python posture_client.py --test-led</span>
+
+<span class="comment"># ทดสอบระบบรวมทั้งหมดรอบเดียว (Self-check):</span>
+<span class="cmd">.venv/bin/python posture_client.py --check</span></pre>
+
+  <h3>2. คำสั่งอัปเดตโค้ดและจัดการ Background Services</h3>
+  <pre><span class="comment"># ดึงโค้ดล่าสุดจาก GitHub:</span>
+<span class="cmd">cd</span> ~/off
+<span class="cmd">git fetch origin && git reset --hard origin/main</span>
+
+<span class="comment"># สั่งรีสตาร์ท Service หน้าเว็บ Dashboard (Docker):</span>
+<span class="cmd">sudo docker-compose restart web</span>
+
+<span class="comment"># สั่งรีสตาร์ท Service ตรวจจับท่าทาง (Pi Client):</span>
+<span class="cmd">sudo systemctl restart postureai-client</span>
+
+<span class="comment"># ดู Log การทำงานแบบ Real-time:</span>
+<span class="cmd">sudo journalctl -u postureai-client -f</span></pre>
+
+  <!-- SECTION 6: สรุปและแหล่งข้อมูล -->
+  <h2>6. ข้อมูลเครือข่าย & แหล่งอ้างอิงโครงการ (Project Resources)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>บริการ / ระบบ</th>
+        <th>URL / Endpoint</th>
+        <th>คำอธิบาย</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Web Dashboard</strong></td>
+        <td><code>http://&lt;IP-Pi&gt;:3000</code> (เช่น <code>http://10.0.2.225:3000</code>)</td>
+        <td>หน้าจอแสดงผลสด สถิติ และแท็บตั้งค่า</td>
+      </tr>
+      <tr>
+        <td><strong>Backend REST API</strong></td>
+        <td><code>http://localhost:8000/docs</code></td>
+        <td>Swagger OpenAPI Documentation</td>
+      </tr>
+      <tr>
+        <td><strong>Latest Sensor API</strong></td>
+        <td><code>http://localhost:8000/api/sensors/latest</code></td>
+        <td>อ่านค่าความสว่าง Lux และสถานะเซนเซอร์แบบ Real-time</td>
+      </tr>
+      <tr>
+        <td><strong>GitHub Repository</strong></td>
+        <td><a href="https://github.com/porchyy/off">https://github.com/porchyy/off</a></td>
+        <td>ที่เก็บ Source Code โครงการทั้งหมด</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="text-align: center; margin-top: 30px; font-size: 8.5pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+    OffSyn Tech Project Documentation © 2026 • Document generated automatically via Headless PDF Engine
+  </div>
+
+</body>
+</html>
