@@ -757,13 +757,26 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.fillText(row.label.slice(5), 0, 0);
     c.restore();
   });
+let alertAudio = null;
+
+function playAlertSound() {
+  try {
+    if (!alertAudio) {
+      alertAudio = new Audio('/alert_thai.wav');
+    }
+    alertAudio.currentTime = 0;
+    alertAudio.play().catch(() => {});
+  } catch {}
 }
 
-function notifyRisk(force = false, message = 'กรุณายืดหลังตรงและปรับระดับคอขึ้นครับ') {
+function notifyRisk(force = false, message = 'กรุณาปรับท่านั่งให้หลังตรงและคลายไหล่ค่ะ') {
   const now = Date.now();
   if (!force && now - lastAlert < 15000) return;
   lastAlert = now;
   $('riskPopup').hidden = false;
+  if (settings.voiceEnabled || settings.soundEnabled) {
+    playAlertSound();
+  }
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
     new Notification('OffSyn Tech: 🔴 ควรปรับ (Adjust)', { body: message });
   }

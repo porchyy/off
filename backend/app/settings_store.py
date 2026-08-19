@@ -11,8 +11,8 @@ from .config import settings
 from .models import Setting
 
 DEFAULTS: dict[str, Any] = {
-    "riskThreshold": 60,
-    "riskSeconds": 0,
+    "riskThreshold": 65,
+    "riskSeconds": 8,
     "dataDir": str(settings.data_dir.resolve()),
     "soundEnabled": True,
     "voiceEnabled": True,
