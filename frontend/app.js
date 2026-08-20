@@ -757,6 +757,8 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.fillText(row.label.slice(5), 0, 0);
     c.restore();
   });
+}
+
 let alertAudio = null;
 let popupTimer = null;
 
