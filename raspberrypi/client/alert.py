@@ -104,9 +104,9 @@ class AlertController:
         self.threshold = float(risk.get("threshold", 65))
         self.risk_seconds = max(0.0, float(risk.get("seconds", 8)))
         self.cooldown = max(0.0, float(risk.get("cooldown", 45)))
-        # The physical warning is intentionally unambiguous: physical pin 11
-        # (BCM GPIO17 in the default config) is HIGH below 50 and LOW at 50
-        # or above.  It never blinks or waits for the audible-alert delay.
+        # The logical warning is intentionally unambiguous: physical pin 11
+        # (BCM GPIO17 in the default config) turns on below 50 and off at 50
+        # or above. GpioLed maps that state to the module's active-low output.
         self.indicator_threshold = LED_ALERT_SCORE_THRESHOLD
         buzzer_config = config.get("buzzer", {})
         self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
