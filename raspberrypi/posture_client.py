@@ -317,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
     webrtc = None
     once_deadline = time.monotonic() + 5 if args.once else None
     last_settings_sync = 0.0
+    # A last frame can remain in the shared buffer while a camera is being
+    # unplugged or restarted.  Never keep a physical warning LED on based on
+    # that stale image.
+    max_frame_age_seconds = max(2.0, 3.0 / config["video"]["fps"])
     try:
         camera = open_camera(config["camera"])
         producer = CameraProducer(camera, config["video"]["fps"])
@@ -357,8 +361,8 @@ def main(argv: list[str] | None = None) -> int:
                             message="dashboard settings synchronized",
                         )
                     last_settings_sync = now
-                frame, _ = producer.frames.get()
-                if frame is not None:
+                frame, frame_updated_at = producer.frames.get()
+                if frame is not None and now - frame_updated_at <= max_frame_age_seconds:
                     if detection_enabled:
                         process_live_frame(
                             frame,
@@ -370,10 +374,17 @@ def main(argv: list[str] | None = None) -> int:
                             update_stream_overlay,
                             lcd,
                         )
+                elif detection_enabled:
+                    alert_controller.clear_posture()
+                    if lcd is not None:
+                        lcd.show_waiting_for_pose()
                 consecutive_failures = producer.failures
                 if consecutive_failures >= 3:
                     raise RuntimeError(f"camera capture failed repeatedly: {producer.last_error}")
             except Exception as exc:
+                # A failed inference must not leave the last posture warning
+                # latched while the camera is recovering.
+                alert_controller.clear_posture()
                 consecutive_failures += 1
                 logger.error("detection cycle error (failure %s): %s", consecutive_failures, exc)
                 if consecutive_failures >= 3:

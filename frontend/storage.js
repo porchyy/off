@@ -95,6 +95,10 @@ class BackendStorage {
     return requestJson('/api/client/status');
   }
 
+  async indicatorStatus() {
+    return requestJson('/api/indicator');
+  }
+
   async exportExcel(reportDate) {
     const query = reportDate ? `?date=${encodeURIComponent(reportDate)}` : '';
     const response = await fetch(`/api/reports/daily.xlsx${query}`);
@@ -213,6 +217,10 @@ class LocalStorageStorage {
       retentionDays: null,
       summaryRetentionDays: null,
     };
+  }
+
+  async indicatorStatus() {
+    return { isOn: false, score: null, updatedAt: null };
   }
 
   async exportExcel() {

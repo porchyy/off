@@ -986,6 +986,58 @@ body::before {
   line-height: 1.5;
 }
 
+.web-alert-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: rgba(3, 14, 32, 0.58);
+  transition: border-color var(--t-normal), background var(--t-normal), box-shadow var(--t-normal);
+}
+
+.web-alert-led {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  background: #4d5b6c;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.10);
+  transition: background var(--t-normal), box-shadow var(--t-normal);
+}
+
+.web-alert-copy {
+  display: grid;
+  gap: 1px;
+}
+
+.web-alert-label {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.web-alert-copy strong {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.web-alert-indicator.is-on {
+  background: var(--status-risk-bg);
+  border-color: var(--status-risk-border);
+  box-shadow: 0 0 20px rgba(255, 52, 75, 0.22);
+}
+
+.web-alert-indicator.is-on .web-alert-led {
+  background: var(--status-risk);
+  box-shadow: 0 0 8px var(--status-risk), 0 0 22px rgba(255, 52, 75, 0.92);
+}
+
+.web-alert-indicator.is-on .web-alert-copy strong {
+  color: #ff8b9b;
+}
+
 /* ═══════════════════════════════════════════
    OFFICE SYNDROME RISK CARD
    ═══════════════════════════════════════════ */

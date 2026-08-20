@@ -111,6 +111,17 @@ class ClientStatusResponse(ClientStatusIn):
     summary_retention_days: int = Field(serialization_alias="summaryRetentionDays")
 
 
+class IndicatorStatusIn(ApiModel):
+    """A live posture score supplied by the Raspberry Pi detector."""
+
+    score: float | None = Field(default=None, ge=0, le=100)
+
+
+class IndicatorStatusResponse(IndicatorStatusIn):
+    is_on: bool = Field(serialization_alias="isOn")
+    updated_at: str = Field(serialization_alias="updatedAt")
+
+
 class SensorReadingsIn(ApiModel):
     lux: float | None = Field(default=None, ge=0)
     bh1750_ok: bool = Field(alias="bh1750Ok")

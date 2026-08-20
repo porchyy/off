@@ -80,6 +80,22 @@ def test_latest_sensor_readings_round_trip():
     assert latest.json()["updatedAt"]
 
 
+def test_indicator_is_on_only_for_scores_below_50():
+    initial = client.get("/api/indicator")
+    assert initial.status_code == 200
+    assert initial.json()["isOn"] is False
+
+    on_response = client.put("/api/indicator", json={"score": 49.9})
+    assert on_response.status_code == 204
+    active = client.get("/api/indicator").json()
+    assert active["isOn"] is True
+    assert active["score"] == 49.9
+
+    off_response = client.put("/api/indicator", json={"score": 50})
+    assert off_response.status_code == 204
+    assert client.get("/api/indicator").json()["isOn"] is False
+
+
 def test_camera_frame_round_trip():
     jpeg = b"\xff\xd8pi-camera-preview\xff\xd9"
     put_res = client.put(

@@ -164,6 +164,42 @@ def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
     assert controller.indicator_low_since is None
 
 
+def test_led_retries_turning_off_after_a_transient_gpio_failure():
+    class FailingOffIndicator(FakeIndicator):
+        def __init__(self) -> None:
+            super().__init__()
+            self.fail_first_off = True
+
+        def on(self):
+            self.on_count += 1
+            return True
+
+        def off(self):
+            self.off_count += 1
+            if self.fail_first_off:
+                self.fail_first_off = False
+                return False
+            return True
+
+    now = [0.0]
+    indicator = FailingOffIndicator()
+    controller = AlertController(
+        {"indicator": {"threshold": 50, "delay_seconds": 0}},
+        FakeUploader(),
+        FakeSound(),
+        indicator,
+        clock=lambda: now[0],
+    )
+
+    controller.update({"score": 49})
+    controller.update({"score": 50})
+    assert controller._indicator_is_on is True
+    controller.update({"score": 50})
+
+    assert indicator.off_count == 2
+    assert controller._indicator_is_on is False
+
+
 def test_dashboard_settings_apply_without_restarting_client():
     sound = FakeSound()
     sound.enabled = True

@@ -21,3 +21,22 @@ def test_uploader_averages_detector_samples_before_posting(tmp_path, monkeypatch
     assert posted == [
         ("/api/samples", {"score": 70.0, "neck": 6.0, "shoulders": 4.0, "torso": 2.0})
     ]
+
+
+def test_uploader_sends_live_indicator_state_only_when_it_changes(tmp_path, monkeypatch):
+    uploader = Uploader("http://backend", buffer_path=tmp_path / "buffer.sqlite")
+    calls = []
+
+    class Response:
+        ok = True
+
+    monkeypatch.setattr("client.uploader.requests.put", lambda url, **kwargs: calls.append((url, kwargs["json"])) or Response())
+
+    assert uploader.send_indicator_status(49)
+    assert uploader.send_indicator_status(48)
+    assert uploader.send_indicator_status(50)
+
+    assert calls == [
+        ("http://backend/api/indicator", {"score": 49}),
+        ("http://backend/api/indicator", {"score": 50}),
+    ]

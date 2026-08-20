@@ -26,6 +26,21 @@ def test_detect_lgpio_chip_falls_back_to_the_sysfs_index_without_a_dev_entry(tmp
     assert _detect_lgpio_chip(tmp_path) == 15
 
 
+def test_detect_lgpio_chip_maps_pi5_sysfs_index_to_the_character_device(tmp_path, monkeypatch):
+    sysfs = tmp_path / "sysfs"
+    sysfs.mkdir()
+    chip = sysfs / "gpiochip569"
+    chip.mkdir()
+    (chip / "label").write_text("pinctrl-rp1\n", encoding="utf-8")
+    devices = tmp_path / "devices"
+    devices.mkdir()
+    (devices / "gpiochip11").touch()
+
+    monkeypatch.setattr("client.indicator._gpiochip_label", lambda _: "pinctrl-rp1")
+
+    assert _detect_lgpio_chip(sysfs, devices) == 11
+
+
 def test_direct_lgpio_fallback_controls_an_active_high_led():
     class FakeLgpio:
         def __init__(self):

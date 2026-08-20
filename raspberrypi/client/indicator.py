@@ -9,9 +9,30 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# ``GPIO_GET_CHIPINFO_IOCTL`` from linux/gpio.h.  It retrieves a gpiochip's
+# name, label, and line count from a /dev/gpiochipN character device.
+_GPIO_GET_CHIPINFO_IOCTL = 0x8044B401
 
-def _detect_lgpio_chip(sys_gpio_root: Path = Path("/sys/class/gpio")) -> int | None:
+
+def _gpiochip_label(device_path: Path) -> str | None:
+    """Read a gpiochip label directly when sysfs does not expose ``dev``."""
+    try:
+        import fcntl
+
+        info = bytearray(68)  # struct gpiochip_info: name[32], label[32], lines
+        with device_path.open("rb", buffering=0) as device:
+            fcntl.ioctl(device.fileno(), _GPIO_GET_CHIPINFO_IOCTL, info, True)
+        return bytes(info[32:64]).split(b"\0", 1)[0].decode("utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def _detect_lgpio_chip(
+    sys_gpio_root: Path = Path("/sys/class/gpio"),
+    gpio_device_root: Path = Path("/dev"),
+) -> int | None:
     """Return the /dev/gpiochip number for the RP1 controller on a Pi 5."""
+    sysfs_index: int | None = None
     try:
         for chip_path in sys_gpio_root.glob("gpiochip*"):
             label = (chip_path / "label").read_text(encoding="utf-8").strip()
@@ -24,12 +45,26 @@ def _detect_lgpio_chip(sys_gpio_root: Path = Path("/sys/class/gpio")) -> int | N
                     _, device_minor = device.split(":", 1)
                     return int(device_minor)
                 except (OSError, ValueError):
-                    # Older kernels expose matching sysfs and device indices.
-                    pass
-                return int(chip_path.name.removeprefix("gpiochip"))
+                    # Some current Pi 5 kernels omit this sysfs file.  Their
+                    # sysfs index (e.g. gpiochip569) is not usable as the
+                    # /dev/gpiochipN index, so resolve it below from /dev.
+                    sysfs_index = int(chip_path.name.removeprefix("gpiochip"))
+                    break
     except (OSError, ValueError):
         pass
-    return None
+
+    if sysfs_index is None:
+        return None
+    try:
+        for device_path in gpio_device_root.glob("gpiochip*"):
+            if _gpiochip_label(device_path) == "pinctrl-rp1":
+                suffix = device_path.name.removeprefix("gpiochip")
+                if suffix.isdigit():
+                    return int(suffix)
+    except OSError:
+        pass
+    # Preserve the legacy fallback for kernels where /dev cannot be inspected.
+    return sysfs_index
 
 
 class GpioLed:

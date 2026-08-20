@@ -34,6 +34,7 @@ let piReconnectTimer;
 let piManualStop = false;
 let piLandmarks = [];
 let piMetrics = null;
+let backendIndicatorSeen = false;
 
 const toast = msg => {
   const el = $('toast');
@@ -80,7 +81,36 @@ function updateRisk(m) {
   $('riskReason').textContent = high
     ? `ตรวจพบท่าค้างหรือโน้มตัวต่อเนื่อง ${Math.round(poorPostureMs / 1000)} วินาที ควรลุกพักและปรับเก้าอี้/จอภาพ`
     : band.reason;
+  // Keep the web LED's behavior simple and immediately visible: it stays on
+  // for every red score (< 50) and turns off again as soon as the score recovers.
+  const ledActive = m.score < 50;
+  setWebAlertLed(ledActive);
   if (high) notifyRisk();
+}
+
+function setWebAlertLed(isOn, idleText = 'ดับ · คะแนนตั้งแต่ 50 ขึ้นไป') {
+  const indicator = $('webAlertIndicator');
+  const text = $('webAlertText');
+  if (!indicator || !text) return;
+  indicator.classList.toggle('is-on', isOn);
+  text.textContent = isOn ? 'ติด · คะแนนต่ำกว่า 50' : idleText;
+}
+
+async function loadIndicatorStatus() {
+  if (storage?.isDemo) return;
+  try {
+    const status = await storage.indicatorStatus();
+    const updatedAt = status.updatedAt ? new Date(status.updatedAt) : null;
+    const fresh = updatedAt && Date.now() - updatedAt.getTime() <= 10_000;
+    if (!fresh) {
+      if (backendIndicatorSeen) setWebAlertLed(false, 'ดับ · รอข้อมูลจาก Pi');
+      return;
+    }
+    backendIndicatorSeen = true;
+    setWebAlertLed(status.isOn === true);
+  } catch {
+    // Keep showing the most recent score from the active camera stream.
+  }
 }
 
 function scoreBand(score) {
@@ -429,6 +459,7 @@ function end() {
   stop.disabled = true;
   $('cameraHelp').hidden = false;
   lastMetricAt = 0;
+  setWebAlertLed(false, 'รอข้อมูลท่านั่ง');
   state('หยุดแล้ว');
 }
 
@@ -468,6 +499,7 @@ function endPiCamera() {
   $('cameraHelp').hidden = false;
   $('cameraSignal').className = 'camera-signal neutral';
   $('cameraSignal').textContent = 'หยุดแสดงภาพ';
+  setWebAlertLed(false, 'รอข้อมูลท่านั่ง');
   state('หยุดแล้ว');
   start.disabled = false;
   stop.disabled = true;
@@ -968,6 +1000,8 @@ async function initApp() {
   // Start sensor polling immediately and independently of other initialization
   loadSensorReadings();
   setInterval(loadSensorReadings, 500);
+  loadIndicatorStatus();
+  setInterval(loadIndicatorStatus, 500);
 
   try {
     await loadSettings();

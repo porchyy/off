@@ -30,3 +30,24 @@ class ClientRuntimeState:
 
 
 client_runtime_state = ClientRuntimeState()
+
+
+class IndicatorRuntimeState:
+    """Latest alert-LED state published by the posture detector.
+
+    This deliberately stays in memory: it is live device state, not a
+    historical record.  A restarted backend begins safely with the LED off.
+    """
+
+    def __init__(self) -> None:
+        self.is_on = False
+        self.score: float | None = None
+        self.updated_at = datetime.now(timezone.utc).isoformat()
+
+    def update(self, score: float | None) -> None:
+        self.score = score
+        self.is_on = score is not None and score < 50
+        self.updated_at = datetime.now(timezone.utc).isoformat()
+
+
+indicator_runtime_state = IndicatorRuntimeState()

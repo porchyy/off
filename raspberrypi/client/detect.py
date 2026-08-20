@@ -152,6 +152,13 @@ _overlay_smoother = PoseOverlaySmoother()
 _metric_smoother = PoseMetricSmoother()
 
 
+def _publish_indicator_status(uploader: Any, score: float | None) -> None:
+    """Publish the live web/backend LED state when the uploader supports it."""
+    publish = getattr(uploader, "send_indicator_status", None)
+    if callable(publish):
+        publish(score)
+
+
 def _overlay_settings(detection: dict[str, Any]) -> tuple[float, float, float, float]:
     """Read validated visual-only smoothing settings with safe defaults."""
     alpha = min(0.95, max(0.05, float(detection.get("overlay_smoothing_alpha", DEFAULT_OVERLAY_SMOOTHING_ALPHA))))
@@ -517,6 +524,7 @@ def process_live_frame(
             _metric_smoother.reset()
             if alert_controller is not None:
                 alert_controller.clear_posture()
+            _publish_indicator_status(uploader, None)
             if lcd_display is not None:
                 lcd_display.show_incomplete_pose()
             logger.debug("pose detected but required head/shoulder landmarks are not visible; sending overlay without a score")
@@ -567,6 +575,7 @@ def process_live_frame(
         logger.debug("detected metrics: score=%s, neck=%s°, shoulders=%s°, torso=%s°",
                      metrics["score"], metrics["neck"], metrics["shoulders"], metrics["torso"])
         uploader.send_sample({key: metrics[key] for key in METRIC_KEYS})
+        _publish_indicator_status(uploader, float(metrics["score"]))
 
         if lcd_display is not None:
             lcd_display.show_metrics(metrics)
@@ -579,6 +588,7 @@ def process_live_frame(
         _metric_smoother.reset()
         if alert_controller is not None:
             alert_controller.clear_posture()
+        _publish_indicator_status(uploader, None)
         if lcd_display is not None:
             lcd_display.show_waiting_for_pose()
         if _pose_visible:

@@ -34,6 +34,8 @@ from .schemas import (
     ClientStatusIn,
     ClientStatusResponse,
     HealthResponse,
+    IndicatorStatusIn,
+    IndicatorStatusResponse,
     OkResponse,
     SampleIn,
     SensorReadingsIn,
@@ -44,7 +46,7 @@ from .schemas import (
     SummaryResponse,
 )
 from .settings_store import DEFAULTS, ensure_defaults, get_all
-from .runtime_state import client_runtime_state
+from .runtime_state import client_runtime_state, indicator_runtime_state
 from .sensor_store import sensor_store
 
 router = APIRouter()
@@ -95,6 +97,23 @@ def client_status() -> ClientStatusResponse:
 @router.put("/api/client/status", status_code=204)
 def update_client_status(payload: ClientStatusIn) -> Response:
     client_runtime_state.update(payload.online, payload.last_sync_at, payload.message)
+    return Response(status_code=204)
+
+
+@router.get("/api/indicator", response_model=IndicatorStatusResponse)
+def get_indicator_status() -> IndicatorStatusResponse:
+    """Return the live alert LED state used by the dashboard."""
+    return IndicatorStatusResponse(
+        score=indicator_runtime_state.score,
+        is_on=indicator_runtime_state.is_on,
+        updated_at=indicator_runtime_state.updated_at,
+    )
+
+
+@router.put("/api/indicator", status_code=204)
+def put_indicator_status(payload: IndicatorStatusIn) -> Response:
+    """Apply the fixed warning rule: light on below 50, otherwise off."""
+    indicator_runtime_state.update(payload.score)
     return Response(status_code=204)
 
 
@@ -264,6 +283,9 @@ def json_dumps(value: Any) -> str:
 
 @router.post("/api/samples", status_code=201, response_model=OkResponse)
 def add_sample(payload: SampleIn, db: Session = Depends(get_db)) -> OkResponse:
+    # The compact minute sample keeps the backend state coherent even if a
+    # client running an older uploader has not yet sent /api/indicator.
+    indicator_runtime_state.update(payload.score)
     minute_start = datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat()
     risk_threshold = get_all(db)["riskThreshold"]
     row = db.scalar(select(MinuteSummary).where(MinuteSummary.minute_start == minute_start))

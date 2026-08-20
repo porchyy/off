@@ -120,6 +120,28 @@ class AlertController:
         self._indicator_is_on = False
         self._buzzer_is_on = False
 
+    def _set_indicator(self, is_on: bool) -> bool:
+        """Set the LED and retain its state when a GPIO operation fails.
+
+        A failed ``off()`` must not make us forget that the physical LED may
+        still be lit.  Keeping that state means the next detection cycle will
+        retry turning it off instead of leaving the warning on indefinitely.
+        Older indicator implementations that return ``None`` are treated as
+        successful after completing their call.
+        """
+        if self.indicator is None:
+            self._indicator_is_on = False
+            return True
+        try:
+            result = self.indicator.on() if is_on else self.indicator.off()
+        except Exception as exc:
+            logger.error("could not turn %s LED indicator: %s", "on" if is_on else "off", exc)
+            return False
+        if result is False:
+            return False
+        self._indicator_is_on = is_on
+        return True
+
     def apply_runtime_settings(self, settings: dict[str, Any]) -> bool:
         """Apply the dashboard-owned settings without restarting the Pi service."""
         threshold = settings.get("riskThreshold")
@@ -166,15 +188,13 @@ class AlertController:
                 or now - self.indicator_last_toggle_at >= self.indicator_blink_seconds
             ):
                 if self._indicator_is_on:
-                    self.indicator.off()
+                    self._set_indicator(False)
                 else:
-                    self.indicator.on()
-                self._indicator_is_on = not self._indicator_is_on
+                    self._set_indicator(True)
                 self.indicator_last_toggle_at = now
         elif self.indicator is not None and self._indicator_is_on:
-            self.indicator.off()
-            self._indicator_is_on = False
-            self.indicator_last_toggle_at = None
+            if self._set_indicator(False):
+                self.indicator_last_toggle_at = None
         elif not should_light_indicator:
             self.indicator_last_toggle_at = None
 
@@ -213,8 +233,7 @@ class AlertController:
         self.indicator_low_since = None
         self.indicator_last_toggle_at = None
         if self.indicator is not None and self._indicator_is_on:
-            self.indicator.off()
-        self._indicator_is_on = False
+            self._set_indicator(False)
         if self.buzzer is not None and self._buzzer_is_on:
             self.buzzer.off()
         self._buzzer_is_on = False

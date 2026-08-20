@@ -34,6 +34,8 @@ class Uploader:
         self._sample_started_at: float | None = None
         self._sample_total: dict[str, float] = {}
         self._sample_count = 0
+        self._indicator_is_on: bool | None = None
+        self._indicator_last_sent_at = 0.0
         self._init_buffer()
 
     def _init_buffer(self) -> None:
@@ -74,6 +76,29 @@ class Uploader:
 
     def send_alert(self, alert: dict[str, Any]) -> bool:
         return self._post("/api/alerts", alert)
+
+    def send_indicator_status(self, score: float | None) -> bool:
+        """Publish the live fixed LED rule without waiting for minute samples."""
+        is_on = score is not None and float(score) < 50
+        now = time.monotonic()
+        # Send immediately when the LED changes, with a small heartbeat while
+        # unchanged so a newly opened dashboard receives current state.
+        if is_on == self._indicator_is_on and now - self._indicator_last_sent_at < 5.0:
+            return True
+        try:
+            response = requests.put(
+                f"{self._base}/api/indicator",
+                json={"score": score},
+                timeout=self._timeout,
+            )
+            if response.ok:
+                self._indicator_is_on = is_on
+                self._indicator_last_sent_at = now
+                return True
+            logger.warning("backend returned %s for /api/indicator", response.status_code)
+        except requests.RequestException as exc:
+            logger.debug("could not publish LED indicator state: %s", exc)
+        return False
 
     def send_frame(self, jpeg: bytes) -> bool:
         """Upload only the newest preview frame; never buffer camera images."""
