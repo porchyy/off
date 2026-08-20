@@ -1497,16 +1497,8 @@ body::before {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 52, 75, 0.3);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  animation: slideUpPopup 0.3s ease-out;
   max-width: 90vw;
-  will-change: transform, opacity;
-}
-
-.risk-popup.popup-enter {
-  animation: slideUpPopup 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.risk-popup.popup-exit {
-  animation: slideDownPopup 0.4s cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
 .risk-popup[hidden] {
@@ -1514,13 +1506,8 @@ body::before {
 }
 
 @keyframes slideUpPopup {
-  from { opacity: 0; transform: translate(-50%, 30px); }
+  from { opacity: 0; transform: translate(-50%, 20px); }
   to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-@keyframes slideDownPopup {
-  from { opacity: 1; transform: translate(-50%, 0); }
-  to { opacity: 0; transform: translate(-50%, 30px); }
 }
 
 .risk-popup-pulse {
