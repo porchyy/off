@@ -93,6 +93,8 @@ indicator:
   threshold: 50
   # รอ 5 วินาทีเพื่อไม่ให้ไฟติดระหว่างขยับตัวชั่วคราว
   delay_seconds: 5
+  # ระยะเวลาระหว่างสลับติด/ดับ ขณะคะแนนยังเสี่ยง
+  blink_seconds: 0.5
 
 # ไม่ใช้ GPIO buzzer ในชุด MAX98357A นี้
 buzzer:

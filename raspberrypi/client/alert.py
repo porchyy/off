@@ -105,6 +105,7 @@ class AlertController:
         indicator_config = config.get("indicator", {})
         self.indicator_threshold = min(100.0, max(0.0, float(indicator_config.get("threshold", 50))))
         self.indicator_delay_seconds = min(60.0, max(0.0, float(indicator_config.get("delay_seconds", 5))))
+        self.indicator_blink_seconds = min(10.0, max(0.1, float(indicator_config.get("blink_seconds", 0.5))))
         buzzer_config = config.get("buzzer", {})
         self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
         self.uploader = uploader
@@ -114,6 +115,7 @@ class AlertController:
         self.clock = clock
         self.low_since: float | None = None
         self.indicator_low_since: float | None = None
+        self.indicator_last_toggle_at: float | None = None
         self.last_alert: float | None = None
         self._indicator_is_on = False
         self._buzzer_is_on = False
@@ -158,12 +160,23 @@ class AlertController:
         else:
             self.indicator_low_since = None
             should_light_indicator = False
-        if self.indicator is not None and should_light_indicator != self._indicator_is_on:
-            if should_light_indicator:
-                self.indicator.on()
-            else:
-                self.indicator.off()
-            self._indicator_is_on = should_light_indicator
+        if self.indicator is not None and should_light_indicator:
+            if (
+                self.indicator_last_toggle_at is None
+                or now - self.indicator_last_toggle_at >= self.indicator_blink_seconds
+            ):
+                if self._indicator_is_on:
+                    self.indicator.off()
+                else:
+                    self.indicator.on()
+                self._indicator_is_on = not self._indicator_is_on
+                self.indicator_last_toggle_at = now
+        elif self.indicator is not None and self._indicator_is_on:
+            self.indicator.off()
+            self._indicator_is_on = False
+            self.indicator_last_toggle_at = None
+        elif not should_light_indicator:
+            self.indicator_last_toggle_at = None
 
         # Buzzer follows its own threshold (default 50)
         should_buzz = score < self.buzzer_threshold
@@ -198,6 +211,7 @@ class AlertController:
         """Clear posture warnings when no person has a measurable pose."""
         self.low_since = None
         self.indicator_low_since = None
+        self.indicator_last_toggle_at = None
         if self.indicator is not None and self._indicator_is_on:
             self.indicator.off()
         self._indicator_is_on = False

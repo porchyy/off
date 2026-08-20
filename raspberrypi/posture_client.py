@@ -121,6 +121,7 @@ def validate_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]
     indicator["active_high"] = bool(indicator.get("active_high", True))
     indicator["threshold"] = min(100.0, max(0.0, float(indicator.get("threshold", 50))))
     indicator["delay_seconds"] = min(60.0, max(0.0, float(indicator.get("delay_seconds", 5))))
+    indicator["blink_seconds"] = min(10.0, max(0.1, float(indicator.get("blink_seconds", 0.5))))
     chip = indicator.get("chip")
     if chip is not None:
         indicator["chip"] = int(chip)
