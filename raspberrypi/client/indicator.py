@@ -11,11 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 def _detect_lgpio_chip(sys_gpio_root: Path = Path("/sys/class/gpio")) -> int | None:
-    """Return the RP1 GPIO chip number when running on a Raspberry Pi 5."""
+    """Return the /dev/gpiochip number for the RP1 controller on a Pi 5."""
     try:
         for chip_path in sys_gpio_root.glob("gpiochip*"):
             label = (chip_path / "label").read_text(encoding="utf-8").strip()
             if label == "pinctrl-rp1":
+                # The sysfs GPIO base (for example gpiochip569) is not the
+                # same as the character-device index on newer Pi 5 kernels
+                # (for example /dev/gpiochip15).  lgpio expects the latter.
+                try:
+                    device = (chip_path / "dev").read_text(encoding="utf-8").strip()
+                    _, device_minor = device.split(":", 1)
+                    return int(device_minor)
+                except (OSError, ValueError):
+                    # Older kernels expose matching sysfs and device indices.
+                    pass
                 return int(chip_path.name.removeprefix("gpiochip"))
     except (OSError, ValueError):
         pass

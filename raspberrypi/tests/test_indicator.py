@@ -10,6 +10,15 @@ from client.indicator import _detect_lgpio_chip
 
 
 def test_detect_lgpio_chip_finds_pi5_rp1_controller(tmp_path):
+    chip = tmp_path / "gpiochip569"
+    chip.mkdir()
+    (chip / "label").write_text("pinctrl-rp1\n", encoding="utf-8")
+    (chip / "dev").write_text("254:15\n", encoding="utf-8")
+
+    assert _detect_lgpio_chip(tmp_path) == 15
+
+
+def test_detect_lgpio_chip_falls_back_to_the_sysfs_index_without_a_dev_entry(tmp_path):
     chip = tmp_path / "gpiochip15"
     chip.mkdir()
     (chip / "label").write_text("pinctrl-rp1\n", encoding="utf-8")
