@@ -15,6 +15,8 @@ from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
+LED_ALERT_SCORE_THRESHOLD = 50.0
+
 
 class SoundPlayer:
     """Play a WAV file through ALSA, or generate a short two-tone beep."""
@@ -87,7 +89,7 @@ class SoundPlayer:
 
 
 class AlertController:
-    """Trigger delayed alerts and a separately delayed posture LED."""
+    """Trigger delayed audible alerts and an immediate, steady posture LED."""
 
     def __init__(
         self,
@@ -102,10 +104,10 @@ class AlertController:
         self.threshold = float(risk.get("threshold", 65))
         self.risk_seconds = max(0.0, float(risk.get("seconds", 8)))
         self.cooldown = max(0.0, float(risk.get("cooldown", 45)))
-        indicator_config = config.get("indicator", {})
-        self.indicator_threshold = min(100.0, max(0.0, float(indicator_config.get("threshold", 50))))
-        self.indicator_delay_seconds = min(60.0, max(0.0, float(indicator_config.get("delay_seconds", 5))))
-        self.indicator_blink_seconds = min(10.0, max(0.1, float(indicator_config.get("blink_seconds", 0.5))))
+        # The physical warning is intentionally unambiguous: physical pin 11
+        # (BCM GPIO17 in the default config) is HIGH below 50 and LOW at 50
+        # or above.  It never blinks or waits for the audible-alert delay.
+        self.indicator_threshold = LED_ALERT_SCORE_THRESHOLD
         buzzer_config = config.get("buzzer", {})
         self.buzzer_threshold = min(100.0, max(0.0, float(buzzer_config.get("threshold", 50))))
         self.uploader = uploader
@@ -173,30 +175,12 @@ class AlertController:
         now = self.clock()
         score = float(metrics["score"])
 
-        # A brief low score is normal while someone moves. Require it to last
-        # for the LED's own delay; sound/alerts continue using risk.seconds.
-        if score < self.indicator_threshold:
-            if self.indicator_low_since is None:
-                self.indicator_low_since = now
-            should_light_indicator = now - self.indicator_low_since >= self.indicator_delay_seconds
-        else:
-            self.indicator_low_since = None
-            should_light_indicator = False
-        if self.indicator is not None and should_light_indicator:
-            if (
-                self.indicator_last_toggle_at is None
-                or now - self.indicator_last_toggle_at >= self.indicator_blink_seconds
-            ):
-                if self._indicator_is_on:
-                    self._set_indicator(False)
-                else:
-                    self._set_indicator(True)
-                self.indicator_last_toggle_at = now
-        elif self.indicator is not None and self._indicator_is_on:
+        should_light_indicator = score < self.indicator_threshold
+        if self.indicator is not None and should_light_indicator and not self._indicator_is_on:
+            self._set_indicator(True)
+        elif self.indicator is not None and not should_light_indicator and self._indicator_is_on:
             if self._set_indicator(False):
                 self.indicator_last_toggle_at = None
-        elif not should_light_indicator:
-            self.indicator_last_toggle_at = None
 
         # Buzzer follows its own threshold (default 50)
         should_buzz = score < self.buzzer_threshold

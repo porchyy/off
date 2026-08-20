@@ -100,34 +100,28 @@ def test_good_posture_resets_low_score_timer():
     assert controller.update({"score": 50}) is True
 
 
-def test_led_waits_for_a_sustained_low_score_and_turns_off_when_score_recovers():
+def test_led_turns_on_immediately_below_50_and_off_at_50():
     now = [0.0]
     indicator = FakeIndicator()
     controller = AlertController(
-        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 50, "delay_seconds": 5}},
+        {"risk": {"threshold": 60, "seconds": 5}, "indicator": {"threshold": 65, "delay_seconds": 5}},
         FakeUploader(),
         FakeSound(),
         indicator,
         clock=lambda: now[0],
     )
 
-    controller.update({"score": 49})
-    assert indicator.on_count == 0
-    now[0] = 4.9
     assert controller.update({"score": 49}) is False
-    assert indicator.on_count == 0
-    now[0] = 5.0
-    assert controller.update({"score": 49}) is True
     assert indicator.on_count == 1
     controller.update({"score": 50})
     assert indicator.off_count == 1
 
 
-def test_led_blinks_while_the_low_score_persists():
+def test_led_stays_on_while_the_score_remains_below_50():
     now = [0.0]
     indicator = FakeIndicator()
     controller = AlertController(
-        {"indicator": {"threshold": 50, "delay_seconds": 0, "blink_seconds": 0.5}},
+        {"indicator": {"threshold": 65, "delay_seconds": 5, "blink_seconds": 0.5}},
         FakeUploader(),
         FakeSound(),
         indicator,
@@ -141,10 +135,9 @@ def test_led_blinks_while_the_low_score_persists():
     assert indicator.off_count == 0
     now[0] = 0.5
     controller.update({"score": 49})
+    assert indicator.on_count == 1
+    controller.update({"score": 50})
     assert indicator.off_count == 1
-    now[0] = 1.0
-    controller.update({"score": 49})
-    assert indicator.on_count == 2
 
 
 def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
@@ -159,7 +152,8 @@ def test_no_measurable_pose_turns_off_the_led_and_resets_the_risk_timer():
     controller.update({"score": 49})
     controller.clear_posture()
 
-    assert indicator.off_count == 0
+    assert indicator.off_count == 1
+    assert controller._indicator_is_on is False
     assert controller.low_since is None
     assert controller.indicator_low_since is None
 
