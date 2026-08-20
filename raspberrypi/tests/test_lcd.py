@@ -49,3 +49,25 @@ def test_lcd_1602_prompts_for_a_complete_pose_and_clears_stale_scores():
         (" POSE NOT READY ", "PLEASE SIT WELL "),
         ("  OFFSYN TECH   ", "WAITING FOR POSE"),
     ]
+
+
+def test_lcd_1602_does_not_rewrite_an_unchanged_screen():
+    class FakeLcd:
+        def __init__(self):
+            self.cursor_pos = (0, 0)
+            self.writes = []
+
+        def write_string(self, text):
+            self.writes.append((self.cursor_pos, text))
+
+    lcd = object.__new__(CharacterLcd)
+    lcd._lcd = FakeLcd()
+    lcd._clock = lambda: 10.0
+    lcd._last_lines = None
+    lcd._last_write_at = 0.0
+    lcd.update_seconds = 0.5
+
+    lines = (" SCORE:  82/100 ", "     NORMAL     ")
+    assert lcd._write(lines) is True
+    assert lcd._write(lines) is True
+    assert lcd._lcd.writes == [((0, 0), lines[0]), ((1, 0), lines[1])]

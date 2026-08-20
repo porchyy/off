@@ -82,7 +82,12 @@ class CharacterLcd:
         if self._lcd is None:
             return False
         now = self._clock()
-        if not force and lines == self._last_lines and now - self._last_write_at < self.update_seconds:
+        # Re-sending an unchanged screen over I2C makes common PCF8574 LCD
+        # backpacks visibly flicker and can occasionally corrupt characters.
+        # Leave a stable screen alone; changed values are still rate-limited.
+        if not force and lines == self._last_lines:
+            return True
+        if not force and now - self._last_write_at < self.update_seconds:
             return True
         try:
             self._lcd.cursor_pos = (0, 0)
