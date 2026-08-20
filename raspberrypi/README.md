@@ -138,14 +138,13 @@ indicator:
   pin: 17
   # เว้นว่างเพื่อให้ตรวจหา GPIO ของ Pi 5 อัตโนมัติ
   chip:
-  active_high: false
+  active_high: true
   threshold: 50
 ```
 
 ทดสอบก่อนใช้งานจริงด้วย `python posture_client.py --config config.yaml --test-led`.
-LED ที่ physical Pin 11 (BCM GPIO17) จะติดค้างทันทีเมื่อคะแนนต่ำกว่า **50** และดับทันทีเมื่อคะแนน
-ตั้งแต่ 50 หรือไม่พบ pose โดยไม่ต้องรอเสียงแจ้งเตือน. โมดูลที่ต่ออยู่เป็น active-low จึงใช้ LOW ตอนติด
-และ HIGH ตอนดับ; หากโมดูลของคุณทำงานกลับด้าน ให้ตั้ง `active_high: true`.
+LED ที่ physical Pin 11 (BCM GPIO17) จะเป็น HIGH และติดค้างทันทีเมื่อคะแนนต่ำกว่า **50** จากนั้น
+เป็น LOW และดับทันทีเมื่อคะแนนตั้งแต่ 50 หรือไม่พบ pose โดยไม่ต้องรอเสียงแจ้งเตือน.
 
 ## คำสั่งตรวจสอบแบบ manual
 

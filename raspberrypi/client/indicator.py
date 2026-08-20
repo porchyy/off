@@ -77,8 +77,8 @@ class GpioLed:
     def __init__(self, config: dict[str, Any]) -> None:
         self.enabled = bool(config.get("enabled", False))
         self.pin = int(config.get("pin", 17))
-        # The installed Pin 11 module is active-low: a LOW output lights it.
-        self.active_high = bool(config.get("active_high", False))
+        # Pin 11 uses active-high output: HIGH lights the LED, LOW turns it off.
+        self.active_high = bool(config.get("active_high", True))
         configured_chip = config.get("chip")
         self.chip = int(configured_chip) if configured_chip is not None else _detect_lgpio_chip()
         self._led: Any | None = None
