@@ -12,7 +12,7 @@ from .models import Setting
 
 DEFAULTS: dict[str, Any] = {
     "riskThreshold": 65,
-    "riskSeconds": 8,
+    "riskSeconds": 15,
     "dataDir": str(settings.data_dir.resolve()),
     "soundEnabled": True,
     "voiceEnabled": True,
