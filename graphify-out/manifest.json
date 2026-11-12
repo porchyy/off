@@ -1,0 +1,578 @@
+{
+  ".github/workflows/ci.yml": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.03038,
+    "ast_hash": "73969763c6df320e5955aead29559fc1",
+    "semantic_hash": "73969763c6df320e5955aead29559fc1"
+  },
+  "backend/app/__init__.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303867,
+    "ast_hash": "ceb7c54704922acd24a6cb2401497a26",
+    "semantic_hash": "ceb7c54704922acd24a6cb2401497a26"
+  },
+  "backend/app/__main__.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303903,
+    "ast_hash": "c132eca974b43c8ec57cfe2ef8124b24",
+    "semantic_hash": "c132eca974b43c8ec57cfe2ef8124b24"
+  },
+  "backend/app/camera_signaling.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303922,
+    "ast_hash": "f1be52cd12cc748a7af726e6070f12a3",
+    "semantic_hash": "f1be52cd12cc748a7af726e6070f12a3"
+  },
+  "backend/app/camera_store.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303936,
+    "ast_hash": "9990e40bdd23aec5f889a3ca062c0789",
+    "semantic_hash": "9990e40bdd23aec5f889a3ca062c0789"
+  },
+  "backend/app/config.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.030395,
+    "ast_hash": "027bfb57f8e8a0d47e223f9d40359093",
+    "semantic_hash": "027bfb57f8e8a0d47e223f9d40359093"
+  },
+  "backend/app/daily_report.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303967,
+    "ast_hash": "6a44dd48872a958c681602becbd5222a",
+    "semantic_hash": "6a44dd48872a958c681602becbd5222a"
+  },
+  "backend/app/database.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303981,
+    "ast_hash": "0643e617e7849e853c3fb4af47c800c5",
+    "semantic_hash": "0643e617e7849e853c3fb4af47c800c5"
+  },
+  "backend/app/main.py": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0303996,
+    "ast_hash": "8cffd9e72e12c967b15d370077cebbf2",
+    "semantic_hash": "8cffd9e72e12c967b15d370077cebbf2"
+  },
+  "backend/app/models.py": {
+    "mtime": 1794466710.5906427,
+    "seen": 1794471909.0304008,
+    "ast_hash": "7ae376757d4bd784e328375210015a5a",
+    "semantic_hash": "7ae376757d4bd784e328375210015a5a"
+  },
+  "backend/app/routes.py": {
+    "mtime": 1794466710.5906427,
+    "seen": 1794471909.0304024,
+    "ast_hash": "8afbcf840de542df607de031e0005d91",
+    "semantic_hash": "8afbcf840de542df607de031e0005d91"
+  },
+  "backend/app/runtime_state.py": {
+    "mtime": 1794466710.5913522,
+    "seen": 1794471909.0304039,
+    "ast_hash": "dbbf068de9c71449808af3ef29018729",
+    "semantic_hash": "dbbf068de9c71449808af3ef29018729"
+  },
+  "backend/app/schemas.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304053,
+    "ast_hash": "573fc70fa3e593507a6638e833115447",
+    "semantic_hash": "573fc70fa3e593507a6638e833115447"
+  },
+  "backend/app/sensor_store.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304067,
+    "ast_hash": "0178de621f9bb98adf21e698c91c22ea",
+    "semantic_hash": "0178de621f9bb98adf21e698c91c22ea"
+  },
+  "backend/app/settings_store.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.030408,
+    "ast_hash": "2684531e8daab42515a6dc510a8e3603",
+    "semantic_hash": "2684531e8daab42515a6dc510a8e3603"
+  },
+  "backend/tests/__init__.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304096,
+    "ast_hash": "42faef1c75b5b3f920a546e4672c4c6c",
+    "semantic_hash": "42faef1c75b5b3f920a546e4672c4c6c"
+  },
+  "backend/tests/test_api.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304108,
+    "ast_hash": "aa49cd15eea01ddd0e2083895cabaaa0",
+    "semantic_hash": "aa49cd15eea01ddd0e2083895cabaaa0"
+  },
+  "backend/tests/test_camera_signaling.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304122,
+    "ast_hash": "08023312a737497d567a1c9c712c8935",
+    "semantic_hash": "08023312a737497d567a1c9c712c8935"
+  },
+  "build.sh": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304136,
+    "ast_hash": "b55e79526b9392078b5d0871d03fd446",
+    "semantic_hash": "b55e79526b9392078b5d0871d03fd446"
+  },
+  "designs/postureai_print_case/build_print_case.py": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.030415,
+    "ast_hash": "313bab30cdf134d1a388ed1117921160",
+    "semantic_hash": "313bab30cdf134d1a388ed1117921160"
+  },
+  "docker-compose.yml": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304165,
+    "ast_hash": "8b01e3badccc11275fde5093de74923b",
+    "semantic_hash": "8b01e3badccc11275fde5093de74923b"
+  },
+  "frontend/app.js": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.030418,
+    "ast_hash": "a484665554f17a0181bce143fd2b0753",
+    "semantic_hash": "a484665554f17a0181bce143fd2b0753"
+  },
+  "frontend/package.json": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0304198,
+    "ast_hash": "e8f360b997bd6b97e08e39878cf62122",
+    "semantic_hash": "e8f360b997bd6b97e08e39878cf62122"
+  },
+  "frontend/pose-utils.js": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0304213,
+    "ast_hash": "22723ab2c4809c8ab4890a0c2dff8b65",
+    "semantic_hash": "22723ab2c4809c8ab4890a0c2dff8b65"
+  },
+  "frontend/public/wasm/vision_wasm_internal.js": {
+    "mtime": 1794466710.7416706,
+    "seen": 1794471909.0304224,
+    "ast_hash": "d8d0c10582436f8b74c62c648e3646df",
+    "semantic_hash": "d8d0c10582436f8b74c62c648e3646df"
+  },
+  "frontend/public/wasm/vision_wasm_nosimd_internal.js": {
+    "mtime": 1794466710.82506,
+    "seen": 1794471909.0304239,
+    "ast_hash": "76fd5f5e8f554d36fe6637a2ae88b23e",
+    "semantic_hash": "76fd5f5e8f554d36fe6637a2ae88b23e"
+  },
+  "frontend/scripts/copy-mediapipe-assets.mjs": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304253,
+    "ast_hash": "c153d78be9ec571501e2edb9ad697e5b",
+    "semantic_hash": "c153d78be9ec571501e2edb9ad697e5b"
+  },
+  "frontend/storage.js": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304267,
+    "ast_hash": "fe2bf29788a614f9f5f9cbae9fe7e724",
+    "semantic_hash": "fe2bf29788a614f9f5f9cbae9fe7e724"
+  },
+  "frontend/tests/pose.test.js": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030428,
+    "ast_hash": "43c99d34444f5c6f238fe3248d771cad",
+    "semantic_hash": "43c99d34444f5c6f238fe3248d771cad"
+  },
+  "frontend/tests/storage.test.js": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304294,
+    "ast_hash": "afdf02ddc6f01076c29bc0470d585c58",
+    "semantic_hash": "afdf02ddc6f01076c29bc0470d585c58"
+  },
+  "frontend/vite.config.js": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304308,
+    "ast_hash": "50a7b2c6f64da66a2f78e45dbf584371",
+    "semantic_hash": "50a7b2c6f64da66a2f78e45dbf584371"
+  },
+  "raspberrypi/blink_led_pin11.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304322,
+    "ast_hash": "d11eb046263e8f5d0a1a6f759e756c6f",
+    "semantic_hash": "d11eb046263e8f5d0a1a6f759e756c6f"
+  },
+  "raspberrypi/client/__init__.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304337,
+    "ast_hash": "07abc0361c20bd3030096a9fea2b5e5d",
+    "semantic_hash": "07abc0361c20bd3030096a9fea2b5e5d"
+  },
+  "raspberrypi/client/alert.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030435,
+    "ast_hash": "9de5e361652323587ec25311a0b80267",
+    "semantic_hash": "9de5e361652323587ec25311a0b80267"
+  },
+  "raspberrypi/client/buzzer.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304363,
+    "ast_hash": "ad31fd10f7ef1ebc16c9fb996e79ddb5",
+    "semantic_hash": "ad31fd10f7ef1ebc16c9fb996e79ddb5"
+  },
+  "raspberrypi/client/capture.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304377,
+    "ast_hash": "6732073873ba40078e7b626736433d2a",
+    "semantic_hash": "6732073873ba40078e7b626736433d2a"
+  },
+  "raspberrypi/client/detect.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304391,
+    "ast_hash": "a186b8f8af10be19620454b66ba64ef5",
+    "semantic_hash": "a186b8f8af10be19620454b66ba64ef5"
+  },
+  "raspberrypi/client/indicator.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304403,
+    "ast_hash": "635de9f08f8fc45e689fffe619ed52bc",
+    "semantic_hash": "635de9f08f8fc45e689fffe619ed52bc"
+  },
+  "raspberrypi/client/lcd.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030442,
+    "ast_hash": "8027975cf84e846298c4ddd2d2c29691",
+    "semantic_hash": "8027975cf84e846298c4ddd2d2c29691"
+  },
+  "raspberrypi/client/posture_classifier.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304434,
+    "ast_hash": "d7ff9b06c58e3c86dd9b8081e88aea9a",
+    "semantic_hash": "d7ff9b06c58e3c86dd9b8081e88aea9a"
+  },
+  "raspberrypi/client/uploader.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304449,
+    "ast_hash": "3781500b295e1531a57f57da96e057f4",
+    "semantic_hash": "3781500b295e1531a57f57da96e057f4"
+  },
+  "raspberrypi/client/webrtc.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030446,
+    "ast_hash": "05e67945eedeffe855d7206908c49320",
+    "semantic_hash": "05e67945eedeffe855d7206908c49320"
+  },
+  "raspberrypi/config.example.yaml": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304477,
+    "ast_hash": "d0f68056d36d0a715a461651de744273",
+    "semantic_hash": "d0f68056d36d0a715a461651de744273"
+  },
+  "raspberrypi/generate_voice.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304568,
+    "ast_hash": "c5696cd537498b65a967a0eb0e8e8357",
+    "semantic_hash": "c5696cd537498b65a967a0eb0e8e8357"
+  },
+  "raspberrypi/install-sensor-service.sh": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304585,
+    "ast_hash": "7c2041b8c99f34178c645f24073f8aac",
+    "semantic_hash": "7c2041b8c99f34178c645f24073f8aac"
+  },
+  "raspberrypi/posture_client.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.03046,
+    "ast_hash": "c295d64ad95b45cebdd3a743276b73e0",
+    "semantic_hash": "c295d64ad95b45cebdd3a743276b73e0"
+  },
+  "raspberrypi/sensor_readers.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030461,
+    "ast_hash": "f2d821b102625077f3f790488144072e",
+    "semantic_hash": "f2d821b102625077f3f790488144072e"
+  },
+  "raspberrypi/sensor_web_client.py": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304627,
+    "ast_hash": "252c93385fe2fb456669ad67365d3236",
+    "semantic_hash": "252c93385fe2fb456669ad67365d3236"
+  },
+  "raspberrypi/setup-max98357.sh": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030464,
+    "ast_hash": "93ef1e53d2cd476522f19cf0ab3c89f7",
+    "semantic_hash": "93ef1e53d2cd476522f19cf0ab3c89f7"
+  },
+  "raspberrypi/setup-pi5.sh": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304654,
+    "ast_hash": "4b3a1b463a7073b1c3f76f7d31560acb",
+    "semantic_hash": "4b3a1b463a7073b1c3f76f7d31560acb"
+  },
+  "raspberrypi/setup-sensor-pi5.sh": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0304668,
+    "ast_hash": "fbd65afd4ccb784b95a876af9621fa9f",
+    "semantic_hash": "fbd65afd4ccb784b95a876af9621fa9f"
+  },
+  "raspberrypi/start.sh": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030468,
+    "ast_hash": "cc91c89ecef3aeb4ed765682d4ff3f08",
+    "semantic_hash": "cc91c89ecef3aeb4ed765682d4ff3f08"
+  },
+  "raspberrypi/stop.sh": {
+    "mtime": 1794466710.9240692,
+    "seen": 1794471909.0304694,
+    "ast_hash": "c77636a53e8b248adcbe9ade20ae5735",
+    "semantic_hash": "c77636a53e8b248adcbe9ade20ae5735"
+  },
+  "raspberrypi/test_bh1750.py": {
+    "mtime": 1794466710.9246838,
+    "seen": 1794471909.0304708,
+    "ast_hash": "6a1e0edc66ed4f9ed21cdca99f8b7945",
+    "semantic_hash": "6a1e0edc66ed4f9ed21cdca99f8b7945"
+  },
+  "raspberrypi/test_sensors.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304723,
+    "ast_hash": "8a67ea395b40cb5f010f1d6923533829",
+    "semantic_hash": "8a67ea395b40cb5f010f1d6923533829"
+  },
+  "raspberrypi/tests/test_alert.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304737,
+    "ast_hash": "4168b24f623b89bf4c33206587d6e21c",
+    "semantic_hash": "4168b24f623b89bf4c33206587d6e21c"
+  },
+  "raspberrypi/tests/test_capture.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.030475,
+    "ast_hash": "4d0c6290afb8650b5449b8f5d1e5d590",
+    "semantic_hash": "4d0c6290afb8650b5449b8f5d1e5d590"
+  },
+  "raspberrypi/tests/test_config.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304766,
+    "ast_hash": "569b35fde233c691b1c701b915e06ebf",
+    "semantic_hash": "569b35fde233c691b1c701b915e06ebf"
+  },
+  "raspberrypi/tests/test_detect.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304778,
+    "ast_hash": "0a2f01bb4acee398c7ce19ea8102d1e0",
+    "semantic_hash": "0a2f01bb4acee398c7ce19ea8102d1e0"
+  },
+  "raspberrypi/tests/test_indicator.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304792,
+    "ast_hash": "532b2a440b35af39c2218c132037abef",
+    "semantic_hash": "532b2a440b35af39c2218c132037abef"
+  },
+  "raspberrypi/tests/test_lcd.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304806,
+    "ast_hash": "493d59d3c32a20119a5de6b2c6109243",
+    "semantic_hash": "493d59d3c32a20119a5de6b2c6109243"
+  },
+  "raspberrypi/tests/test_posture_classifier.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304818,
+    "ast_hash": "2ed9c05ae834746484495b2250a66f76",
+    "semantic_hash": "2ed9c05ae834746484495b2250a66f76"
+  },
+  "raspberrypi/tests/test_sensor_readers.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304835,
+    "ast_hash": "9d764c57137470ed0aa32816cb57de98",
+    "semantic_hash": "9d764c57137470ed0aa32816cb57de98"
+  },
+  "raspberrypi/tests/test_sensor_web_client.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304847,
+    "ast_hash": "ac7684a2064fa6f60d3a721a6c101a1f",
+    "semantic_hash": "ac7684a2064fa6f60d3a721a6c101a1f"
+  },
+  "raspberrypi/tests/test_uploader.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304863,
+    "ast_hash": "0cc2754c6d94ec613897ba745751ff40",
+    "semantic_hash": "0cc2754c6d94ec613897ba745751ff40"
+  },
+  "raspberrypi/tests/test_webrtc.py": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304875,
+    "ast_hash": "f5731af0631ed755792b0fec34b7bff9",
+    "semantic_hash": "f5731af0631ed755792b0fec34b7bff9"
+  },
+  "update-pi.sh": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0304887,
+    "ast_hash": "7d7add213e9d858f4a05b018f9ac9328",
+    "semantic_hash": "7d7add213e9d858f4a05b018f9ac9328"
+  },
+  ".agents/AGENTS.md": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0304904,
+    "ast_hash": "510ce6b029c5e59584cd6725c1ec2a67",
+    "semantic_hash": "510ce6b029c5e59584cd6725c1ec2a67"
+  },
+  "README.md": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0304918,
+    "ast_hash": "08a107d2d8aa069a25aebff6a4798fb4",
+    "semantic_hash": "08a107d2d8aa069a25aebff6a4798fb4"
+  },
+  "backend/README.md": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0304933,
+    "ast_hash": "d6b7a547dbfb9854f57e67528d422d5d",
+    "semantic_hash": "d6b7a547dbfb9854f57e67528d422d5d"
+  },
+  "backend/requirements-dev.txt": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304947,
+    "ast_hash": "b36137c1710baa20991fb5105aaac794",
+    "semantic_hash": "b36137c1710baa20991fb5105aaac794"
+  },
+  "backend/requirements.txt": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304964,
+    "ast_hash": "23ae1b56d722d5ffc3d25649d3ef6aa7",
+    "semantic_hash": "23ae1b56d722d5ffc3d25649d3ef6aa7"
+  },
+  "database/README.md": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304976,
+    "ast_hash": "3003de7aa94f14f546c1f1dcd116cb39",
+    "semantic_hash": "3003de7aa94f14f546c1f1dcd116cb39"
+  },
+  "designs/postureai_print_case/README.md": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0304987,
+    "ast_hash": "0a701c846c23d2ba1992c1cf293bcefd",
+    "semantic_hash": "0a701c846c23d2ba1992c1cf293bcefd"
+  },
+  "docker/README.md": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0305004,
+    "ast_hash": "2acf9e47bbadd8eba1ea29bdbab9cc11",
+    "semantic_hash": "2acf9e47bbadd8eba1ea29bdbab9cc11"
+  },
+  "docs/OffSynTech_Project_Report.html": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.0305016,
+    "ast_hash": "d1ad3c3cd54bfb71ad0dd4cb53699aa0",
+    "semantic_hash": "d1ad3c3cd54bfb71ad0dd4cb53699aa0"
+  },
+  "docs/OffSynTech_QuickGuide.html": {
+    "mtime": 1794466710.6073897,
+    "seen": 1794471909.0305028,
+    "ast_hash": "e2820ef3e5b6a680e3e26914f4a492c2",
+    "semantic_hash": "e2820ef3e5b6a680e3e26914f4a492c2"
+  },
+  "docs/OffSynTech_QuickGuide.md": {
+    "mtime": 1794466710.6073897,
+    "seen": 1794471909.0305045,
+    "ast_hash": "5ffc512fb5ec43c5482ad4a9101cd6f4",
+    "semantic_hash": "5ffc512fb5ec43c5482ad4a9101cd6f4"
+  },
+  "docs/README.md": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.030506,
+    "ast_hash": "99ee581ccc3fed4274f18de24a282b1f",
+    "semantic_hash": "99ee581ccc3fed4274f18de24a282b1f"
+  },
+  "docs/pi5-setup-guide.html": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305073,
+    "ast_hash": "8d46695a4b560bfa735e338e42671988",
+    "semantic_hash": "8d46695a4b560bfa735e338e42671988"
+  },
+  "docs/specs/style-guide.html": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305088,
+    "ast_hash": "a92d31ade78aa43b30aade4ddb8b3d98",
+    "semantic_hash": "a92d31ade78aa43b30aade4ddb8b3d98"
+  },
+  "frontend/README.md": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305102,
+    "ast_hash": "b5c4629712caabd580e377b5db488707",
+    "semantic_hash": "b5c4629712caabd580e377b5db488707"
+  },
+  "frontend/index.html": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305116,
+    "ast_hash": "0b48fb9d83e1d4c7003db0edad0dc2aa",
+    "semantic_hash": "0b48fb9d83e1d4c7003db0edad0dc2aa"
+  },
+  "frontend/public/models/README.md": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305128,
+    "ast_hash": "ffa319accf4e8e7028d3a4465c1d10c6",
+    "semantic_hash": "ffa319accf4e8e7028d3a4465c1d10c6"
+  },
+  "project_review.md": {
+    "mtime": 1794466502.7806125,
+    "seen": 1794471909.0305142,
+    "ast_hash": "10a593da6cc5a7ba1300182c1be75717",
+    "semantic_hash": "10a593da6cc5a7ba1300182c1be75717"
+  },
+  "raspberrypi/README.md": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0305157,
+    "ast_hash": "e920579922c40d8cb63c2ae610269795",
+    "semantic_hash": "e920579922c40d8cb63c2ae610269795"
+  },
+  "raspberrypi/SENSORS.md": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030518,
+    "ast_hash": "b3b2a9347b6063251f135c749f9b26af",
+    "semantic_hash": "b3b2a9347b6063251f135c749f9b26af"
+  },
+  "raspberrypi/requirements-sensors.txt": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.0305195,
+    "ast_hash": "5ffb07d8dbe39549e18555783a1c4073",
+    "semantic_hash": "5ffb07d8dbe39549e18555783a1c4073"
+  },
+  "raspberrypi/requirements.txt": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030521,
+    "ast_hash": "8b22f472dc658b696829b6291226949a",
+    "semantic_hash": "8b22f472dc658b696829b6291226949a"
+  },
+  "task.md": {
+    "mtime": 1794466710.9251409,
+    "seen": 1794471909.0305223,
+    "ast_hash": "ad7ca5a179b81ec1209e2a5662244ae6",
+    "semantic_hash": "ad7ca5a179b81ec1209e2a5662244ae6"
+  },
+  "OffSynTech_Project_Report.pdf": {
+    "mtime": 1794466710.5750175,
+    "seen": 1794471909.0305235,
+    "ast_hash": "8de63c0f9b001bddb04ede153f685f51",
+    "semantic_hash": "8de63c0f9b001bddb04ede153f685f51"
+  },
+  "docs/OffSynTech_Project_Report.pdf": {
+    "mtime": 1794466710.5917647,
+    "seen": 1794471909.030525,
+    "ast_hash": "8de63c0f9b001bddb04ede153f685f51",
+    "semantic_hash": "8de63c0f9b001bddb04ede153f685f51"
+  },
+  "docs/OffSynTech_QuickGuide.pdf": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305264,
+    "ast_hash": "b1e9643eb499cf4eaf58fa9752f72cdb",
+    "semantic_hash": "b1e9643eb499cf4eaf58fa9752f72cdb"
+  },
+  "docs/pi5-setup-guide.pdf": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305278,
+    "ast_hash": "d470ef4ad1b46014ea7252775e0fb753",
+    "semantic_hash": "d470ef4ad1b46014ea7252775e0fb753"
+  },
+  "frontend/public/alert_thai.wav": {
+    "mtime": 1794466710.6083677,
+    "seen": 1794471909.0305293,
+    "ast_hash": "673e589fdd901315a4e76c64b80515a1",
+    "semantic_hash": "673e589fdd901315a4e76c64b80515a1"
+  },
+  "raspberrypi/alert_thai.wav": {
+    "mtime": 1794466710.9084427,
+    "seen": 1794471909.030531,
+    "ast_hash": "673e589fdd901315a4e76c64b80515a1",
+    "semantic_hash": "673e589fdd901315a4e76c64b80515a1"
+  }
+}

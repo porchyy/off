@@ -130,8 +130,8 @@ def test_get_settings():
     response = client.get("/api/settings")
     assert response.status_code == 200
     data = response.json()
-    assert data["riskThreshold"] == 60
-    assert data["riskSeconds"] == 0
+    assert data["riskThreshold"] == 65
+    assert data["riskSeconds"] == 15
     assert data["soundEnabled"] is True
     assert data["voiceEnabled"] is True
     assert data["desktopEnabled"] is False
@@ -289,10 +289,10 @@ def test_download_daily_excel_report():
 
     assert response.status_code == 200
     assert "spreadsheetml.sheet" in response.headers["content-type"]
-    assert "OffSynTech_" in response.headers["content-disposition"]
+    assert "ErgoAgent_" in response.headers["content-disposition"]
     workbook = load_workbook(BytesIO(response.content), data_only=False)
     assert workbook.sheetnames == ["สรุปรายวัน", "รายละเอียดรายนาที", "เหตุการณ์แจ้งเตือน"]
-    assert workbook["สรุปรายวัน"]["A1"].value == "OffSyn Tech — รายงานท่านั่งรายวัน"
+    assert workbook["สรุปรายวัน"]["A1"].value == "Ergo Agent — รายงานท่านั่งรายวัน"
     assert workbook["รายละเอียดรายนาที"]["B2"].value == 80
     assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Posture risk alert"
     assert len(workbook["สรุปรายวัน"]._charts) == 1
@@ -306,10 +306,10 @@ def test_download_monthly_excel_report():
 
     assert response.status_code == 200
     assert "spreadsheetml.sheet" in response.headers["content-type"]
-    assert "OffSynTech_" in response.headers["content-disposition"]
+    assert "ErgoAgent_" in response.headers["content-disposition"]
     workbook = load_workbook(BytesIO(response.content), data_only=False)
     assert workbook.sheetnames == ["สรุปรายเดือน", "สรุปรายวัน", "เหตุการณ์แจ้งเตือน"]
-    assert workbook["สรุปรายเดือน"]["A1"].value == "OffSyn Tech — รายงานท่านั่งรายเดือน"
+    assert workbook["สรุปรายเดือน"]["A1"].value == "Ergo Agent — รายงานท่านั่งรายเดือน"
     assert workbook["สรุปรายวัน"]["B2"].value == 88
     assert workbook["เหตุการณ์แจ้งเตือน"]["C2"].value == "Monthly posture alert"
     assert len(workbook["สรุปรายเดือน"]._charts) == 1
@@ -406,3 +406,9 @@ def test_client_status_round_trip():
     assert get_res.json()["lastSyncAt"] == "2026-08-06T00:00:00+00:00"
     assert get_res.json()["retentionDays"] == 35
     assert get_res.json()["summaryRetentionDays"] == 365
+
+
+def test_event_stream():
+    with client.stream("GET", "/api/stream") as response:
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers["content-type"]

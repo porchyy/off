@@ -1,4 +1,4 @@
-# FastAPI backend image.
+# FastAPI backend image for Ergo Agent.
 # Build context: repo root (so backend/ is reachable as a subpath).
 # Run via: docker build -f docker/Dockerfile.backend .
 
@@ -12,14 +12,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -g 1000 appuser \
+ && useradd -u 1000 -g appuser -m appuser \
+ && mkdir -p /app/database \
+ && chown -R appuser:appuser /app
 
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/app ./app
+RUN chown -R appuser:appuser /app
 
-ENV POSTUREAI_DATA_DIR=/app/database \
+USER appuser
+
+ENV ERGO_AGENT_DATA_DIR=/app/database \
+    POSTUREAI_DATA_DIR=/app/database \
+    ERGO_AGENT_PORT=8000 \
     POSTUREAI_PORT=8000
 
 EXPOSE 8000

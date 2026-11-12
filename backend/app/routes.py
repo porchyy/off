@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 import hmac
@@ -55,13 +56,17 @@ logger = logging.getLogger(__name__)
 MAX_CAMERA_FRAME_BYTES = 3 * 1024 * 1024
 
 
-def require_admin_token(x_postureai_admin_token: str | None = Header(default=None)) -> None:
+def require_admin_token(
+    x_ergo_agent_admin_token: str | None = Header(default=None),
+    x_postureai_admin_token: str | None = Header(default=None),
+) -> None:
     """Protect mutations without requiring a login to view the LAN dashboard."""
     if not settings.require_admin_token:
         return
     if not settings.admin_token:
         raise HTTPException(status_code=503, detail="admin token is not configured")
-    if not x_postureai_admin_token or not hmac.compare_digest(x_postureai_admin_token, settings.admin_token):
+    token = x_ergo_agent_admin_token or x_postureai_admin_token
+    if not token or not hmac.compare_digest(token, settings.admin_token):
         raise HTTPException(status_code=401, detail="administrator token is required")
 
 
@@ -78,6 +83,39 @@ def health(db: Session = Depends(get_db)) -> HealthResponse:
         db_path=str(settings.sqlite_path),
         data_dir=str(settings.data_dir.resolve()),
         time=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+@router.get("/api/stream")
+async def event_stream(request: Request) -> StreamingResponse:
+    """Server-Sent Events (SSE) telemetry stream for real-time dashboard updates."""
+    async def event_generator():
+        last_state = ""
+        while True:
+            if await request.is_disconnected():
+                break
+            sensors = sensor_store.snapshot()
+            indicator = indicator_runtime_state.snapshot()
+            client_status = client_runtime_state.snapshot()
+            current_payload = {
+                "sensors": sensors,
+                "indicator": indicator,
+                "client": client_status,
+            }
+            payload_str = json.dumps(current_payload, sort_keys=True)
+            if payload_str != last_state:
+                last_state = payload_str
+                yield f"event: telemetry\ndata: {payload_str}\n\n"
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
@@ -174,11 +212,12 @@ async def camera_webrtc(websocket: WebSocket) -> None:
     is never stored by the backend.
     """
     role = websocket.query_params.get("role", "")
+    replace = websocket.query_params.get("replace", "true").lower() in {"true", "1"}
     if role not in {"pi", "viewer"}:
         await websocket.close(code=1008, reason="role must be pi or viewer")
         return
     await websocket.accept()
-    if not await camera_signaling.register(role, websocket):
+    if not await camera_signaling.register(role, websocket, replace=replace):
         state = await camera_signaling.status()
         if role == "viewer" and state["viewerConnected"]:
             reason = "camera is already being viewed by another dashboard"
@@ -394,7 +433,7 @@ def download_daily_excel(
     selected_date = report_date or local_today()
     risk_threshold = get_all(db)["riskThreshold"]
     content = build_daily_report(db, selected_date, risk_threshold)
-    filename = f"OffSynTech_{selected_date.isoformat()}.xlsx"
+    filename = f"ErgoAgent_{selected_date.isoformat()}.xlsx"
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -411,7 +450,7 @@ def download_monthly_excel(
     selected_month = (report_month or local_today()).replace(day=1)
     risk_threshold = get_all(db)["riskThreshold"]
     content = build_monthly_report(db, selected_month, risk_threshold)
-    filename = f"OffSynTech_{selected_month.strftime('%Y-%m')}.xlsx"
+    filename = f"ErgoAgent_{selected_month.strftime('%Y-%m')}.xlsx"
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

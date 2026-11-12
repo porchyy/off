@@ -46,6 +46,7 @@ class Bh1750Reader:
             raise ValueError("lux_scale must be a positive finite number")
         self.lux_scale = lux_scale
         self.address: int | None = None
+        self._initialized = False
 
     def discover(self) -> int:
         """Find a responding BH1750 at either supported address."""
@@ -60,6 +61,7 @@ class Bh1750Reader:
                 bus = smbus2.SMBus(self.bus_number)
                 bus.read_byte(address)
                 self.address = address
+                self._initialized = False
                 return address
             except (OSError, FileNotFoundError):
                 continue
@@ -68,6 +70,7 @@ class Bh1750Reader:
                     bus.close()
 
         self.address = None
+        self._initialized = False
         raise SensorReadError("ไม่พบ BH1750 บน I2C bus")
 
     def read_lux(self) -> float:
@@ -83,10 +86,13 @@ class Bh1750Reader:
 
             bus = smbus2.SMBus(self.bus_number)
             try:
-                bus.write_byte(self.address, BH1750_POWER_ON)
-                time.sleep(0.01)
-                bus.write_byte(self.address, BH1750_CONTINUOUS_HIGH_RES)
-                time.sleep(self.measurement_seconds)
+                if not self._initialized:
+                    bus.write_byte(self.address, BH1750_POWER_ON)
+                    time.sleep(0.01)
+                    bus.write_byte(self.address, BH1750_CONTINUOUS_HIGH_RES)
+                    if self.measurement_seconds > 0:
+                        time.sleep(self.measurement_seconds)
+                    self._initialized = True
                 # BH1750 has no register pointer.  SMBus block reads write a
                 # command byte immediately before receiving data, which can
                 # restart a conversion and make some modules return the same
@@ -104,4 +110,5 @@ class Bh1750Reader:
             return round(raw_value / 1.2 * self.lux_scale, 1)
         except (OSError, FileNotFoundError, TypeError, ValueError) as error:
             self.address = None
+            self._initialized = False
             raise SensorReadError(str(error) or "I2C read failed") from error

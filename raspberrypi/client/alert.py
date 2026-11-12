@@ -26,6 +26,12 @@ class SoundPlayer:
         self.device = str(config.get("device", "plughw:CARD=MAX98357A,DEV=0"))
         self.file = config.get("file")
         self.volume = max(0.0, min(1.0, float(config.get("volume", 0.75))))
+        self._cached_beep: Path | None = None
+
+    def close(self) -> None:
+        if self._cached_beep and self._cached_beep.is_file():
+            self._cached_beep.unlink(missing_ok=True)
+            self._cached_beep = None
 
     def play(self) -> bool:
         if not self.enabled:
@@ -37,7 +43,6 @@ class SoundPlayer:
             logger.error("cannot play alert: aplay not found (install package alsa-utils)")
             return False
 
-        temporary_path: Path | None = None
         try:
             if self.file:
                 sound_path = Path(str(self.file)).expanduser()
@@ -45,8 +50,7 @@ class SoundPlayer:
                     logger.error("alert sound file not found: %s", sound_path)
                     return False
             else:
-                temporary_path = self._make_beep()
-                sound_path = temporary_path
+                sound_path = self._make_beep()
 
             command = [player, "-q"]
             if self.device:
@@ -60,11 +64,10 @@ class SoundPlayer:
         except (OSError, subprocess.SubprocessError) as exc:
             logger.error("failed to play alert sound: %s", exc)
             return False
-        finally:
-            if temporary_path:
-                temporary_path.unlink(missing_ok=True)
 
     def _make_beep(self) -> Path:
+        if self._cached_beep and self._cached_beep.is_file():
+            return self._cached_beep
         sample_rate = 44_100
         segments = ((880.0, 0.22), (0.0, 0.10), (1_100.0, 0.28))
         samples: list[int] = []
@@ -77,7 +80,8 @@ class SoundPlayer:
                 value = 0 if frequency == 0 else int(amplitude * fade * math.sin(2 * math.pi * frequency * index / sample_rate))
                 samples.append(value)
 
-        handle = tempfile.NamedTemporaryFile(prefix="postureai-alert-", suffix=".wav", delete=False)
+        target_dir = Path("/dev/shm") if Path("/dev/shm").is_dir() else Path(tempfile.gettempdir())
+        handle = tempfile.NamedTemporaryFile(prefix="ergoagent-alert-", suffix=".wav", dir=target_dir, delete=False)
         handle.close()
         path = Path(handle.name)
         with wave.open(str(path), "wb") as output:
@@ -85,6 +89,7 @@ class SoundPlayer:
             output.setsampwidth(2)
             output.setframerate(sample_rate)
             output.writeframes(struct.pack(f"<{len(samples)}h", *samples))
+        self._cached_beep = path
         return path
 
 

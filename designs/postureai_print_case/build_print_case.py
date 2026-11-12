@@ -140,7 +140,35 @@ for x in (-W / 2 + 11, W / 2 - 11):
         hole = add_cylinder("standoff pilot", 2.8, 14.0, (x, D / 2 - 9.0, z), vertices=24)
         cut(post, hole, "pilot hole")
         posts.append(post)
-shell = join([shell] + posts, "OffSyn Tech front shell")
+shell = join([shell] + posts, "Ergo Agent front shell")
+
+# ── Production-Grade Ergonomics: Thermal Vents, USB-C Port, & Pi 5 Bosses ──
+
+# 1. USB-C power port cutout on left side wall (recessed for standard cable relief)
+usbc_cut = add_box("USB-C power cutter", (14.0, 16.0, 10.0), (-W / 2, 0, 22.0))
+bevel(usbc_cut, 1.5, 3)
+cut(shell, usbc_cut, "USB-C power port")
+
+# 2. Thermal convection ventilation slots on top (exhaust) and bottom (intake)
+for i in range(-3, 4):
+    vent_x = i * 16.0
+    top_vent = add_box("top vent", (8.0, 30.0, 10.0), (vent_x, 0, H))
+    bevel(top_vent, 1.0, 2)
+    cut(shell, top_vent, "top thermal exhaust")
+    bot_vent = add_box("bottom vent", (8.0, 30.0, 10.0), (vent_x, 0, 0))
+    bevel(bot_vent, 1.0, 2)
+    cut(shell, bot_vent, "bottom thermal intake")
+
+# 3. Raspberry Pi 5 mounting standoffs (58mm x 49mm standard mounting hole pattern)
+pi_posts = []
+pi_center_z = 24.0
+for px in (-58.0 / 2, 58.0 / 2):
+    for py in (-49.0 / 2, 49.0 / 2):
+        pi_post = add_cylinder("pi5 standoff", 6.0, 6.0, (px, py, pi_center_z - 3.0), vertices=24)
+        pi_hole = add_cylinder("pi5 hole", 2.5, 8.0, (px, py, pi_center_z - 3.0), vertices=16)
+        cut(pi_post, pi_hole, "pi5 m2.5 insert hole")
+        pi_posts.append(pi_post)
+shell = join([shell] + pi_posts, "Ergo Agent front shell")
 
 # Flat removable rear cover. Screw holes are deliberately only on this rear face.
 cover = add_box("OffSyn Tech rear cover", (W - 0.4, WALL, H - 0.4), (0, D / 2 - WALL / 2, H / 2))

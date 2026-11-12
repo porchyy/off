@@ -51,9 +51,7 @@ async def _daily_report_loop() -> None:
             write_daily_report(db, report_date, risk_threshold, settings.daily_report_dir)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    Base.metadata.create_all(engine)
+def _sync_startup_maintenance() -> None:
     with SessionLocal() as db:
         ensure_defaults(db)
         risk_threshold = get_all(db)["riskThreshold"]
@@ -63,6 +61,12 @@ async def lifespan(app: FastAPI):
         prune_daily_summaries(db, settings.summary_retention_days)
         write_daily_report(db, local_today() - timedelta(days=1), risk_threshold, settings.daily_report_dir)
         prune_expired_reports(settings.daily_report_dir, settings.retention_days)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(engine)
+    await asyncio.to_thread(_sync_startup_maintenance)
     retention_task = asyncio.create_task(_retention_loop())
     report_task = asyncio.create_task(_daily_report_loop())
     try:
@@ -80,7 +84,7 @@ async def lifespan(app: FastAPI):
             pass
 
 
-app = FastAPI(title="OffSyn Tech Backend", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Ergo Agent Backend", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

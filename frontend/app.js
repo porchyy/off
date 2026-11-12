@@ -568,7 +568,7 @@ function connectPiCamera() {
     preview.onloadedmetadata = () => {
       drawPiOverlay();
     };
-    console.log('[OffSyn Tech] WebRTC stream color mode: RGB', {
+    console.log('[Ergo Agent] WebRTC stream color mode: RGB', {
       track: event.track.getSettings?.(),
       streamId: event.streams[0]?.id
     });
@@ -592,7 +592,7 @@ function connectPiCamera() {
       await piPeer.setRemoteDescription({ type: 'answer', sdp: message.sdp });
     } else if (message.type === 'stream_info') {
       const colorMode = message.displayColorMode || message.cameraFormat || 'unknown';
-      console.log('[OffSyn Tech] actual Pi Camera stream format:', message.cameraFormat, {
+      console.log('[Ergo Agent] actual Pi Camera stream format:', message.cameraFormat, {
         displayColorMode: colorMode,
         normalizedOutput: message.outputColorSpace
       });
@@ -610,10 +610,11 @@ function connectPiCamera() {
     } else if (message.type === 'error') {
       toast(message.message || 'ไม่สามารถเชื่อมต่อ Pi Camera ได้');
       if (message.code === 'unavailable') {
-        piManualStop = true;
         $('cameraSignal').className = 'camera-signal risk';
         $('cameraSignal').textContent = message.message;
-        state('กล้องถูกใช้งานอยู่', 'risk');
+        state('รอเชื่อมต่อกล้อง', 'risk');
+        clearTimeout(piReconnectTimer);
+        piReconnectTimer = setTimeout(connectPiCamera, 3000);
       }
     }
   });
@@ -740,9 +741,9 @@ async function loadDashboard() {
   try {
     await loadSummary();
     const stats = await storage.stats();
-    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#087cff');
-    drawBarChart($('monthlyChart'), stats.monthly || [], 'average', 100, '#00d9ff');
-    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#ff344b');
+    drawBarChart($('dailyChart'), stats.daily, 'average', 100, '#0A84FF');
+    drawBarChart($('monthlyChart'), stats.monthly || [], 'average', 100, '#30D158');
+    drawBarChart($('weeklyChart'), stats.weeklyAlerts, 'alerts', Math.max(5, ...stats.weeklyAlerts.map(x => x.alerts || 0)), '#FF453A');
   } catch {
     toast('โหลดข้อมูลไม่สำเร็จ');
   }
@@ -751,12 +752,27 @@ async function loadDashboard() {
 }
 
 function drawBarChart(target, rows, field, maxValue, color) {
+  if (!target) return;
+  const dpr = window.devicePixelRatio || 1;
+  const displayWidth = target.clientWidth || target.width || 600;
+  const displayHeight = target.clientHeight || target.height || 260;
+
+  if (target.width !== displayWidth * dpr || target.height !== displayHeight * dpr) {
+    target.width = displayWidth * dpr;
+    target.height = displayHeight * dpr;
+  }
+
   const c = target.getContext('2d');
-  const { width, height } = target;
+  c.save();
+  c.scale(dpr, dpr);
+  const width = displayWidth;
+  const height = displayHeight;
+
   c.clearRect(0, 0, width, height);
-  c.fillStyle = '#041126';
+  c.fillStyle = 'rgba(28, 28, 30, 0.4)';
   c.fillRect(0, 0, width, height);
-  c.strokeStyle = 'rgba(70, 139, 214, 0.22)';
+  c.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  c.lineWidth = 1;
   for (let i = 1; i <= 4; i++) {
     const y = 24 + (height - 64) * i / 4;
     c.beginPath();
@@ -765,12 +781,13 @@ function drawBarChart(target, rows, field, maxValue, color) {
     c.stroke();
   }
   if (!rows.length) {
-    c.fillStyle = '#9eb7d2';
-    c.font = '16px sans-serif';
+    c.fillStyle = '#8E8E93';
+    c.font = '14px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
     c.fillText('ยังไม่มีข้อมูล', 34, height / 2);
+    c.restore();
     return;
   }
-  const gap = 10;
+  const gap = 12;
   const chartW = width - 56;
   const barW = Math.max(12, (chartW - gap * (rows.length - 1)) / rows.length);
   rows.forEach((row, i) => {
@@ -779,16 +796,23 @@ function drawBarChart(target, rows, field, maxValue, color) {
     const h = Math.max(2, (height - 78) * value / maxValue);
     const y = height - 38 - h;
     c.fillStyle = color;
-    c.fillRect(x, y, barW, h);
-    c.fillStyle = '#9eb7d2';
-    c.font = '12px sans-serif';
-    c.fillText(String(value), x, y - 6);
+    if (typeof c.roundRect === 'function') {
+      c.beginPath();
+      c.roundRect(x, y, barW, h, [4, 4, 0, 0]);
+      c.fill();
+    } else {
+      c.fillRect(x, y, barW, h);
+    }
+    c.fillStyle = '#aeaeb2';
+    c.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
+    c.fillText(String(value), x + Math.max(0, (barW - 14) / 2), y - 6);
     c.save();
     c.translate(x + 2, height - 18);
     c.rotate(-0.35);
     c.fillText(row.label.slice(5), 0, 0);
     c.restore();
   });
+  c.restore();
 }
 
 let alertAudio = null;
@@ -812,7 +836,7 @@ function notifyRisk(force = false, message = 'กรุณาปรับท่�
     playAlertSound();
   }
   if (settings.desktopEnabled && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('OffSyn Tech: 🔴 ควรปรับ (Adjust)', { body: message });
+    new Notification('Ergo Agent: 🔴 ควรปรับ (Adjust)', { body: message });
   }
 }
 
@@ -835,7 +859,7 @@ async function downloadExcel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `OffSynTech_${reportDate}.xlsx`;
+    a.download = `ErgoAgent_${reportDate}.xlsx`;
     document.body.append(a);
     a.click();
     a.remove();
@@ -852,7 +876,7 @@ async function downloadMonthlyExcel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `OffSynTech_${reportMonth}.xlsx`;
+    a.download = `ErgoAgent_${reportMonth}.xlsx`;
     document.body.append(a);
     a.click();
     a.remove();
@@ -993,15 +1017,57 @@ function initViewRouter() {
 // Initialize View Router for separate pages synchronously
 initViewRouter();
 
+function applySseTelemetry(data) {
+  if (data.sensors) {
+    const lux = $('sensorLux');
+    const status = $('sensorDataState');
+    const updatedAt = $('sensorUpdatedAt');
+    if (lux && status && updatedAt) {
+      const s = data.sensors;
+      const updated = s.updated_at ? new Date(s.updated_at) : null;
+      const stale = !updated || Date.now() - updated.getTime() > 10_000;
+      const online = s.bh1750_ok;
+      lux.textContent = online && Number.isFinite(s.lux) ? Number(s.lux).toFixed(1) : '--';
+      status.textContent = stale ? 'กำลังรอข้อมูลใหม่' : online ? 'ออนไลน์' : 'Sensor error';
+      status.className = 'badge ' + (stale ? 'neutral' : online ? 'good' : 'risk');
+      updatedAt.textContent = updated ? updated.toLocaleTimeString('th-TH') : '--:--:--';
+    }
+  }
+  if (data.indicator) {
+    const ind = data.indicator;
+    const updated = ind.updated_at ? new Date(ind.updated_at) : null;
+    const fresh = updated && Date.now() - updated.getTime() <= 10_000;
+    if (fresh) {
+      backendIndicatorSeen = true;
+      setWebAlertLed(ind.is_on === true);
+    }
+  }
+}
+
+function initTelemetryStream() {
+  loadSensorReadings();
+  loadIndicatorStatus();
+  if (typeof EventSource !== 'undefined') {
+    try {
+      const sse = new EventSource('/api/stream');
+      sse.addEventListener('telemetry', (e) => {
+        try {
+          applySseTelemetry(JSON.parse(e.data));
+        } catch {}
+      });
+      return;
+    } catch {}
+  }
+  setInterval(loadSensorReadings, 3000);
+  setInterval(loadIndicatorStatus, 3000);
+}
+
 async function initApp() {
   storage = await createStorage();
   applyStorageMode();
 
-  // Start sensor polling immediately and independently of other initialization
-  loadSensorReadings();
-  setInterval(loadSensorReadings, 500);
-  loadIndicatorStatus();
-  setInterval(loadIndicatorStatus, 500);
+  // Real-time Server-Sent Events stream (replaces 500ms polling flood)
+  initTelemetryStream();
 
   try {
     await loadSettings();

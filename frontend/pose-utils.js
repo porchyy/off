@@ -45,9 +45,6 @@ export function scorePose(landmarks) {
     Math.abs(leftShoulder.y - rightShoulder.y),
     Math.max(0.001, Math.abs(leftShoulder.x - rightShoulder.x))
   ) * degrees;
-  // The Pi adds a calibrated signed lean trend to this value. Browser-only
-  // analysis has no shared per-person baseline, so it intentionally reports 0.
-  const torso = 0;
   const leftHip = landmarks[23];
   const rightHip = landmarks[24];
   const hipsVisible = [leftHip, rightHip].every(point => point && point.visibility > 0.45);
@@ -67,6 +64,7 @@ export function scorePose(landmarks) {
       Math.max(0.001, Math.abs(midHip.y - midShoulder.y))
     ) * degrees;
   }
+  const torso = trunkLean !== null ? Math.round(trunkLean * 10) / 10 : 0;
 
   // Make visible left/right head drift from the shoulder midpoint meaningful
   // in the score, matching the Pi-side posture calculation.

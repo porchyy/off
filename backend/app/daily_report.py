@@ -336,7 +336,7 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
 
     summary.merge_cells("A1:H1")
-    summary["A1"] = "OffSyn Tech — รายงานท่านั่งรายวัน"
+    summary["A1"] = "Ergo Agent — รายงานท่านั่งรายวัน"
     summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
     summary["A1"].fill = HEADER_FILL
     summary["A1"].alignment = Alignment(horizontal="center")
@@ -347,11 +347,12 @@ def build_daily_report(db: Session, report_date: date, risk_threshold: int) -> b
     summary["B3"] = "ข้อมูลรายนาทีเก็บตามนโยบายระบบ ส่วนสรุปรายวันเก็บระยะยาว ไม่รวมภาพหรือวิดีโอ"
     summary["B3"].alignment = Alignment(wrap_text=True)
     if minute_rows:
+        last_row = len(minute_rows) + 1
         summary_rows = [
-            ("คะแนนเฉลี่ย", "=IFERROR(AVERAGE('รายละเอียดรายนาที'!B2:B%d),0)" % (len(minute_rows) + 1)),
-            ("คะแนนต่ำสุด", "=IFERROR(MIN('รายละเอียดรายนาที'!C2:C%d),0)" % (len(minute_rows) + 1)),
-            ("คะแนนสูงสุด", "=IFERROR(MAX('รายละเอียดรายนาที'!D2:D%d),0)" % (len(minute_rows) + 1)),
-            ("เวลาที่เสี่ยง (นาที)", "=IFERROR(SUM('รายละเอียดรายนาที'!I2:I%d)/60,0)" % (len(minute_rows) + 1)),
+            ("คะแนนเฉลี่ย", f"=IFERROR(SUMPRODUCT('รายละเอียดรายนาที'!B2:B{last_row},'รายละเอียดรายนาที'!H2:H{last_row})/SUM('รายละเอียดรายนาที'!H2:H{last_row}),0)"),
+            ("คะแนนต่ำสุด", f"=IFERROR(MIN('รายละเอียดรายนาที'!C2:C{last_row}),0)"),
+            ("คะแนนสูงสุด", f"=IFERROR(MAX('รายละเอียดรายนาที'!D2:D{last_row}),0)"),
+            ("เวลาที่เสี่ยง (นาที)", f"=IFERROR(SUM('รายละเอียดรายนาที'!I2:I{last_row})/60,0)"),
             ("จำนวนช่วงเวลาที่มีข้อมูล", len(minute_rows)),
         ]
     elif day_summary:
@@ -472,7 +473,7 @@ def build_monthly_report(db: Session, report_month: date, risk_threshold: int) -
     alert_sheet = workbook.create_sheet("เหตุการณ์แจ้งเตือน")
 
     summary.merge_cells("A1:H1")
-    summary["A1"] = "OffSyn Tech — รายงานท่านั่งรายเดือน"
+    summary["A1"] = "Ergo Agent — รายงานท่านั่งรายเดือน"
     summary["A1"].font = Font(bold=True, color="FFFFFF", size=14)
     summary["A1"].fill = HEADER_FILL
     summary["A1"].alignment = Alignment(horizontal="center")

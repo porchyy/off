@@ -3,7 +3,7 @@
 
 import { defineConfig } from 'vite';
 
-const backendTarget = process.env.POSTUREAI_BACKEND_URL || 'http://localhost:8000';
+const backendTarget = process.env.ERGO_AGENT_BACKEND_URL || process.env.POSTUREAI_BACKEND_URL || 'http://localhost:8000';
 
 export default defineConfig({
   root: '.',
@@ -15,6 +15,7 @@ export default defineConfig({
       '/api': {
         target: backendTarget,
         changeOrigin: true,
+        ws: true,
       },
     },
   },

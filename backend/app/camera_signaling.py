@@ -14,16 +14,32 @@ class CameraSignalingBroker:
         self._pi: WebSocket | None = None
         self._viewer: WebSocket | None = None
 
-    async def register(self, role: str, websocket: WebSocket) -> bool:
+    async def register(self, role: str, websocket: WebSocket, replace: bool = False) -> bool:
         async with self._lock:
             if role == "pi":
-                if self._pi is not None:
+                if self._pi is not None and not replace:
                     return False
+                if self._pi is not None and self._pi is not websocket:
+                    try:
+                        close_coro = getattr(self._pi, "close", None)
+                        if callable(close_coro):
+                            await close_coro(code=1000, reason="superseded by reconnecting pi")
+                    except Exception:
+                        pass
                 self._pi = websocket
                 return True
             if role == "viewer":
-                if self._pi is None or self._viewer is not None:
+                if self._pi is None:
                     return False
+                if self._viewer is not None and not replace:
+                    return False
+                if self._viewer is not None and self._viewer is not websocket:
+                    try:
+                        close_coro = getattr(self._viewer, "close", None)
+                        if callable(close_coro):
+                            await close_coro(code=1000, reason="superseded by reconnecting viewer")
+                    except Exception:
+                        pass
                 self._viewer = websocket
                 return True
         return False

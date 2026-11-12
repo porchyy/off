@@ -1,7 +1,13 @@
 const SAMPLE_LIMIT = 500;
 const ALERT_LIMIT = 500;
-const ADMIN_TOKEN_KEY = 'postureai_admin_token';
+const ADMIN_TOKEN_KEY = 'ergoagent_admin_token';
+const LEGACY_ADMIN_TOKEN_KEY = 'postureai_admin_token';
 const KEYS = {
+  samples: 'ergoagent_samples',
+  alerts: 'ergoagent_alerts',
+  settings: 'ergoagent_settings'
+};
+const LEGACY_KEYS = {
   samples: 'postureai_samples',
   alerts: 'postureai_alerts',
   settings: 'postureai_settings'
@@ -16,9 +22,9 @@ export const defaultSettings = {
   desktopEnabled: false
 };
 
-const readJson = (key, fallback) => {
+const readJson = (key, fallback, legacyKey) => {
   try {
-    const value = localStorage.getItem(key);
+    const value = localStorage.getItem(key) ?? (legacyKey ? localStorage.getItem(legacyKey) : null);
     return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
@@ -39,8 +45,8 @@ async function requestJson(url, options) {
 }
 
 function adminHeaders() {
-  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
-  return token ? { 'x-postureai-admin-token': token } : {};
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(LEGACY_ADMIN_TOKEN_KEY);
+  return token ? { 'x-ergo-agent-admin-token': token, 'x-postureai-admin-token': token } : {};
 }
 
 class BackendStorage {
@@ -133,7 +139,7 @@ class LocalStorageStorage {
   }
 
   async getSettings() {
-    return { ...defaultSettings, ...readJson(KEYS.settings, {}) };
+    return { ...defaultSettings, ...readJson(KEYS.settings, {}, LEGACY_KEYS.settings) };
   }
 
   async saveSettings(settings) {
@@ -143,14 +149,14 @@ class LocalStorageStorage {
   }
 
   async addSample(sample) {
-    const samples = readJson(KEYS.samples, []);
+    const samples = readJson(KEYS.samples, [], LEGACY_KEYS.samples);
     samples.push({ id: crypto.randomUUID(), ...sample, created_at: new Date().toISOString() });
     writeJson(KEYS.samples, samples.slice(-SAMPLE_LIMIT));
     return { ok: true };
   }
 
   async addAlert(alert) {
-    const alerts = readJson(KEYS.alerts, []);
+    const alerts = readJson(KEYS.alerts, [], LEGACY_KEYS.alerts);
     alerts.push({ id: crypto.randomUUID(), ...alert, created_at: new Date().toISOString() });
     writeJson(KEYS.alerts, alerts.slice(-ALERT_LIMIT));
     return { ok: true };
@@ -158,8 +164,8 @@ class LocalStorageStorage {
 
   async summary() {
     const today = todayKey();
-    const samples = readJson(KEYS.samples, []).filter(sample => dayKey(sample.created_at) === today);
-    const alerts = readJson(KEYS.alerts, [])
+    const samples = readJson(KEYS.samples, [], LEGACY_KEYS.samples).filter(sample => dayKey(sample.created_at) === today);
+    const alerts = readJson(KEYS.alerts, [], LEGACY_KEYS.alerts)
       .filter(alert => dayKey(alert.created_at) === today)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
       .slice(0, 10);
@@ -171,7 +177,7 @@ class LocalStorageStorage {
 
   async stats() {
     const samplesByDay = new Map();
-    for (const sample of readJson(KEYS.samples, [])) {
+    for (const sample of readJson(KEYS.samples, [], LEGACY_KEYS.samples)) {
       const label = dayKey(sample.created_at);
       const row = samplesByDay.get(label) || { label, total: 0, samples: 0 };
       row.total += Number(sample.score || 0);
@@ -184,7 +190,7 @@ class LocalStorageStorage {
       .slice(-14);
 
     const alertsByDay = new Map();
-    for (const alert of readJson(KEYS.alerts, [])) {
+    for (const alert of readJson(KEYS.alerts, [], LEGACY_KEYS.alerts)) {
       const label = dayKey(alert.created_at);
       alertsByDay.set(label, (alertsByDay.get(label) || 0) + 1);
     }
@@ -224,16 +230,18 @@ class LocalStorageStorage {
   }
 
   async exportExcel() {
-    throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ OffSyn Tech');
+    throw Error('การส่งออก Excel ต้องเชื่อมต่อกับ backend ของ Ergo Agent');
   }
 
   async exportMonthlyExcel() {
-    throw Error('การส่งออก Excel รายเดือนต้องเชื่อมต่อกับ backend ของ OffSyn Tech');
+    throw Error('การส่งออก Excel รายเดือนต้องเชื่อมต่อกับ backend ของ Ergo Agent');
   }
 
   async clear() {
     localStorage.removeItem(KEYS.samples);
     localStorage.removeItem(KEYS.alerts);
+    localStorage.removeItem(LEGACY_KEYS.samples);
+    localStorage.removeItem(LEGACY_KEYS.alerts);
     return { ok: true };
   }
 }

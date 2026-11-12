@@ -39,12 +39,13 @@ class CameraProducer:
         # cannot disagree about channel order.
         self.color_space = "rgb" if camera.color_space == "bgr" else camera.color_space
         self.frames = LatestFrameBuffer()
+        self.raw_frames = LatestFrameBuffer()
         self.failures = 0
         self.last_error: Exception | None = None
         self._overlay_lock = threading.Lock()
         self._overlay_renderer: Callable[[Any], None] | None = None
         self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._run, name="postureai-camera", daemon=True)
+        self._thread = threading.Thread(target=self._run, name="ergoagent-camera", daemon=True)
 
     def start(self) -> None:
         self._thread.start()
@@ -72,11 +73,18 @@ class CameraProducer:
                 if self.camera.color_space == "bgr":
                     import cv2  # type: ignore
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                self.raw_frames.put(frame)
                 with self._overlay_lock:
                     overlay_renderer = self._overlay_renderer
                 if overlay_renderer is not None:
-                    overlay_renderer(frame)
-                self.frames.put(frame)
+                    try:
+                        display_frame = frame.copy()
+                        overlay_renderer(display_frame)
+                        self.frames.put(display_frame)
+                    except Exception:
+                        self.frames.put(frame)
+                else:
+                    self.frames.put(frame)
                 self.failures = 0
                 self.last_error = None
             except Exception as exc:
@@ -131,6 +139,11 @@ def _open_picamera2(width: int, height: int, flip: int) -> Camera:
     ))
     camera.start()
     time.sleep(1.0)  # Allow auto-exposure to settle.
+    try:
+        from libcamera import controls  # type: ignore
+        camera.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 1.25})
+    except Exception:
+        pass
     active_format = str(camera.camera_configuration()["main"]["format"])
     logger.info("Pi Camera active stream format: %s", active_format)
     return Camera(camera, "picamera2", flip, color_space="rgb", stream_format=active_format)

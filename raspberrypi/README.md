@@ -85,12 +85,16 @@ sudo apt-get install -y alsa-utils espeak-ng
 
 | MAX98357A | Raspberry Pi 5 |
 |---|---|
-| VIN | Pin 2 (5V) |
+| VIN | Pin 2 (5V) *(ต้องต่อตัวเก็บประจุ 470µF คร่อม VIN/GND)* |
 | GND | Pin 6 (GND) |
 | BCLK | Pin 12 (GPIO18) |
 | LRC | Pin 35 (GPIO19) |
 | DIN | Pin 40 (GPIO21) |
 | SD | Pin 7 (GPIO4) |
+
+> ⚠️ **คำเตือนความปลอดภัยทางไฟฟ้าและการจ่ายไฟ (Power Decoupling & Level Shifting):**  
+> 1. **ลำโพง MAX98357A:** ต้องต่อตัวเก็บประจุ Electrolytic Low-ESR ขนาด 470µF ขนานกับ 0.1µF คร่อมระหว่างขั้ว VIN และ GND ของบอร์ดแอมป์ เพื่อดูดซับกระแสกระชาก 600mA ป้องกันแรงดัน 5V ตก (Rail Sag) ที่ทำให้ Pi 5 PMIC รีบูต  
+> 2. **I2C LCD 1602 (5V):** ขา SDA/SCL ของบอร์ด PCF8574 มี pull-up 5V ภายใน **ห้ามต่อตรงเข้า Pi 5 Pin 3 & 5** (ชิป RP1 ทนได้ 3.3V เท่านั้น) — **ต้องต่อผ่าน Bi-directional Logic Level Shifter 3.3V/5V (เช่น PCA9306 / BSS138)** เท่านั้น!
 
 ต่อลำโพงเข้าขั้ว `SPK+` และ `SPK-` ของโมดูลเท่านั้น ห้ามต่อขั้วลำโพงข้างใดข้างหนึ่ง
 ลง GND จากนั้นติดตั้ง I2S overlay และตั้ง MAX98357A เป็น ALSA output หลัก:

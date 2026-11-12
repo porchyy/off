@@ -28,6 +28,14 @@ class ClientRuntimeState:
             return False
         return datetime.now(timezone.utc) - updated <= timedelta(seconds=90)
 
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "online": self.is_online(),
+            "last_sync_at": self.last_sync_at,
+            "message": self.message,
+            "updated_at": self.updated_at,
+        }
+
 
 client_runtime_state = ClientRuntimeState()
 
@@ -48,6 +56,13 @@ class IndicatorRuntimeState:
         self.score = score
         self.is_on = score is not None and score < 50
         self.updated_at = datetime.now(timezone.utc).isoformat()
+
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "is_on": self.is_on,
+            "score": self.score,
+            "updated_at": self.updated_at,
+        }
 
 
 indicator_runtime_state = IndicatorRuntimeState()
