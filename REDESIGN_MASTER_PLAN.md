@@ -480,8 +480,8 @@ A production-grade edge appliance deployed on a Raspberry Pi 5 operates under st
 
 #### 1. Tri-State Adaptive Inference Governor (Dynamic FPS)
 Human ergonomic posture shifts across seconds, not milliseconds. Running a fixed 30 FPS inference loop 24/7 wastes over 80% of CPU cycles analyzing identical posture states.
-* **State 1: Quiescent / Good Posture (Score $\ge 80$, low motion):** Drop inference to **2 to 3 FPS**. Telemetry heartbeats continue at 1 Hz. (Die temperature drops to ~48°C).
-* **State 2: Dynamic Motion (Frame-to-frame pixel delta $> 6\%$):** Ramp inference up to **10 to 12 FPS** to capture the posture change smoothly.
+* **State 1: Quiescent / Good Posture (Score $\ge 80$, low motion):** Drop inference to **2 to 3 FPS** (telemetry heartbeats continue at 1 Hz; SoC temp drops to ~48°C).
+* **State 2: Dynamic Motion (Landmark Displacement Delta $> 5\%$):** Ramp inference up to **12 FPS** immediately on anatomical landmark displacement (nose, ears, shoulders) without heavy pixel diffing overhead, holding for a **3-second cooldown window** after motion ceases before smoothly decelerating back to quiescent speed.
 * **State 3: Sustained Degradation (Score $< 65$):** Maintain inference at **5 to 6 FPS** to integrate the 15-second risk duration timer.
 * **Net Benefit:** Slashes 24/7 compute consumption by **~72%**, ensuring the Pi 5 runs cool and silent inside the 3D-printed convection chassis without thermal throttling.
 
@@ -514,6 +514,10 @@ ergo-agent/
 ├── cad/                          # Parametric 3D printable chassis & CAD assets
 │   ├── ergo_chassis_mk2.py       # Blender/CadQuery parametric model with power/cooling cutouts
 │   └── stl/                      # Exported manufacturing meshes
+├── ergo-core-rs/                 # Compiled Rust Native Biomechanics Module (PyO3 + Maturin)
+│   ├── Cargo.toml                # Native build manifests & SIMD dependencies
+│   ├── src/lib.rs                # Stack-allocated Kalman filter, Coronal trig & Sigmoid math
+│   └── pyproject.toml            # Maturin bridge configuration
 ├── hardware/                     # Schematics, wiring diagrams, and ALSA configurations
 │   ├── schematics/               # Circuit diagrams (PCA9306, decoupling, pinout)
 │   ├── asound.conf               # ALSA softvol + dmix audio configuration
@@ -637,15 +641,21 @@ gantt
   Execute full simulated 24-hour test run: edge client streaming 15 FPS video and 2 Hz sensor telemetry to backend, dashboard streaming via SSE, and zero crashes or memory leaks.
 
 ### Phase 6: Profiling, Thermal Baselines & Measured Micro-Optimization (Days 39–48)
-*Executed strictly post-launch/post-verification to eliminate premature optimization risks.*
-- [ ] **Task 6.1: Empirical System Profiling & Flamegraph Analysis.**  
-  Run `py-spy` and Linux `perf` on the live Raspberry Pi 5 under continuous 24-hour operation. Identify the exact top 3 CPU cycle and memory allocation hotspots before touching any low-level code.
-- [ ] **Task 6.2: Targeted Rust SIMD Acceleration (`ergo-core-rs`).**  
-  Implement PyO3 native extension only for the proven hotspots (zero-copy YUV420 to RGB tensor conversion via ARM NEON and stack-allocated Kalman landmark smoothing).
-- [ ] **Task 6.3: Adaptive Dynamic FPS Governor Fine-Tuning.**  
-  Calibrate pixel-delta motion thresholds ($5\% - 8\%$) to smoothly transition inference between Quiescent (3 FPS) and Active (12 FPS) states without inducing visual or temporal jitter.
-- [ ] **Task 6.4: Thermal & Core Affinity Verification.**  
-  Pin processes via `taskset` (Cores 0-1 for OS/FastAPI, Cores 2-3 for AI inference). Verify via `/sys/class/thermal/thermal_zone0/temp` that die temperature remains passively below 58°C inside the production enclosure.
+*Engineering requirements established via Grilling Consensus (Ponytail & YAGNI principles):*
+- [ ] **Task 6.1: Empirical System Profiling & Flamegraph Analysis on Live Hardware.**  
+  - Capture profiles with `py-spy` (`py-spy record -o flamegraph.svg --pid <PID>`) and Linux `perf` executed exclusively on the physical Raspberry Pi 5 under real 24-hour load (zero fake mock scripts on dev workstations) to identify the top 3 genuine CPU hotspots.
+- [ ] **Task 6.2: High-Performance Biomechanical Rust Module (`ergo-core-rs`).**  
+  - Established as a **Hard Dependency** for deterministic, microsecond-level performance, structured in `ergo-core-rs/`.
+  - Built with `PyO3` + `Maturin`, binding compilation (`maturin develop --release`) directly into `update-pi.sh`.
+  - **Explicit Rust Scope:** Strictly limited to 1) Coronal joint angles (neck tilt, shoulder slant, torso vector), 2) Zero-heap stack-allocated Kalman filter for landmark smoothing, and 3) Continuous sigmoid loss scoring.
+- [ ] **Task 6.3: Adaptive Dynamic FPS Governor Mechanism.**  
+  - **Trigger Metric:** Uses **Landmark Displacement Delta** tracking coordinate shifts of anatomical anchors (nose, ears, shoulders) at a threshold $> 5\%$, avoiding heavy image pixel diffing overhead.
+  - **Operating Frequency:** Quiescent resting state runs at **3 FPS**; accelerates to **12 FPS** immediately upon detected posture shift.
+  - **Cooldown Hold:** Once motion subsides, sustains **12 FPS for 3 continuous seconds** before smoothly decaying back to 3 FPS.
+- [ ] **Task 6.4: Core Affinity, Thermal Design & UI Boundary.**  
+  - **Thermal Strategy:** 100% reliant on the physical Natural Convection Chimney of the MK-II chassis; zero software throttling of camera capture.
+  - **Dashboard Boundary:** Do **NOT** display CPU temperature on the user-facing web dashboard, preserving the clean Apple Health serenity and preventing unnecessary user anxiety.
+  - **Core Affinity:** Enforced via `taskset`: Cores 0–1 for OS, Network, and FastAPI/SSE; Cores 2–3 for MediaPipe Pose and Rust biomechanics.
 
 ---
 
