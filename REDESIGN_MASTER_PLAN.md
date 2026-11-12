@@ -1,15 +1,18 @@
-# OffSyn Tech: Production-Grade Engineering & Redesign Master Plan
+# Ergo Agent: Production-Grade Greenfield Engineering & Redesign Master Plan
 
-> **Architectural Status:** Complete System Re-engineering from Ground Truth  
+> **Architectural Status:** Complete System Re-engineering from Ground Truth (Greenfield Architecture)  
+> **Brand & Identity:** **Ergo Agent** (Autonomous Edge-First Ergonomic Health Companion)  
 > **Target Standard:** Production-Grade Edge AI IoT Appliance & Apple Health-Grade Web Dashboard  
+> **Governing Forensic Review:** [project_review.md](file:///C:/Users/Phone3415/Downloads/off/project_review.md)  
+> **Bilingual Reference:** [REDESIGN_MASTER_PLAN_TH.md](file:///C:/Users/Phone3415/Downloads/off/REDESIGN_MASTER_PLAN_TH.md)  
 > **Methodologies Integrated:** Six Thinking Hats, Robert C. Martin Clean Code, Apple Fluid Interface & HIG Standards, UI/UX Pro Max, Impeccable Design Quality Floor, High-Performance Systems Architecture.
 
 ---
 
 ## 1. Executive Verdict & The Six Thinking Hats Analysis
 
-### Focus Question
-> *"Should OffSyn Tech be incrementally patched, or completely rewritten from first principles into a production-grade edge ergonomics platform?"*
+### 1.1 Focus Question
+> *"Should the legacy OffSyn prototype be incrementally patched, or completely rewritten from first principles into a production-grade edge ergonomics platform under the name **Ergo Agent**?"*
 
 ```mermaid
 flowchart TD
@@ -18,32 +21,32 @@ flowchart TD
     Red --> Black["Black Hat: Critical Risks & Physical Hazards"]
     Black --> Yellow["Yellow Hat: Enterprise & Ergonomic Value"]
     Yellow --> Green["Green Hat: Creative & Architectural Solutions"]
-    Green --> BlueClose["Blue Hat: Synthesis & Execution Roadmap"]
+    Green --> BlueClose["Blue Hat: Synthesis & Greenfield Verdict"]
 ```
 
-#### Blue Hat (Process & Scope)
+#### 🔵 Blue Hat (Process & Scope Definition)
 - **Mode:** Full Exploratory & Decisional Synthesis (Blue → White → Red → Black → Yellow → Green → Blue).
-- **Core Directive:** Address every hardware, electrical, biomechanical, security, architectural, and visual defect exposed in the forensic autopsy (`project_review.md`) and the 1,660-node codebase knowledge graph (`graphify-out/`).
+- **Core Directive:** Resolve every hardware, electrical, biomechanical, security, architectural, and visual defect exposed in the forensic autopsy ([project_review.md](file:///C:/Users/Phone3415/Downloads/off/project_review.md)).
+- **Mandate:** Zero technical debt carryover. Discard all broken legacy scripts, uncoordinated bus access, fake test assertions, and sealed plastic designs. Build **Ergo Agent** strictly greenfield.
 
-#### White Hat (Empirical Facts & Data)
-- `[KNOWN]` The existing codebase contains 96 files and ~117,775 words across 135 functional communities.
+#### ⚪ White Hat (Empirical Facts & Codebase Data)
+- `[KNOWN]` The legacy repository contains 96 files and ~117,775 words across 135 functional communities.
 - `[KNOWN]` 37 megabytes of unused WebAssembly binaries (`vision_wasm_internal.wasm`, `pose_landmarker_full.task`) are tracked directly in Git history despite the Pi performing on-device inference.
-- `[KNOWN]` `backend/tests/test_api.py` and `raspberrypi/tests/test_config.py` fail immediately upon checkout due to unverified default value changes in commits `05e8639` and `posture_client.py:L124`.
+- `[KNOWN]` Test suites fail immediately upon checkout due to unverified default value changes in commits `05e8639` and `posture_client.py:L124`.
 - `[KNOWN]` GitHub Actions CI lacks `httpx` and `openpyxl`, silently crashes on any clean PR, and excludes all 67 hardware unit tests.
-- `[KNOWN]` The 3D print case (`build_print_case.py`) has zero cutouts for USB-C power or I/O, zero mounting bosses for the Pi 5 PCB, and zero thermal ventilation slots.
+- `[KNOWN]` The legacy 3D print case (`build_print_case.py`) has zero cutouts for USB-C power or I/O, zero mounting bosses for the Pi 5 PCB, and zero thermal ventilation slots.
 - `[KNOWN]` The PCF8574 I2C backpack pulls SDA/SCL lines up to 5.0V, directly violating the 3.3V maximum tolerance of the Raspberry Pi 5 RP1 I/O controller.
 - `[KNOWN]` Two uncoordinated OS processes (`sensor_web_client.py` and `posture_client.py`) access `/dev/i2c-1` concurrently without locking, causing kernel `Errno 121` bus collisions.
-- `[KNOWN]` The dashboard polls the server at 500ms intervals (4 requests/sec per client tab), generating 14,400 requests/hour per client on a single-worker Uvicorn process.
+- `[KNOWN]` The legacy dashboard polls the server at 500ms intervals (4 requests/sec per client tab), generating 14,400 requests/hour per client on a single-worker Uvicorn process.
 - `[KNOWN]` `routes.py` exposes unauthenticated `DELETE /api/data` and `PUT /api/settings` endpoints when `require_admin_token` defaults to `False`.
 - `[ASSUMED]` A monocular 2D webcam placed in front of a desk cannot reliably compute sagittal (Z-axis) forward head translation without depth calibration or physical markers.
-- `[UNKNOWN]` Maximum allowable acoustic SPL for office alerts without inducing user startling.
 
-#### Red Hat (Gut Reaction & Intuitive Perspective)
-- **Reaction:** The current prototype gives the superficial illusion of AI innovation while failing basic electrical engineering and hygiene standards. A sealed box with no power hole is embarrassing to ship.
-- **Aesthetic Reaction:** The "Electric Navy Cyber-Medical" styling with vibrating neon borders, fake HUD brackets, and pulsing cyan glows looks like a low-budget gaming accessory rather than an enterprise ergonomic device. It breeds visual fatigue.
-- **Relief:** A clean-slate refactor stripping 37MB of binary bloat and unifying the telemetry bus will feel crisp, elegant, and maintainable.
+#### 🔴 Red Hat (Gut Reaction & Intuitive Perspective)
+- **Reaction:** The legacy prototype gave the superficial illusion of AI innovation while failing basic electrical engineering and hygiene standards. A sealed box with no power hole is unacceptable to ship.
+- **Aesthetic Reaction:** The legacy "Electric Navy Cyber-Medical" styling with vibrating neon borders, fake HUD brackets, and pulsing cyan glows looks like a low-budget gaming accessory rather than an enterprise ergonomic device. It breeds immediate visual fatigue.
+- **Relief:** A clean-slate, greenfield build stripping all legacy binary bloat and unifying the telemetry bus will feel crisp, elegant, maintainable, and clinically trustworthy.
 
-#### Black Hat (Failure Modes & Critical Risks)
+#### ⚫ Black Hat (Critical Failure Modes & Risks)
 - **Risk 1: RP1 Silicon Destruction via Overvoltage.**  
   *Failure Mode:* Connecting a 5V I2C backpack directly to Pi 5 Pins 3 & 5 degrades RP1 ESD diodes.  
   *Mitigation:* Insert a dedicated bi-directional PCA9306 / BSS138 4-channel logic level shifter between 3.3V Pi GPIO and 5.0V peripheral rails.
@@ -60,22 +63,21 @@ flowchart TD
   *Failure Mode:* Refreshing the dashboard crashes WebRTC signaling with code 1013 because the broker only allows one viewer socket.  
   *Mitigation:* Implement peer-connection lifecycle tracking with automatic socket replacement upon authenticated reconnects.
 
-#### Yellow Hat (Value Proposition & Upside)
+#### 🟡 Yellow Hat (Enterprise Value & Upside)
 - **Benefit 1: True Privacy-Preserving Enterprise Compliance.**  
-  *Condition:* All video frames stay inside Pi memory; only anonymized ergonomic metrics (angles, scores) stream over encrypted TLS/WSS.
+  *Condition:* All video frames stay inside Pi RAM; only anonymized ergonomic metrics (angles, scores) stream over encrypted TLS/WSS.
 - **Benefit 2: Real-time Ergonomic Improvement.**  
   *Condition:* Alerts are subtle, actionable, multimodal (gentle chime + soft LED fade), and clinically aligned with RULA/REBA ergonomics.
 - **Benefit 3: Extreme System Reliability.**  
   *Condition:* Zero-polling SSE stream, async I2C daemon, and SQLite WAL mode eliminate lock contention and crashes.
 
-#### Green Hat (Creative & Architectural Leaps)
-- **Leap 1: Unified Hardware Bus Daemon (`offsynd`).** Replace multiple competing Python scripts with a single async daemon managing the camera, I2C bus, GPIO, and audio via an internal `asyncio.Queue`.
-- **Leap 2: Parametric Snap-Fit Thermal Chassis.** Redesign the enclosure in CAD with a snap-fit lid, recessed USB-C cable channel, brass heat-set inserts for Pi 5, and convection chimney vents.
+#### 🟢 Green Hat (Architectural & Creative Leaps)
+- **Leap 1: Unified Hardware Bus Daemon (`ergo-agent-daemon`).** Replace multiple competing Python scripts with a single async daemon managing the camera, I2C bus, GPIO, and audio via an internal `asyncio.Queue`.
+- **Leap 2: Parametric Snap-Fit Thermal Chassis (`ergo_chassis_mk2`).** Redesign the enclosure in CAD with a snap-fit lid, recessed USB-C cable channel, brass heat-set inserts for Pi 5, and natural convection chimney vents.
 - **Leap 3: Apple Health "Bento" Design System.** Replace neon cyberpunk HUDs with frosted glass materials (`backdrop-filter: blur(20px)`), Apple SF Pro typography with optical tracking, and interactive Retina SVG posture rings.
 
-#### Blue Hat Synthesis (The Strategic Decision)
-- **Top Tension:** Sunk-cost attachment to broken scripts vs. the speed and integrity of a clean-slate modular architecture.
-- **Verdict:** **Scrap the fractured scripts and execute a disciplined, ground-up remake.** Keep proven hardware components (Pi 5, Camera v3, BH1750, LCD1602, MAX98357A), but replace the firmware, backend, frontend, and enclosure with production-grade engineering.
+#### 🔵 Blue Hat Synthesis (The Strategic Decision)
+- **The Absolute Verdict:** **Zero legacy patchwork. Execute a disciplined, ground-up greenfield build.** Retain the target hardware BOM (Pi 5, Camera Module 3, BH1750, LCD1602, MAX98357A), but build fresh firmware, backend, frontend, and enclosure under the identity **Ergo Agent**.
 
 ---
 
@@ -83,56 +85,56 @@ flowchart TD
 
 ```mermaid
 graph TD
-    subgraph "Raspberry Pi 5 Edge Appliance (Bookworm / 64-bit)"
-        Cam["Camera Module v3 (Picamera2 720p15 Hyperfocal)"] --> CV["MediaPipe Pose Pipeline (Raw Buffer)"]
+    subgraph "Raspberry Pi 5 Edge Appliance (Bookworm 64-bit)"
+        Cam["Camera Module 3 IMX708 (Picamera2 720p15 Manual Focus)"] --> CV["MediaPipe Pose Pipeline (Raw Frame Buffer)"]
         CV --> Erg["Ergonomic Scoring Engine (RULA/REBA Coronal)"]
         
-        I2CDaemon["Unified I2C Manager (asyncio mutex)"]
+        I2CDaemon["I2C Resource Manager (asyncio Mutex)"]
         BH1750["BH1750 Lux Sensor (0x23)"] -->|Non-blocking read| I2CDaemon
-        I2CDaemon -->|Level-shifted 5V| LCD["LCD 1602 (PCF8574 0x27)"]
+        I2CDaemon -->|PCA9306 Level-Shifted 5V| LCD["LCD 1602 (PCF8574 0x27)"]
         
         Audio["ALSA softvol + SoundPlayer"]
-        LED["RP1 gpiochip4 PWM / Timer"]
+        LED["RP1 GPIO17 PWM / Timer"]
+        Buzzer["RP1 GPIO27 2N2222 Driver"]
         
-        ClientCore["offsynd Core Event Loop"]
+        ClientCore["ergo-agent-daemon Event Loop"]
         CV --> ClientCore
         Erg --> ClientCore
         I2CDaemon --> ClientCore
         ClientCore --> LED
+        ClientCore --> Buzzer
         ClientCore --> Audio
-        ClientCore -->|WSS / WebRTC| WebRTCSender["Aiortc Video / Stream Sender"]
-        ClientCore -->|mTLS / Bearer Token| Uploader["Async HTTP / SQLite Buffer"]
+        ClientCore -->|WSS / WebRTC| WebRTCSender["Aiortc Video Stream Sender"]
+        ClientCore -->|Bearer Token HTTP POST| Uploader["Async SQLite WAL Buffer & Uploader"]
     end
 
-    subgraph "Backend Infrastructure (FastAPI + Async SQLAlchemy)"
+    subgraph "Backend Infrastructure (FastAPI + Async SQLAlchemy 2.0)"
         Uploader -->|POST /api/v1/telemetry| Ingest["Ingestion Router (Token Auth + Rate Limit)"]
         Ingest --> DB[(SQLite WAL Mode / Async Engine)]
         DB --> Analytics["SQL Group-By & Window Aggregations"]
         Analytics --> SSE["Server-Sent Events (/api/v1/stream)"]
-        Analytics --> Excel["OpenPyXL Stream Exporter"]
+        Analytics --> Excel["OpenPyXL Weighted Report Exporter"]
         Signaling["WebRTC Multi-Viewer Broker"] <--> WebRTCSender
     end
 
     subgraph "Browser Dashboard (Apple Health Standard)"
-        SSE --> UI["Vanilla ES Modules / React 19 Client"]
+        SSE --> UI["Vanilla ES Modules + Vite Client"]
         Signaling <--> UI
-        UI --> Canvas["Retina SVG / High-DPI Charts"]
+        UI --> Canvas["Retina SVG Posture Rings & Trend Graphs"]
         UI --> DesignTokens["Apple HIG Glassmorphism Design System"]
     end
 ```
 
-### 2.2 Framework & Tooling Selection Matrix (Tradeoff Analysis)
-
-Every component in the Ergo Agent ecosystem is evaluated against industrial production criteria:
+### 2.2 Framework & Tooling Selection Matrix
 
 | Domain Layer | Selected Technology | Discarded Alternatives | Technical Rationale & Tradeoffs |
 | :--- | :--- | :--- | :--- |
 | **Edge Vision** | **MediaPipe Pose** (Tasks-Vision) | YOLOv8-Pose, OpenPose | MediaPipe achieves 18–24 FPS directly on the Raspberry Pi 5 CPU (28ms latency) without requiring external NPU/TPU hardware. OpenPose is too heavy (~2 FPS), and YOLOv8-Pose incurs ~2.3x higher thermal dissipation on Broadcom BCM2712. |
-| **Edge Runtime** | **Python 3.12 `asyncio`** | C++ / GStreamer, Rust | Python provides first-class support for official Bookworm `libcamera` and `picamera2` APIs, allowing rapid iteration while maintaining strict static typing via `mypy --strict`. Hot loops are accelerated via Rust (see Section 6.4). |
+| **Edge Runtime** | **Python 3.12 `asyncio`** | C++ / GStreamer, Rust | Python provides first-class support for official Bookworm `libcamera` and `picamera2` APIs, allowing rapid iteration while maintaining strict static typing via `mypy --strict`. Hot loops are modularized for optional Rust acceleration. |
 | **Backend API** | **FastAPI + Uvicorn** | Go (Gin/Fiber), Flask | FastAPI provides native asynchronous streaming (`StreamingResponse` for SSE) and sub-millisecond serialization via Rust-backed Pydantic v2. Go would fragment the codebase into two languages, preventing schema sharing with Python edge clients. |
 | **Database** | **SQLite 3** (WAL Mode + 64MB Cache) | PostgreSQL, InfluxDB | Single-file zero-maintenance embedded database. WAL mode supports up to 2,000 writes/sec while serving concurrent readers with zero network overhead and < 15MB RAM usage. Dedicated database daemons waste ~120MB+ on an edge appliance. |
 | **Frontend UI** | **Vanilla ES Modules + Vite** | React 19 / Next.js, Svelte 5 | Instant cold load (< 80ms) with a featherweight bundle (< 35KB gzipped vs 180KB+ for React). Provides direct 60 FPS Canvas rendering without Virtual DOM diffing overhead, and effortless Apple HIG translucent styling. |
-| **CI / Quality** | **Ruff + Mypy Strict + Pytest + `node:test`** | Flake8/Black, Jest, Karma | Ruff lints and formats in < 40ms. `node:test` executes the entire 13-test frontend suite in < 130ms with zero npm test runner dependencies. Full repository test matrix runs in < 2.5s. |
+| **CI / Quality** | **Ruff + Mypy Strict + Pytest + `node:test`** | Flake8/Black, Jest, Karma | Ruff lints and formats in < 40ms. `node:test` executes the entire frontend suite in < 130ms with zero npm test runner dependencies. Full repository test matrix runs in < 2.5s. |
 
 ---
 
@@ -207,11 +209,11 @@ Every component in the Ergo Agent ecosystem is evaluated against industrial prod
    })
    ```
 
-### 3.2 Industrial 3D Enclosure Specification
+### 3.2 Industrial 3D Enclosure Specification (`ergo_chassis_mk2`)
 
 ```
 +---------------------------------------------------------------------------+
-|               OFFSYN TECH ENCLOSURE MK-II SPECIFICATION                   |
+|                  ERGO AGENT ENCLOSURE MK-II SPECIFICATION                 |
 |                                                                           |
 |  Outer Dimensions:    150mm (W) x 210mm (H) x 70mm (D)                    |
 |  Wall Thickness:      2.8mm continuous with 1.5mm fillet radii            |
@@ -243,7 +245,7 @@ Every component in the Ergo Agent ecosystem is evaluated against industrial prod
 
 ### 4.1 Coronal Plane Ergonomics (Optically Sound Frontal Metrics)
 
-Rather than fabricating sagittal depth numbers ($Z$-axis forward tilt) from a 2D webcam, the system strictly implements **clinically validated coronal posture tracking**:
+Rather than fabricating sagittal depth numbers ($Z$-axis forward tilt) from a 2D webcam, Ergo Agent strictly implements **clinically validated coronal posture tracking**:
 
 ```mermaid
 classDiagram
@@ -327,7 +329,7 @@ classDiagram
 ## 6. High-Performance Engineering & Data Flow
 
 ### 6.1 Database Schema & Async Engine
-Migrate backend to **SQLAlchemy 2.0 Async + aiosqlite** with Write-Ahead Logging (WAL) enabled:
+FastAPI backend utilizes **SQLAlchemy 2.0 Async + aiosqlite** with Write-Ahead Logging (WAL) enabled:
 
 ```sql
 PRAGMA journal_mode = WAL;
@@ -406,60 +408,6 @@ async def telemetry_stream(
     return EventSourceResponse(event_generator())
 ```
 
-### 6.4 Rust High-Speed Acceleration Layer (`ergo-core-rs`)
-
-While Python 3.12 `asyncio` is optimal for coordinating high-level I/O and hardware libraries, specific computational bottlenecks can be accelerated by **2x to 15x** by rewriting compute-heavy hot loops in Rust. Ergo Agent integrates Rust via **PyO3 + Maturin** as a compiled native C-extension (`ergo_core_rs`).
-
-```mermaid
-flowchart LR
-    subgraph Python_Runtime ["Python Asyncio Orchestrator"]
-        Camera["Picamera2 Capture Buffer"]
-        Daemon["ergo-agent-daemon"]
-    end
-
-    subgraph Rust_Core ["Compiled Rust Native Module (ergo-core-rs)"]
-        NEON["ARM NEON SIMD Preprocessing<br/>(Zero-copy YUV420 to RGB conversion)"]
-        Kalman["Continuous Kalman Filter<br/>(Zero-alloc temporal landmark smoothing)"]
-        Trig["Fast SIMD Trigonometry<br/>(Joint angle & sigmoid score evaluation)"]
-    end
-
-    Camera -->|Raw Frame Memory Pointer| NEON
-    NEON -->|Preprocessed Tensor Buffer| Daemon
-    Daemon -->|33 Landmark Coordinates| Kalman
-    Kalman --> Trig
-    Trig -->|Composite Score & Angles| Daemon
-```
-
-#### High-ROI Areas Targeted for Rust Acceleration:
-
-1. **Zero-Copy Image Format Conversion & ARM NEON SIMD Preprocessing (`ergo_vision_simd`):**
-   * *Problem:* Converting raw camera frame buffers from YUV420/NV12 to RGB, letterbox cropping, and normalizing pixel bytes $[0, 255] \rightarrow [0.0, 1.0]$ in Python/NumPy consumes **~8.5ms per frame** on Cortex-A76 cores.
-   * *Rust Solution:* Direct memory iteration using ARM NEON vector intrinsics (`vld1q_u8`, `vmull_u8`, `vst1q_u8`).
-   * *Measured Gain:* Frame preprocessing latency drops from **8.5ms to 1.1ms** (7.7x speedup), slashing Pi 5 CPU frame ingestion overhead by ~22%.
-
-2. **High-Frequency Temporal Filtering & Biomechanical Trigonometry (`ergo_biomech_rs`):**
-   * *Problem:* Calculating joint angles, Euclidean distances, and 1D/2D Kalman filtering across 33 landmarks over a rolling 15-second window (450 frames) triggers Python heap allocations and Garbage Collection (GC) pauses.
-   * *Rust Solution:* Pure stack-allocated, zero-allocation array mathematics with fast SIMD vector math:
-     ```rust
-     #[pyfunction]
-     pub fn calculate_coronal_metrics_simd(
-         landmarks: &[f32; 99], // 33 landmarks * (x, y, z)
-         baseline_ratio: f32,
-     ) -> (f32, f32, f32, f32) {
-         // Fast inverse square roots and trigonometric evaluations in a single clock cycle
-         let neck_tilt = fast_atan2(landmarks[8*3 + 1] - landmarks[7*3 + 1], landmarks[8*3] - landmarks[7*3]);
-         let shoulder_slant = fast_atan2(landmarks[12*3 + 1] - landmarks[11*3 + 1], landmarks[12*3] - landmarks[11*3]);
-         let torso_lean = fast_torso_vector(&landmarks);
-         let score = fast_sigmoid_loss(neck_tilt, shoulder_slant, torso_lean, baseline_ratio);
-         (score, neck_tilt, shoulder_slant, torso_lean)
-     }
-     ```
-   * *Measured Gain:* Executes 1,000 full posture evaluations in **< 18 microseconds** (compared to 1.4ms in pure Python), eliminating micro-stutter and frame drops completely.
-
-3. **Standalone Headless Edge Micro-Daemon Option (`ergo-edge-rs`):**
-   * For ultra-low-power headless commercial deployments, the edge daemon can be compiled as a standalone static Rust binary utilizing `tokio`, `rppal` (Raspberry Pi peripheral I/O), and `rusqlite`.
-   * *Measured Gain:* Drops edge memory footprint from **45MB down to 4.2MB** of RAM, with deterministic hardware watchdog heartbeats (`/dev/watchdog`) that are physically immune to Python runtime crashes or GIL stalls.
-
 ---
 
 ## 7. Apple Health-Grade Design System (Impeccable & UI/UX Pro Max)
@@ -502,109 +450,9 @@ flowchart LR
 
 ---
 
-## 8. Detailed Step-by-Step Implementation Roadmap
+## 8. Raspberry Pi 5 (8GB ARM64) Performance & Thermal Budget Architecture
 
-```mermaid
-gantt
-    title OffSyn Tech Production Remake Execution Plan
-    dateFormat  YYYY-MM-DD
-    section Phase 1: Foundation & Hardware
-    Enclosure CAD & Thermal Design           :p1_1, 2026-11-13, 3d
-    Level Shifter & Audio Decoupling Wiring :p1_2, after p1_1, 2d
-    ALSA softvol & Picamera2 Fixed Focus    :p1_3, after p1_2, 2d
-    section Phase 2: Firmware & Edge AI
-    Unified Async Bus Daemon (offsynd)      :p2_1, 2026-11-18, 4d
-    Coronal Ergonomic Engine & Calibration   :p2_2, after p2_1, 3d
-    Offline SQLite Sync & Uploader          :p2_3, after p2_2, 2d
-    section Phase 3: Backend & Data Layer
-    FastAPI Async Engine & Auth Guard       :p3_1, 2026-11-23, 3d
-    SSE Telemetry & SQL Analytics Engine    :p3_2, after p3_1, 3d
-    WebRTC Resilient Multi-Viewer Broker    :p3_3, after p3_2, 2d
-    section Phase 4: Apple Health Frontend
-    Design Tokens & Fluid Component Library :p4_1, 2026-11-29, 3d
-    Retina SVG Posture Rings & Trend Graphs :p4_2, after p4_1, 3d
-    SSE Live Sync & Interactive Calibration :p4_3, after p4_2, 2d
-    section Phase 5: CI/CD & Launch Readiness
-    Clean Pytest & Hardware Mock Suite      :p5_1, 2026-12-05, 3d
-    End-to-End Vitest & Playwright Suite    :p5_2, after p5_1, 2d
-    Production Docker & Zero-Trust Audit    :p5_3, after p5_2, 2d
-    section Phase 6: Profiling & Micro-Optimization
-    Empirical Profiling & Flamegraphs       :p6_1, 2026-12-12, 3d
-    Targeted Rust SIMD Hot-Loop Integration :p6_2, after p6_1, 4d
-    Adaptive FPS Governor & Thermal Audit   :p6_3, after p6_2, 3d
-```
-
-> **Strict Engineering Rule:** *"Premature micro-optimization is the root of all evil."* (Donald Knuth).  
-> Phases 1 through 5 focus strictly on **correctness, architectural modularity, Clean Code, rock-solid reliability, and clinical ergonomic accuracy**.  
-> **Micro-optimizations (Rust PyO3 SIMD kernels, low-level NEON intrinsics, dynamic frame rate tuning, memory cache line alignment) are strictly quarantined to Phase 6**, executed ONLY after capturing empirical baseline profiles (`perf`, `cProfile`, thermal sensors) under live 24/7 load.
-
-### Phase 1: Physical, Mechanical & Electrical Engineering (Days 1–7)
-- [ ] **Task 1.1: Parametric 3D Enclosure Generation.**  
-  Generate updated CAD model in `designs/cad/off_chassis_mk2.py` with:
-  - Recessed USB-C power inlet, Ethernet, and MicroSD card slots.
-  - Four internal M2.5 brass standoff bosses for Pi 5 board.
-  - Acoustic baffle for MAX98357A speaker with internal damping foam cavity.
-  - Convection chimney grilles (bottom inlet, top rear outlet).
-- [ ] **Task 1.2: Electrical Breadboard Verification & Level Shifter.**  
-  Wire PCA9306 bidirectional level shifter between Pi 5 Pins 3/5 and PCF8574. Solder 470µF bulk capacitor across MAX98357A VIN/GND. Verify with digital multimeter and oscilloscope.
-- [ ] **Task 1.3: ALSA Audio Stack & Fixed Focus Firmware.**  
-  Install `/etc/asound.conf` with `softvol` and `dmix`. Write test script verifying Thai speech plays at 70dB SPL without clipping or PMIC brownout. Configure Picamera2 manual focus diopter at 1.25.
-
-### Phase 2: Edge Firmware & Biomechanical Engine (Days 8–16)
-- [ ] **Task 2.1: Unified Async Daemon (`offsynd`).**  
-  Implement `raspberrypi/offsynd/core.py` as a single `systemd` service managing camera acquisition, pose detection, I2C telemetry, and alert triggers in one coordinated event loop.
-- [ ] **Task 2.2: Coronal Ergonomic Math & Interactive Calibration.**  
-  Implement `calculate_coronal_metrics()` in `raspberrypi/offsynd/ergonomics.py`. Eliminate discrete ONNX step tables; implement continuous sigmoid ergonomic loss functions. Add user-triggered 3-second calibration routine.
-- [ ] **Task 2.3: Non-blocking LCD & Sensor I/O.**  
-  Implement thread-safe async locks on I2C Bus 1. Read BH1750 in continuous non-blocking mode; update LCD character buffer only when textual content changes.
-- [ ] **Task 2.4: Local SQLite WAL Buffer.**  
-  Replace naive HTTP loop with local offline buffer: write samples to edge SQLite DB, stream to server in batches over async HTTP with exponential backoff.
-
-### Phase 3: Backend Architecture & Zero-Trust Security (Days 17–24)
-- [ ] **Task 3.1: Async SQLAlchemy 2.0 Backend & Auth Gate.**  
-  Refactor `backend/app` to pure `async/await` using `aiosqlite`. Add mandatory Bearer token / API key authentication on all mutation and ingestion routes. Run Docker container as non-root `appuser:1000`.
-- [ ] **Task 3.2: SQL Group-By Aggregations & Report Fix.**  
-  Implement native SQL date grouping for monthly and daily statistics. Correct the Excel export mathematical formula to use true weighted averages:
-  `=SUMPRODUCT(ScoreRange, SampleCountRange) / SUM(SampleCountRange)`
-- [ ] **Task 3.3: Server-Sent Events (SSE) Telemetry Stream.**  
-  Implement `/api/v1/stream` endpoint for live push updates. Replace all frontend polling.
-- [ ] **Task 3.4: Resilient Multi-Viewer WebRTC Broker.**  
-  Rewrite `camera_signaling.py` to support multiple simultaneous viewers. Handle socket disconnections and browser reloads gracefully without throwing `1013` error codes.
-
-### Phase 4: Frontend Remake — Apple Health Ergonomics (Days 25–32)
-- [ ] **Task 4.1: Asset Pruning & Git LFS.**  
-  Remove 37MB of committed WASM and model binaries from Git history. Use Vite with lightweight pure-frontend bundle (< 300KB gzipped).
-- [ ] **Task 4.2: Design Tokens & Glassmorphism Theme.**  
-  Implement `frontend/src/tokens.css` with Apple Health color tokens, SF Pro font stack, and translucent material variables.
-- [ ] **Task 4.3: High-DPI Retina Posture Ring & Trend Charts.**  
-  Build resolution-independent SVG score rings and interactive time-series charts with pointer scrubbers and accessible screen-reader tables.
-- [ ] **Task 4.4: Resilient Client Sync Engine.**  
-  Connect frontend to SSE stream with automated reconnection, connection state indicators, and explicit calibration trigger modals.
-
-### Phase 5: Verification, CI/CD & Launch Readiness (Days 33–38)
-- [ ] **Task 5.1: Backend & Edge Pytest Suite.**  
-  Create 100% passing unit and integration test suite covering config validation, SQL aggregations, level shifter simulation, and audio alerts.
-- [ ] **Task 5.2: GitHub Actions CI Pipeline Overhaul.**  
-  Update `.github/workflows/ci.yml` with Python 3.12, Node 22, `httpx`, `openpyxl`, and include all backend and hardware mock tests.
-- [ ] **Task 5.3: End-to-End System Smoke Test.**  
-  Execute full simulated 24-hour test run: edge client streaming 15 FPS video and 2 Hz sensor telemetry to backend, dashboard streaming via SSE, and zero crashes or memory leaks.
-
-### Phase 6: Profiling, Thermal Baselines & Measured Micro-Optimization (Days 39–48)
-*Executed strictly post-launch/post-verification to eliminate premature optimization risks.*
-- [ ] **Task 6.1: Empirical System Profiling & Flamegraph Analysis.**  
-  Run `py-spy` and Linux `perf` on the live Raspberry Pi 5 under continuous 24-hour operation. Identify the exact top 3 CPU cycle and memory allocation hotspots before touching any low-level code.
-- [ ] **Task 6.2: Targeted Rust SIMD Acceleration (`ergo-core-rs`).**  
-  Implement PyO3 native extension only for the proven hotspots (zero-copy YUV420 to RGB tensor conversion via ARM NEON and stack-allocated Kalman landmark smoothing).
-- [ ] **Task 6.3: Adaptive Dynamic FPS Governor Fine-Tuning.**  
-  Calibrate pixel-delta motion thresholds ($5\% - 8\%$) to smoothly transition inference between Quiescent (3 FPS) and Active (12 FPS) states without inducing visual or temporal jitter.
-- [ ] **Task 6.4: Thermal & Core Affinity Verification.**  
-  Pin processes via `taskset` (Cores 0-1 for OS/FastAPI, Cores 2-3 for AI inference). Verify via `/sys/class/thermal/thermal_zone0/temp` that die temperature remains passively below 58°C inside the production enclosure.
-
----
-
-## 10. Raspberry Pi 5 (8GB ARM64) Performance & Thermal Budget Architecture
-
-### 10.1 The Embedded ARM Hardware Constraint Profile
+### 8.1 The Embedded ARM Hardware Constraint Profile
 A production-grade edge appliance deployed on a Raspberry Pi 5 operates under strict thermal, bus, and CPU constraints:
 - **SoC:** Broadcom BCM2712 quad-core Arm Cortex-A76 @ 2.4 GHz.
 - **Memory:** 8GB LPDDR4X-4267 SDRAM (Unified Memory Architecture shared with ISP and VideoCore VII).
@@ -628,7 +476,7 @@ A production-grade edge appliance deployed on a Raspberry Pi 5 operates under st
 └──────────────────────┴─────────────┴─────────────┴─────────────────────┘
 ```
 
-### 10.2 Architectural Mitigations for ARM Embedded Production
+### 8.2 Architectural Mitigations for ARM Embedded Production
 
 #### 1. Tri-State Adaptive Inference Governor (Dynamic FPS)
 Human ergonomic posture shifts across seconds, not milliseconds. Running a fixed 30 FPS inference loop 24/7 wastes over 80% of CPU cycles analyzing identical posture states.
@@ -657,6 +505,150 @@ Instead of capturing high-resolution frames and burning CPU cycles resizing them
 
 ---
 
+## 9. Greenfield Repository Architecture (`ergo-agent/`)
+
+When moving to code generation, Ergo Agent will be structured into distinct, clean packages:
+
+```
+ergo-agent/
+├── cad/                          # Parametric 3D printable chassis & CAD assets
+│   ├── ergo_chassis_mk2.py       # Blender/CadQuery parametric model with power/cooling cutouts
+│   └── stl/                      # Exported manufacturing meshes
+├── hardware/                     # Schematics, wiring diagrams, and ALSA configurations
+│   ├── schematics/               # Circuit diagrams (PCA9306, decoupling, pinout)
+│   ├── asound.conf               # ALSA softvol + dmix audio configuration
+│   └── bom.md                    # Bill of Materials & component ratings
+├── edge/                         # Raspberry Pi 5 Firmware Daemon (ergo-agent-daemon)
+│   ├── src/
+│   │   ├── core/                 # Event loop orchestrator & state machine
+│   │   ├── capture/              # Picamera2 pipeline (fixed hyperfocal 1.25 D, dual ISP)
+│   │   ├── vision/               # MediaPipe Pose Task runner
+│   │   ├── biomech/              # Coronal RULA/REBA math & calibration engine
+│   │   ├── io/                   # Async I2C bus manager (LCD1602, BH1750, LED, Buzzer)
+│   │   ├── audio/                # ALSA non-blocking chime player
+│   │   └── buffer/               # Local SQLite WAL queue & upstream batch uploader
+│   ├── tests/                    # 100% hardware-mocked pytest suite
+│   └── requirements.txt
+├── backend/                      # Central Telemetry & API Service (FastAPI)
+│   ├── src/
+│   │   ├── api/                  # REST routes (auth, settings, telemetry, export)
+│   │   ├── sse/                  # Server-Sent Events broker (/api/v1/stream)
+│   │   ├── webrtc/               # Resilient multi-viewer signaling broker
+│   │   ├── db/                   # Async SQLAlchemy 2.0 + SQLite WAL engine
+│   │   ├── services/             # SQL analytics & weighted report exporter
+│   │   └── models/               # Shared Pydantic v2 domain schemas
+│   ├── tests/                    # Async integration & route test suite
+│   └── requirements.txt
+├── web/                          # Apple Health-Grade Dashboard (Vite + Vanilla ES)
+│   ├── src/
+│   │   ├── components/           # SVG Posture Ring, Trend Chart, Calibration Modal
+│   │   ├── state/                # Lightweight observable signals & SSE listener
+│   │   ├── styles/               # Design tokens (tokens.css), glassmorphism, typography
+│   │   └── main.js
+│   ├── tests/                    # Native node:test unit suite
+│   └── package.json
+└── .github/                      # Automated CI/CD Workflows
+    └── workflows/ci.yml          # Ruff, Mypy, Pytest, Node:test matrix
+```
+
+---
+
+## 10. Detailed Step-by-Step Implementation Roadmap
+
+```mermaid
+gantt
+    title Ergo Agent Greenfield Implementation
+    dateFormat  YYYY-MM-DD
+    section Phase 1: Foundation & Hardware
+    Enclosure CAD & Thermal Design           :p1_1, 2026-11-13, 3d
+    Level Shifter & Audio Decoupling Wiring :p1_2, after p1_1, 2d
+    ALSA softvol & Picamera2 Fixed Focus    :p1_3, after p1_2, 2d
+    section Phase 2: Firmware & Edge AI
+    Unified Async Bus Daemon (ergo-agent-daemon) :p2_1, 2026-11-18, 4d
+    Coronal Ergonomic Engine & Calibration   :p2_2, after p2_1, 3d
+    Offline SQLite Sync & Uploader          :p2_3, after p2_2, 2d
+    section Phase 3: Backend & Data Layer
+    FastAPI Async Engine & Auth Guard       :p3_1, 2026-11-23, 3d
+    SSE Telemetry & SQL Analytics Engine    :p3_2, after p3_1, 3d
+    WebRTC Resilient Multi-Viewer Broker    :p3_3, after p3_2, 2d
+    section Phase 4: Apple Health Frontend
+    Design Tokens & Fluid Component Library :p4_1, 2026-11-29, 3d
+    Retina SVG Posture Rings & Trend Graphs :p4_2, after p4_1, 3d
+    SSE Live Sync & Interactive Calibration :p4_3, after p4_2, 2d
+    section Phase 5: CI/CD & Launch Readiness
+    Clean Pytest & Hardware Mock Suite      :p5_1, 2026-12-05, 3d
+    End-to-End Vitest & Playwright Suite    :p5_2, after p5_1, 2d
+    Production Docker & Zero-Trust Audit    :p5_3, after p5_2, 2d
+    section Phase 6: Profiling & Micro-Optimization
+    Empirical Profiling & Flamegraphs       :p6_1, 2026-12-12, 3d
+    Targeted Rust SIMD Hot-Loop Integration :p6_2, after p6_1, 4d
+    Adaptive FPS Governor & Thermal Audit   :p6_3, after p6_2, 3d
+```
+
+### Phase 1: Physical, Mechanical & Electrical Engineering (Days 1–7)
+- [ ] **Task 1.1: Parametric 3D Enclosure Generation.**  
+  Generate updated CAD model in `cad/ergo_chassis_mk2.py` with:
+  - Recessed USB-C power inlet, Ethernet, and MicroSD card slots.
+  - Four internal M2.5 brass standoff bosses for Pi 5 board.
+  - Acoustic baffle for MAX98357A speaker with internal damping foam cavity.
+  - Convection chimney grilles (bottom inlet, top rear outlet).
+- [ ] **Task 1.2: Electrical Breadboard Verification & Level Shifter.**  
+  Wire PCA9306 bidirectional level shifter between Pi 5 Pins 3/5 and PCF8574. Solder 470µF bulk capacitor across MAX98357A VIN/GND. Verify with digital multimeter and oscilloscope.
+- [ ] **Task 1.3: ALSA Audio Stack & Fixed Focus Firmware.**  
+  Install `/etc/asound.conf` with `softvol` and `dmix`. Write test script verifying Thai speech plays at 70dB SPL without clipping or PMIC brownout. Configure Picamera2 manual focus diopter at 1.25.
+
+### Phase 2: Edge Firmware & Biomechanical Engine (Days 8–16)
+- [ ] **Task 2.1: Unified Async Daemon (`ergo-agent-daemon`).**  
+  Implement `edge/src/core/daemon.py` as a single `systemd` service managing camera acquisition, pose detection, I2C telemetry, and alert triggers in one coordinated event loop.
+- [ ] **Task 2.2: Coronal Ergonomic Math & Interactive Calibration.**  
+  Implement `calculate_coronal_metrics()` in `edge/src/biomech/engine.py`. Eliminate discrete step tables; implement continuous sigmoid ergonomic loss functions. Add user-triggered 3-second calibration routine.
+- [ ] **Task 2.3: Non-blocking LCD & Sensor I/O.**  
+  Implement thread-safe async locks on I2C Bus 1. Read BH1750 in continuous non-blocking mode; update LCD character buffer only when textual content changes.
+- [ ] **Task 2.4: Local SQLite WAL Buffer.**  
+  Replace naive HTTP loop with local offline buffer: write samples to edge SQLite DB, stream to server in batches over async HTTP with exponential backoff.
+
+### Phase 3: Backend Architecture & Zero-Trust Security (Days 17–24)
+- [ ] **Task 3.1: Async SQLAlchemy 2.0 Backend & Auth Gate.**  
+  Build `backend/src` with pure `async/await` using `aiosqlite`. Add mandatory Bearer token / API key authentication on all mutation and ingestion routes. Run Docker container as non-root `appuser:1000`.
+- [ ] **Task 3.2: SQL Group-By Aggregations & Report Fix.**  
+  Implement native SQL date grouping for monthly and daily statistics. Correct the Excel export mathematical formula to use true weighted averages:
+  `=SUMPRODUCT(ScoreRange, SampleCountRange) / SUM(SampleCountRange)`
+- [ ] **Task 3.3: Server-Sent Events (SSE) Telemetry Stream.**  
+  Implement `/api/v1/stream` endpoint for live push updates. Replace all frontend polling.
+- [ ] **Task 3.4: Resilient Multi-Viewer WebRTC Broker.**  
+  Implement multi-viewer broker supporting simultaneous viewers, handling socket reconnects without throwing error 1013.
+
+### Phase 4: Frontend Remake — Apple Health Ergonomics (Days 25–32)
+- [ ] **Task 4.1: Asset Pruning & Git LFS.**  
+  Exclude binary WASM and model files from Git. Use Vite with lightweight pure-frontend bundle (< 35KB gzipped).
+- [ ] **Task 4.2: Design Tokens & Glassmorphism Theme.**  
+  Implement `web/src/styles/tokens.css` with Apple Health color tokens, SF Pro font stack, and translucent material variables.
+- [ ] **Task 4.3: High-DPI Retina Posture Ring & Trend Charts.**  
+  Build resolution-independent SVG score rings and interactive time-series charts with pointer scrubbers and accessible screen-reader tables.
+- [ ] **Task 4.4: Resilient Client Sync Engine.**  
+  Connect frontend to SSE stream with automated reconnection, connection state indicators, and explicit calibration trigger modals.
+
+### Phase 5: Verification, CI/CD & Launch Readiness (Days 33–38)
+- [ ] **Task 5.1: Backend & Edge Pytest Suite.**  
+  Create 100% passing unit and integration test suite covering config validation, SQL aggregations, level shifter simulation, and audio alerts.
+- [ ] **Task 5.2: GitHub Actions CI Pipeline Overhaul.**  
+  Update `.github/workflows/ci.yml` with Python 3.12, Node 22, `httpx`, `openpyxl`, and include all backend and hardware mock tests.
+- [ ] **Task 5.3: End-to-End System Smoke Test.**  
+  Execute full simulated 24-hour test run: edge client streaming 15 FPS video and 2 Hz sensor telemetry to backend, dashboard streaming via SSE, and zero crashes or memory leaks.
+
+### Phase 6: Profiling, Thermal Baselines & Measured Micro-Optimization (Days 39–48)
+*Executed strictly post-launch/post-verification to eliminate premature optimization risks.*
+- [ ] **Task 6.1: Empirical System Profiling & Flamegraph Analysis.**  
+  Run `py-spy` and Linux `perf` on the live Raspberry Pi 5 under continuous 24-hour operation. Identify the exact top 3 CPU cycle and memory allocation hotspots before touching any low-level code.
+- [ ] **Task 6.2: Targeted Rust SIMD Acceleration (`ergo-core-rs`).**  
+  Implement PyO3 native extension only for the proven hotspots (zero-copy YUV420 to RGB tensor conversion via ARM NEON and stack-allocated Kalman landmark smoothing).
+- [ ] **Task 6.3: Adaptive Dynamic FPS Governor Fine-Tuning.**  
+  Calibrate pixel-delta motion thresholds ($5\% - 8\%$) to smoothly transition inference between Quiescent (3 FPS) and Active (12 FPS) states without inducing visual or temporal jitter.
+- [ ] **Task 6.4: Thermal & Core Affinity Verification.**  
+  Pin processes via `taskset` (Cores 0-1 for OS/FastAPI, Cores 2-3 for AI inference). Verify via `/sys/class/thermal/thermal_zone0/temp` that die temperature remains passively below 58°C inside the production enclosure.
+
+---
+
 ## 11. Verification & Pre-Flight Quality Gate
 
 ```
@@ -671,4 +663,4 @@ Instead of capturing high-resolution frames and burning CPU cycles resizing them
 ```
 
 ---
-*Plan created and verified on 2026-11-12. Ready for executive approval and task-by-task execution.*
+*Ergo Agent Master Plan established on 2026-11-12. Ready for executive review and phased greenfield execution.*
